@@ -69,8 +69,10 @@ const BASE_90D: Record<StageName, number[]> = {
 };
 
 /** Override today's count to reflect the fixture state currently shown. */
-const FIXTURE_TODAY: Record<"clean" | "at-risk" | "broken", Record<StageName, number>> = {
+const FIXTURE_TODAY: Record<"clean" | "watch" | "at-risk" | "broken", Record<StageName, number>> = {
   clean: { Rebalance: 0, Estimates: 0, Actuals: 0, Reporting: 0 },
+  // v0.1.2 §1.5 watch fixture — only Estimates slightly past typical.
+  watch: { Rebalance: 0, Estimates: 2, Actuals: 0, Reporting: 0 },
   // Matches what MandateGrid shows in the at-risk fixture (Vanguard
   // Rebalance, iShares Estimates, Cohen Actuals + JPM Actuals, Reporting 0).
   "at-risk": { Rebalance: 1, Estimates: 1, Actuals: 2, Reporting: 0 },
@@ -95,7 +97,7 @@ function dateNDaysAgo(n: number): string {
 
 export function getStageTrends(
   windowDays: WindowDays,
-  fixtureKey: "clean" | "at-risk" | "broken",
+  fixtureKey: "clean" | "watch" | "at-risk" | "broken",
   partial: boolean = true,
 ): StageTrendData[] {
   return STAGE_NAMES.map((stage) => {

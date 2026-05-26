@@ -40,7 +40,7 @@ export default function PageHeader({
           Mock Qlik feed
         </span>
         <div className="flex items-center gap-1 rounded-full border border-neutral-300 p-0.5">
-          {(["clean", "at-risk", "broken"] as const).map((s) => (
+          {(["clean", "watch", "at-risk", "broken"] as const).map((s) => (
             <button
               key={s}
               type="button"
