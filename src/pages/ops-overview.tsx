@@ -12,6 +12,18 @@ import {
   effectiveState,
   useMonitorActions,
 } from "../lib/qlik";
+import {
+  readUrlSort,
+  writeUrlSort,
+  type GridSortMode,
+} from "../lib/grid-sort";
+import {
+  readUrlView,
+  savedViewsRepo,
+  writeUrlView,
+} from "../lib/saved-views";
+import { useSavedViews } from "../hooks/useSavedViews";
+import SavedViewTabs from "../components/ops-overview/SavedViewTabs";
 import PageHeader from "../components/ops-overview/PageHeader";
 import LensBar, {
   LENS_LABEL,
@@ -22,11 +34,10 @@ import ManagementStrip, {
   type Period,
 } from "../components/ops-overview/ManagementStrip";
 import OperationalStateBanner from "../components/ops-overview/OperationalStateBanner";
-import StaleBanner from "../components/ops-overview/StaleBanner";
+import SystemHealthStrip from "../components/ops-overview/SystemHealthStrip";
 import MonitorList from "../components/ops-overview/MonitorList";
 import PipelineView from "../components/ops-overview/PipelineView";
 import MandateGrid from "../components/ops-overview/MandateGrid";
-import QlikHeaderTrio from "../components/ops-overview/QlikHeaderTrio";
 import PipelineDrawer from "../components/ops-overview/PipelineDrawer";
 import CleanDayPanel from "../components/ops-overview/CleanDayPanel";
 import HolidayHeaderStrip from "../components/ops-overview/HolidayHeaderStrip";
@@ -47,7 +58,13 @@ import { fetchMonitors } from "../lib/qlik";
 function readUrlState(): OperationalState | null {
   if (typeof window === "undefined") return null;
   const raw = new URLSearchParams(window.location.search).get("state");
-  if (raw === "clean" || raw === "at-risk" || raw === "broken") return raw;
+  if (
+    raw === "clean" ||
+    raw === "watch" ||
+    raw === "at-risk" ||
+    raw === "broken"
+  )
+    return raw;
   return null;
 }
 
@@ -115,10 +132,35 @@ export default function OpsOverview() {
     () => readUrlPeriod() ?? "30d",
   );
   const [now, setNow] = useState(() => Date.now());
-  // Spec v0.1.1 §6.2 — default lens is "Needs my attention", not "All".
-  const [lens, setLens] = useState<Lens>("needs_attention");
+  const views = useSavedViews();
+  // Spec v0.1.2 §3.4 — landing view is URL param, else user's default, else
+  // the system "Needs my attention" view.
+  const initialView = useMemo(() => {
+    const urlId = readUrlView();
+    if (urlId) {
+      const match = views.find((v) => v.id === urlId);
+      if (match) return match;
+    }
+    return (
+      views.find((v) => v.isDefault) ??
+      views.find((v) => v.id === "sys-needs-attention") ??
+      views[0]
+    );
+    // intentionally compute once on mount — view list mutations don't
+    // re-land the user on a different view mid-session.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const [activeViewId, setActiveViewId] = useState<string | null>(
+    initialView?.id ?? null,
+  );
+  const [lens, setLens] = useState<Lens>(
+    initialView?.lens ?? "needs_attention",
+  );
   const [monitors, setMonitors] = useState<QlikMonitor[]>([]);
   const [pipelines, setPipelines] = useState<PipelineState[]>([]);
+  const [sortMode, setSortMode] = useState<GridSortMode>(
+    () => readUrlSort() ?? "smart",
+  );
   const [pulseMonitorId, setPulseMonitorId] = useState<string | null>(null);
   const [drawerPipelineId, setDrawerPipelineId] = useState<string | null>(null);
   const [drawerDetail, setDrawerDetail] = useState<PipelineDetail | null>(null);
@@ -201,8 +243,34 @@ export default function OpsOverview() {
     writeUrlParams(fixtureKey, period);
   }, [fixtureKey, period]);
 
+  useEffect(() => {
+    writeUrlSort(sortMode);
+  }, [sortMode]);
+
+  useEffect(() => {
+    writeUrlView(activeViewId);
+  }, [activeViewId]);
+
+  function handleSelectView(view: { id: string; lens: Lens }) {
+    setActiveViewId(view.id);
+    setLens(view.lens);
+    savedViewsRepo.touch(view.id);
+  }
+
+  function handleLensChange(next: Lens) {
+    setLens(next);
+    // Manual lens change detaches from the current view (it's no longer
+    // an exact match). The "+ New view" affordance captures the new state.
+    setActiveViewId(null);
+  }
+
   const summary = useMemo(() => deriveSummary(monitors), [monitors]);
-  const state = useMemo(() => deriveOperationalState(monitors), [monitors]);
+  // Spec v0.1.2 §1.5 — L0 derives from pipeline stage tiers (primary signal),
+  // with monitors folded in as a fallback for non-pipeline alerts.
+  const state = useMemo(
+    () => deriveOperationalState(pipelines, monitors),
+    [pipelines, monitors],
+  );
   const scoped = useMemo(
     () => applyLens(monitors, lens, actions),
     [monitors, lens, actions],
@@ -223,9 +291,10 @@ export default function OpsOverview() {
       <div className="flex flex-1 overflow-hidden">
         <div className="flex-1 overflow-y-auto">
           <div className="mx-auto max-w-[1280px] px-8 py-6">
-          {/* Qlik feed health — the three header tiles Qlik users recognise.
-              Spec §0 explicitly names these as the dashboard's headers. */}
-          <QlikHeaderTrio summary={summary} now={now} />
+          {/* Spec v0.1.2 §4 — compact system-health strip replaces the
+              v0.1.1 three-tile Qlik header (which duplicated the L0 banner)
+              AND the standalone StaleBanner (one piece of UI per signal). */}
+          <SystemHealthStrip summary={summary} now={now} />
 
           <ManagementStrip
             metrics={MANAGEMENT_METRICS[period]}
@@ -233,14 +302,19 @@ export default function OpsOverview() {
             onPeriodChange={setPeriod}
           />
 
+          <SavedViewTabs
+            views={views}
+            activeId={activeViewId}
+            currentLens={lens}
+            onSelect={handleSelectView}
+          />
+
           <LensBar
             value={lens}
-            onChange={setLens}
+            onChange={handleLensChange}
             scopedCount={scoped.length}
             totalCount={monitors.length}
           />
-
-          <StaleBanner lastRefresh={summary.lastRefresh} now={now} />
 
           <OperationalStateBanner
             state={state}
@@ -254,6 +328,9 @@ export default function OpsOverview() {
               Plus PipelineDrawer (tier 4) — opened from any pipeline-named surface. */}
           <MandateGrid
             pipelines={pipelines}
+            l0State={state}
+            sortMode={sortMode}
+            onSortChange={setSortMode}
             onMonitorClick={focusMonitor}
             onPipelineClick={openPipelineDrawer}
           />

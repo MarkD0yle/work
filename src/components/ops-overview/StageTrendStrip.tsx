@@ -39,7 +39,7 @@ function writeUrlWindow(win: WindowDays) {
 export default function StageTrendStrip({
   fixtureKey,
 }: {
-  fixtureKey: "clean" | "at-risk" | "broken";
+  fixtureKey: "clean" | "watch" | "at-risk" | "broken";
 }) {
   const [win, setWin] = useState<WindowDays>(() => readUrlWindow() ?? 14);
   const [drilledDate, setDrilledDate] = useState<string | null>(null);

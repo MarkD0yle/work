@@ -1,20 +1,34 @@
-/* Severity colour tier system — spec v0.1.1 §1.
+/* Severity colour tier system — spec v0.1.1 §1, extended in v0.1.2 §1.3.
  *
  *   "Hue carries severity. Weight carries age and acknowledgement state.
  *    They do not cross-talk."
  *
- * In production these map to SSDS tokens like `color.state.broken.banner`.
- * This workspace doesn't have SSDS, so we map each (severity, tier) pair
- * to a Tailwind class triple here. The component contract is identical —
- * swap this file for SSDS token references when porting.
+ * v0.1.2 introduces three breach tiers (Past Typical / Past Required /
+ * Past Benchmark) borrowed from Qlik. These map to severities:
  *
- * Hard rules (spec §11):
+ *   typical    cream    pale yellow    informational    "watch this"
+ *   required   amber    standard       actionable       "act now"
+ *   benchmark  red      saturated      escalation       "page the boss"
+ *
+ * The pre-v0.1.2 names `atrisk` and `broken` are kept as aliases of
+ * `required` and `benchmark` respectively, so legacy callers compile.
+ *
+ * Hard rules (spec §11 + v0.1.2 §6):
  *   - Hue carries severity; weight carries age/ack state (no cross-talk)
  *   - Green never gets age weight — clean is always flat
- *   - No invented colour values — only the tones below
+ *   - Three tiers — never collapse to two except in the trend strip
+ *   - Threshold values come from config, never hardcoded in components
  */
 
-export type Severity = "broken" | "atrisk" | "watch" | "working" | "clean";
+export type Severity =
+  | "benchmark"
+  | "required"
+  | "typical"
+  | "broken" // alias of benchmark
+  | "atrisk" // alias of required
+  | "watch" // pre-breach in-progress with concern (blue) — distinct from typical
+  | "working"
+  | "clean";
 
 /** Five tiers carrying decreasing visual weight within a single hue. */
 export type Tier = "banner" | "surface" | "muted" | "subtle" | "outline";
@@ -25,52 +39,91 @@ export interface ToneClasses {
   border: string;
 }
 
+const BENCHMARK_TONES: Record<Tier, ToneClasses> = {
+  // Loudest — L0 banner only
+  banner: { bg: "bg-red-50", text: "text-red-800", border: "border-red-300" },
+  // Medium — stage cells, pipeline row left stripe
+  surface: { bg: "bg-red-500", text: "text-white", border: "border-red-500" },
+  // Desaturated — acked rows
+  muted: { bg: "bg-red-50", text: "text-red-800", border: "border-red-200" },
+  // Near-neutral with a hint — resolved rows
+  subtle: { bg: "bg-white", text: "text-red-600", border: "border-red-100" },
+  // Border only — filter chips
+  outline: {
+    bg: "bg-transparent",
+    text: "text-red-700",
+    border: "border-red-400",
+  },
+};
+
+const REQUIRED_TONES: Record<Tier, ToneClasses> = {
+  // Required banner uses softer amber fill — required-vs-benchmark contrast
+  // is the point. We don't want amber-500 banner shouting like a red one.
+  banner: {
+    bg: "bg-amber-50",
+    text: "text-amber-900",
+    border: "border-amber-300",
+  },
+  surface: {
+    bg: "bg-amber-400",
+    text: "text-amber-950",
+    border: "border-amber-400",
+  },
+  muted: {
+    bg: "bg-amber-50/40",
+    text: "text-amber-800",
+    border: "border-amber-200",
+  },
+  subtle: {
+    bg: "bg-white",
+    text: "text-amber-700",
+    border: "border-amber-100",
+  },
+  outline: {
+    bg: "bg-transparent",
+    text: "text-amber-800",
+    border: "border-amber-400",
+  },
+};
+
+const TYPICAL_TONES: Record<Tier, ToneClasses> = {
+  // Typical — informational cream/yellow. Visible but quiet.
+  // Hard rule: must be clearly distinct from required (amber) so a row
+  // showing typical → required → benchmark reads as a ladder.
+  banner: {
+    bg: "bg-yellow-50",
+    text: "text-yellow-900",
+    border: "border-yellow-200",
+  },
+  surface: {
+    bg: "bg-yellow-200",
+    text: "text-yellow-900",
+    border: "border-yellow-200",
+  },
+  muted: {
+    bg: "bg-yellow-50",
+    text: "text-yellow-800",
+    border: "border-yellow-100",
+  },
+  subtle: {
+    bg: "bg-white",
+    text: "text-yellow-700",
+    border: "border-yellow-100",
+  },
+  outline: {
+    bg: "bg-transparent",
+    text: "text-yellow-800",
+    border: "border-yellow-300",
+  },
+};
+
 export const SEVERITY_TONES: Record<Severity, Record<Tier, ToneClasses>> = {
-  broken: {
-    // Loudest — L0 banner only
-    banner: { bg: "bg-red-50", text: "text-red-800", border: "border-red-300" },
-    // Medium — stage cells, pipeline row left stripe
-    surface: { bg: "bg-red-500", text: "text-white", border: "border-red-500" },
-    // Desaturated — acked rows
-    muted: { bg: "bg-red-50", text: "text-red-800", border: "border-red-200" },
-    // Near-neutral with a hint — resolved rows
-    subtle: { bg: "bg-white", text: "text-red-600", border: "border-red-100" },
-    // Border only — filter chips
-    outline: {
-      bg: "bg-transparent",
-      text: "text-red-700",
-      border: "border-red-400",
-    },
-  },
-  atrisk: {
-    // At-risk banner uses softer amber fill — broken-vs-atrisk contrast is
-    // the point. We don't want amber-500 banner shouting like a red one.
-    banner: {
-      bg: "bg-amber-50",
-      text: "text-amber-900",
-      border: "border-amber-300",
-    },
-    surface: {
-      bg: "bg-amber-400",
-      text: "text-amber-950",
-      border: "border-amber-400",
-    },
-    muted: {
-      bg: "bg-amber-50/40",
-      text: "text-amber-800",
-      border: "border-amber-200",
-    },
-    subtle: {
-      bg: "bg-white",
-      text: "text-amber-700",
-      border: "border-amber-100",
-    },
-    outline: {
-      bg: "bg-transparent",
-      text: "text-amber-800",
-      border: "border-amber-400",
-    },
-  },
+  benchmark: BENCHMARK_TONES,
+  required: REQUIRED_TONES,
+  typical: TYPICAL_TONES,
+  // Deprecated aliases — kept so v0.1.1 callers compile during migration.
+  broken: BENCHMARK_TONES,
+  atrisk: REQUIRED_TONES,
   watch: {
     // Watch is "approaching breach" — blue, not amber. Distinct hue helps
     // operator distinguish active work from late work.
@@ -208,7 +261,7 @@ export function mandateStatusToSeverity(
 export function monitorStatusToSeverity(
   status: "red" | "amber" | "green" | "info",
 ): Severity {
-  if (status === "red") return "broken";
-  if (status === "amber") return "atrisk";
+  if (status === "red") return "benchmark";
+  if (status === "amber") return "required";
   return "clean";
 }

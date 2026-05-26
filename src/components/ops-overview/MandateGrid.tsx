@@ -1,11 +1,14 @@
 import { useMemo } from "react";
 import {
   PIPELINE_STAGE_ORDER,
+  type OperationalState,
   type PipelineStage,
   type PipelineStageStatus,
   type PipelineState,
 } from "../../lib/qlik";
 import { SEVERITY_TONES } from "../../lib/severity-tokens";
+import { sortPipelines, type GridSortMode } from "../../lib/grid-sort";
+import GridSortControl from "./GridSortControl";
 
 /* Mandate × stage grid — the densest at-a-glance surface.
  *
@@ -18,17 +21,19 @@ import { SEVERITY_TONES } from "../../lib/severity-tokens";
  * pulls the eye. Sorted failures-first, then breaches, then in-progress,
  * then clean, then holiday at the bottom. */
 
-/* Spec — three-tier benchmark surface (borrowed from Qlik's
- *   Past Typical / Past Required / Past Benchmark gradient):
+/* Spec v0.1.2 §1.6 — three-tier breach ladder driven by SSDS tokens.
  *
  *   complete       → light grey + ✓
  *   in_progress    → blue surface + ◐
- *   past_typical   → light yellow + · (slow but no SLA breach yet)
- *   past_required  → amber + !  (past internal required time)
- *   past_benchmark → red + !    (the actual contractual breach)
+ *   past_typical   → cream + · (slow vs typical, no SLA breached)
+ *   past_required  → amber + ! (past internal SLA — act now)
+ *   past_benchmark → red + !   (past contractual benchmark — escalate)
  *   failed         → dark red + ✕ (validation failure)
  *   pending / not_started → empty cell, no fill, no glyph
  *   holiday        → diagonal hatch, no glyph
+ *
+ * Hard rule (spec §6, rule 19): the three tiers stay distinct. Cream →
+ * amber → red must read as a ladder of severity in a single row.
  */
 const STAGE_TONE: Record<
   PipelineStageStatus,
@@ -45,18 +50,18 @@ const STAGE_TONE: Record<
     glyph: "◐",
   },
   past_typical: {
-    bg: "bg-yellow-200",
-    text: "text-yellow-900",
+    bg: SEVERITY_TONES.typical.surface.bg,
+    text: SEVERITY_TONES.typical.surface.text,
     glyph: "·",
   },
   past_required: {
-    bg: SEVERITY_TONES.atrisk.surface.bg,
-    text: SEVERITY_TONES.atrisk.surface.text,
+    bg: SEVERITY_TONES.required.surface.bg,
+    text: SEVERITY_TONES.required.surface.text,
     glyph: "!",
   },
   past_benchmark: {
-    bg: "bg-red-500",
-    text: "text-white",
+    bg: SEVERITY_TONES.benchmark.surface.bg,
+    text: SEVERITY_TONES.benchmark.surface.text,
     glyph: "!",
   },
   failed: {
@@ -96,38 +101,27 @@ function describeStatus(s: PipelineStageStatus): string {
   }
 }
 
-function tierRank(p: PipelineState): number {
-  // Lower = worse = sort first.
-  if (p.isHolidayToday) return 6;
-  const stages = p.stages;
-  if (stages.some((s) => s.status === "failed")) return 0;
-  if (stages.some((s) => s.status === "past_benchmark")) return 1;
-  if (stages.some((s) => s.status === "past_required")) return 2;
-  if (stages.some((s) => s.status === "past_typical")) return 3;
-  if (stages.some((s) => s.status === "in_progress")) return 4;
-  return 5;
-}
-
 export default function MandateGrid({
   pipelines,
+  l0State,
+  sortMode,
+  onSortChange,
   onMonitorClick,
   onPipelineClick,
 }: {
   pipelines: PipelineState[];
+  l0State: OperationalState;
+  sortMode: GridSortMode;
+  onSortChange: (m: GridSortMode) => void;
   onMonitorClick?: (monitorId: string) => void;
   onPipelineClick?: (pipelineId: string) => void;
 }) {
-  const sorted = useMemo(() => {
-    return [...pipelines].sort((a, b) => {
-      const ta = tierRank(a);
-      const tb = tierRank(b);
-      if (ta !== tb) return ta - tb;
-      // Within tier: worst-age desc, then region, then name.
-      if (a.worstAgeMin !== b.worstAgeMin) return b.worstAgeMin - a.worstAgeMin;
-      if (a.region !== b.region) return a.region.localeCompare(b.region);
-      return a.clientName.localeCompare(b.clientName);
-    });
-  }, [pipelines]);
+  // Spec v0.1.2 §2 — Smart sort by default. Hard rule 22: stable across
+  // refreshes (the tiebreaker chain ends in mandate name).
+  const sorted = useMemo(
+    () => sortPipelines(pipelines, sortMode, l0State),
+    [pipelines, sortMode, l0State],
+  );
 
   return (
     <section aria-label="Mandate grid" className="mt-6">
@@ -135,7 +129,10 @@ export default function MandateGrid({
         <h2 className="text-[11px] font-semibold tracking-widest text-neutral-500 uppercase">
           Mandates · stage grid
         </h2>
-        <Legend />
+        <div className="flex items-center gap-4">
+          <GridSortControl value={sortMode} onChange={onSortChange} />
+          <Legend />
+        </div>
       </div>
       <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white">
         {/* Column headers */}
@@ -291,17 +288,17 @@ function Legend() {
     {
       glyph: "·",
       label: "past typical",
-      cls: "bg-yellow-200 text-yellow-900",
+      cls: `${SEVERITY_TONES.typical.surface.bg} ${SEVERITY_TONES.typical.surface.text}`,
     },
     {
       glyph: "!",
       label: "past required",
-      cls: `${SEVERITY_TONES.atrisk.surface.bg} ${SEVERITY_TONES.atrisk.surface.text}`,
+      cls: `${SEVERITY_TONES.required.surface.bg} ${SEVERITY_TONES.required.surface.text}`,
     },
     {
       glyph: "!",
       label: "past benchmark",
-      cls: "bg-red-500 text-white",
+      cls: `${SEVERITY_TONES.benchmark.surface.bg} ${SEVERITY_TONES.benchmark.surface.text}`,
     },
     {
       glyph: "✕",

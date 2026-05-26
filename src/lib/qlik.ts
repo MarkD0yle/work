@@ -95,14 +95,60 @@ export interface MonitorAction {
  * §2.1 — Operational state mapper
  * ==================================================================== */
 
-export type OperationalState = "clean" | "at-risk" | "broken";
+/* Spec v0.1.2 §1.5 — `watch` joins the L0 ladder between clean and at-risk.
+ *   clean    nothing late
+ *   watch    at least one Past Typical breach (slow but no SLA breached)
+ *   at-risk  at least one Past Required breach (SLA breached, but not benchmark)
+ *   broken   at least one Past Benchmark breach (or validation failure) */
+export type OperationalState = "clean" | "watch" | "at-risk" | "broken";
 
-export function deriveOperationalState(
+/* Monitor-only derivation — retained for surfaces that don't have pipeline
+ * data on hand. Monitors don't carry tier info today, so amber maps to
+ * at-risk (the most conservative read) and red maps to broken. */
+export function deriveOperationalStateFromMonitors(
   monitors: QlikMonitor[],
 ): OperationalState {
   if (monitors.some((m) => m.status === "red")) return "broken";
   if (monitors.some((m) => m.status === "amber")) return "at-risk";
   return "clean";
+}
+
+/* Spec v0.1.2 §1.5 — primary L0 derivation, sourced from pipeline stage
+ * tiers (the part of the system that actually carries tier information).
+ * Monitors are folded in as a fallback so a refresh-failure monitor that
+ * isn't attached to a pipeline still escalates the L0 state. */
+export function deriveOperationalState(
+  pipelines: PipelineState[],
+  monitors: QlikMonitor[] = [],
+): OperationalState {
+  let worst: OperationalState = "clean";
+  const bump = (s: OperationalState) => {
+    const rank = (x: OperationalState) =>
+      x === "broken" ? 3 : x === "at-risk" ? 2 : x === "watch" ? 1 : 0;
+    if (rank(s) > rank(worst)) worst = s;
+  };
+
+  for (const p of pipelines) {
+    for (const stage of p.stages) {
+      if (stage.status === "past_benchmark" || stage.status === "failed") {
+        return "broken";
+      }
+      if (stage.status === "past_required") bump("at-risk");
+      else if (stage.status === "past_typical") bump("watch");
+    }
+  }
+
+  // Fallback signal — monitors that aren't backed by a pipeline (e.g. feed
+  // refresh failures) still escalate.
+  for (const m of monitors) {
+    if (m.status === "red") return "broken";
+    if (m.status === "amber") {
+      // typical-tier monitors stay at watch; others escalate to at-risk.
+      if (m.tier === "typical") bump("watch");
+      else bump("at-risk");
+    }
+  }
+  return worst;
 }
 
 export function deriveSummary(monitors: QlikMonitor[]): QlikSummary {
@@ -568,8 +614,29 @@ const BROKEN_FIXTURE: QlikMonitor[] = withFixtureOverrides({
   },
 });
 
+/* Watch fixture — only Past Typical breaches present. Demonstrates the
+ * new v0.1.2 §1.5 `watch` L0 state: something is slightly off but no SLA
+ * has slipped yet. Banner renders cream, not amber. */
+const WATCH_FIXTURE: QlikMonitor[] = withFixtureOverrides({
+  "mon-05": {
+    status: "amber",
+    tier: "typical",
+    detail: "Feed running 4m behind schedule",
+    affectedCount: 1,
+    lastRefreshOffsetMin: -1,
+  },
+  "mon-06": {
+    status: "amber",
+    tier: "typical",
+    detail: "Snapshot 4h 12m old — slightly past typical 4h window",
+    affectedCount: 1,
+    lastRefreshOffsetMin: -2,
+  },
+});
+
 const FIXTURES: Record<OperationalState, QlikMonitor[]> = {
   clean: CLEAN_FIXTURE,
+  watch: WATCH_FIXTURE,
   "at-risk": AT_RISK_FIXTURE,
   broken: BROKEN_FIXTURE,
 };
@@ -1097,8 +1164,44 @@ const BROKEN_PIPELINES: PipelineState[] = [
   },
 ];
 
+/* Spec v0.1.2 §1.5 — watch fixture pipelines. Only past_typical breaches
+ * present (no past_required, no past_benchmark). Drives the cream-tone L0
+ * watch banner. */
+const WATCH_PIPELINES: PipelineState[] = CLEAN_PIPELINES.map((p, i) => {
+  if (i === 0) {
+    return {
+      ...p,
+      stages: [
+        { name: "Rebalance", status: "complete", monitorIds: ["mon-07"], detail: "07:34" },
+        { name: "Estimates", status: "past_typical", monitorIds: ["mon-05"], detail: "4m ago" },
+        { name: "Actuals", status: "not_started", monitorIds: [], detail: "3h 12m" },
+        { name: "Reporting", status: "not_started", monitorIds: [], detail: "6h 25m" },
+      ],
+      worstStatus: "watch",
+      worstAgeMin: 4,
+      summaryLine: "Estimates running slow · 4m past typical",
+    };
+  }
+  if (i === 1) {
+    return {
+      ...p,
+      stages: [
+        { name: "Rebalance", status: "complete", monitorIds: ["mon-07"], detail: "07:24" },
+        { name: "Estimates", status: "past_typical", monitorIds: ["mon-06"], detail: "8m ago" },
+        { name: "Actuals", status: "not_started", monitorIds: [], detail: "4h 58m" },
+        { name: "Reporting", status: "not_started", monitorIds: [], detail: "6h 58m" },
+      ],
+      worstStatus: "watch",
+      worstAgeMin: 8,
+      summaryLine: "Estimates running slow · 8m past typical",
+    };
+  }
+  return p;
+});
+
 const PIPELINE_FIXTURES: Record<OperationalState, PipelineState[]> = {
   clean: CLEAN_PIPELINES,
+  watch: WATCH_PIPELINES,
   "at-risk": AT_RISK_PIPELINES,
   broken: BROKEN_PIPELINES,
 };

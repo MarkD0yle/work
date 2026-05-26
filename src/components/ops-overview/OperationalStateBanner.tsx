@@ -8,8 +8,36 @@ function formatClock(ts: string) {
   });
 }
 
-/* Spec §2.1 — sourced from QlikSummary, NOT derived from synthetic data.
- * Calm-default discipline retained from prior spec: clean = neutral grey. */
+/* Spec v0.1.2 §1.5 — four L0 states: clean / watch / at-risk / broken.
+ *
+ * `watch` is the new state introduced by v0.1.2: at least one past_typical
+ * breach exists but nothing has slipped a required SLA yet. The banner
+ * renders in cream tone — visible but quiet, so it doesn't create alarm
+ * fatigue. Phrasing is informational, not actionable.
+ *
+ * Hard rule (spec §6, rule 24): the system-health strip is quieter than
+ * this banner. Always. */
+
+const STATE_TO_SEVERITY: Record<OperationalState, Severity> = {
+  broken: "benchmark",
+  "at-risk": "required",
+  watch: "typical",
+  clean: "clean",
+};
+
+const STATE_TO_ICON: Record<OperationalState, { bg: string; char: string }> = {
+  broken: { bg: "bg-red-500", char: "■" },
+  "at-risk": { bg: "bg-amber-500", char: "▲" },
+  watch: { bg: "bg-yellow-300", char: "·" },
+  clean: { bg: "bg-neutral-300", char: "✓" },
+};
+
+const STATE_LABEL: Record<OperationalState, string> = {
+  broken: "Broken",
+  "at-risk": "At risk",
+  watch: "Watch",
+  clean: "Clean",
+};
 
 export default function OperationalStateBanner({
   state,
@@ -20,32 +48,24 @@ export default function OperationalStateBanner({
   summary: QlikSummary;
   lensLabel?: string;
 }) {
-  // Spec v0.1.1 §1.4 — L0 banner uses the `.banner` tier (loudest).
-  const severity: Severity =
-    state === "broken" ? "broken" : state === "at-risk" ? "atrisk" : "clean";
-  const tokens = SEVERITY_TONES[severity].banner;
-  const iconBg =
-    state === "broken"
-      ? "bg-red-500"
-      : state === "at-risk"
-        ? "bg-amber-500"
-        : "bg-neutral-300";
-  const iconChar =
-    state === "broken" ? "■" : state === "at-risk" ? "▲" : "✓";
-
-  const stateLabel =
-    state === "clean" ? "Clean" : state === "at-risk" ? "At risk" : "Broken";
+  const tokens = SEVERITY_TONES[STATE_TO_SEVERITY[state]].banner;
+  const icon = STATE_TO_ICON[state];
 
   const sentence =
     state === "clean"
       ? `All monitors green. ${summary.monitorSummary.infoWarnings} info ${
           summary.monitorSummary.infoWarnings === 1 ? "warning" : "warnings"
         }.`
-      : `${summary.monitorSummary.midLevelFlags} monitor${
-          summary.monitorSummary.midLevelFlags === 1 ? "" : "s"
-        } mid-level, ${summary.monitorSummary.infoWarnings} info ${
-          summary.monitorSummary.infoWarnings === 1 ? "warning" : "warnings"
-        }.`;
+      : state === "watch"
+        ? // Quieter copy — situational awareness, not action.
+          `${summary.monitorSummary.midLevelFlags || "Some"} stage${
+            summary.monitorSummary.midLevelFlags === 1 ? "" : "s"
+          } running slow vs typical pace. No SLA breached.`
+        : `${summary.monitorSummary.midLevelFlags} monitor${
+            summary.monitorSummary.midLevelFlags === 1 ? "" : "s"
+          } mid-level, ${summary.monitorSummary.infoWarnings} info ${
+            summary.monitorSummary.infoWarnings === 1 ? "warning" : "warnings"
+          }.`;
 
   return (
     <section
@@ -55,14 +75,14 @@ export default function OperationalStateBanner({
     >
       <span
         aria-hidden
-        className={`inline-flex h-10 w-10 items-center justify-center rounded-full ${iconBg} text-sm font-bold text-white`}
+        className={`inline-flex h-10 w-10 items-center justify-center rounded-full ${icon.bg} text-sm font-bold text-white`}
       >
-        {iconChar}
+        {icon.char}
       </span>
       <div className="flex-1">
         <div className="flex items-baseline gap-3">
           <span className={`text-3xl font-semibold tracking-tight ${tokens.text}`}>
-            {stateLabel}
+            {STATE_LABEL[state]}
           </span>
           {lensLabel && (
             <span className="text-xs font-medium tracking-wide text-neutral-500 uppercase">
