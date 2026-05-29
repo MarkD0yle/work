@@ -1,1 +1,12 @@
 @import "tailwindcss";
+
+/* Spec v0.1.2 L4 §2.1 — slide-up animation for the file forensic
+ * bottom sheet. 240ms ease-out from below the viewport. */
+@keyframes forensic-slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}

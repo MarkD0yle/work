@@ -24,6 +24,8 @@ import {
 } from "../lib/saved-views";
 import { useSavedViews } from "../hooks/useSavedViews";
 import SavedViewTabs from "../components/ops-overview/SavedViewTabs";
+import { useFileForensic } from "../hooks/useFileForensic";
+import FileForensicSheet from "../components/forensic/FileForensicSheet";
 import PageHeader from "../components/ops-overview/PageHeader";
 import LensBar, {
   LENS_LABEL,
@@ -124,6 +126,77 @@ function applyLens(
   }
 }
 
+/* Pipeline-side equivalent of applyLens. Translates the same conceptual
+ * filter to mandate rows so MandateGrid and PipelineView track the lens
+ * the same way MonitorList does.
+ *
+ * Bug fix: lens only filtered monitors; pipelines were unscoped. Adding
+ * the parallel filter so chips visibly affect the heatmap + chevron rows. */
+function applyLensToPipelines(
+  pipelines: PipelineState[],
+  lens: Lens,
+  monitors: QlikMonitor[],
+  actions: ReturnType<typeof useMonitorActions>,
+): PipelineState[] {
+  if (lens === "all") return pipelines;
+
+  // Pipelines have stages with statuses + monitorIds. We reuse the monitor
+  // filter logic on the referenced monitors to keep semantics consistent.
+  const monitorById = new Map(monitors.map((m) => [m.id, m]));
+
+  const stageHasBreach = (s: PipelineState["stages"][number]) =>
+    s.status === "past_typical" ||
+    s.status === "past_required" ||
+    s.status === "past_benchmark" ||
+    s.status === "failed";
+
+  const stageHasRed = (s: PipelineState["stages"][number]) =>
+    s.status === "past_benchmark" || s.status === "failed";
+
+  const pipelineMonitors = (p: PipelineState): QlikMonitor[] => {
+    const ids = new Set<string>();
+    for (const s of p.stages) for (const id of s.monitorIds) ids.add(id);
+    return Array.from(ids)
+      .map((id) => monitorById.get(id))
+      .filter((m): m is QlikMonitor => !!m);
+  };
+
+  const anyUnacked = (p: PipelineState) =>
+    pipelineMonitors(p).some(
+      (m) =>
+        (m.status === "red" || m.status === "amber") &&
+        effectiveState(m, actions).kind === "unacked",
+    );
+
+  switch (lens) {
+    case "needs_attention":
+      // (any breach tier on a stage) AND (mine OR has at least one unacked monitor)
+      return pipelines.filter(
+        (p) =>
+          !p.isHolidayToday &&
+          p.stages.some(stageHasBreach) &&
+          (p.isMine || anyUnacked(p)),
+      );
+    case "red":
+      return pipelines.filter((p) => p.stages.some(stageHasRed));
+    case "amber":
+      return pipelines.filter((p) => p.stages.some(stageHasBreach));
+    case "unacked":
+      return pipelines.filter(
+        (p) => p.stages.some(stageHasBreach) && anyUnacked(p),
+      );
+    case "mine":
+      return pipelines.filter((p) => p.isMine);
+    case "process":
+    case "data":
+    case "rule":
+    case "system":
+      return pipelines.filter((p) =>
+        pipelineMonitors(p).some((m) => m.category === lens),
+      );
+  }
+}
+
 export default function OpsOverview() {
   const [fixtureKey, setFixtureKey] = useState<OperationalState>(
     () => readUrlState() ?? "at-risk",
@@ -167,6 +240,7 @@ export default function OpsOverview() {
   const monitorListRef = useRef<HTMLDivElement | null>(null);
 
   const actions = useMonitorActions();
+  const forensic = useFileForensic();
 
   // Real-time tick for stale-data calculation and refresh-age display.
   useEffect(() => {
@@ -275,6 +349,10 @@ export default function OpsOverview() {
     () => applyLens(monitors, lens, actions),
     [monitors, lens, actions],
   );
+  const scopedPipelines = useMemo(
+    () => applyLensToPipelines(pipelines, lens, monitors, actions),
+    [pipelines, lens, monitors, actions],
+  );
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-neutral-50 text-neutral-900">
@@ -288,7 +366,19 @@ export default function OpsOverview() {
           per-mandate. */}
       <HolidayHeaderStrip />
 
-      <div className="flex flex-1 overflow-hidden">
+      <div
+        className="flex flex-1 overflow-hidden"
+        onClickCapture={(e) => {
+          // Spec v0.1.2 L4 §3.2 hard rule 27 — interacting with the overview
+          // behind the sheet auto-closes it. The L3 panel (right aside) marks
+          // its clicks as data-l3="true" so they're excluded.
+          if (!forensic.scope) return;
+          const target = e.target as HTMLElement;
+          if (target.closest('[data-l3-panel="true"]')) return;
+          if (target.closest('[data-forensic-sheet="true"]')) return;
+          forensic.close();
+        }}
+      >
         <div className="flex-1 overflow-y-auto">
           <div className="mx-auto max-w-[1280px] px-8 py-6">
           {/* Spec v0.1.2 §4 — compact system-health strip replaces the
@@ -327,12 +417,13 @@ export default function OpsOverview() {
                           → PipelineView (chevron rows) → MonitorList (sidebar)
               Plus PipelineDrawer (tier 4) — opened from any pipeline-named surface. */}
           <MandateGrid
-            pipelines={pipelines}
+            pipelines={scopedPipelines}
             l0State={state}
             sortMode={sortMode}
             onSortChange={setSortMode}
             onMonitorClick={focusMonitor}
             onPipelineClick={openPipelineDrawer}
+            onOpenForensic={forensic.open}
           />
 
           {/* Spec — Stage Trend Strip replaces the Qlik-style bar charts.
@@ -340,9 +431,10 @@ export default function OpsOverview() {
           <StageTrendStrip fixtureKey={fixtureKey} />
 
           <PipelineView
-            pipelines={pipelines}
+            pipelines={scopedPipelines}
             onMonitorClick={focusMonitor}
             onPipelineClick={openPipelineDrawer}
+            onOpenForensic={forensic.open}
           />
 
             <Footnotes fixtureKey={fixtureKey} />
@@ -355,6 +447,7 @@ export default function OpsOverview() {
             a mandate is selected. */}
         <aside
           ref={monitorListRef}
+          data-l3-panel="true"
           className="relative w-[440px] shrink-0 border-l border-neutral-200 bg-white"
         >
           {/* Spec v0.1.1 §8 — clean state replaces the monitor list with
@@ -385,11 +478,18 @@ export default function OpsOverview() {
                 <PipelineDrawer
                   detail={drawerDetail}
                   onClose={closePipelineDrawer}
+                  onOpenForensic={forensic.open}
                 />
               </div>
             </>
           )}
         </aside>
+      </div>
+
+      {/* Spec v0.1.2 L4 — bottom sheet, mounted page-level so it overlays
+          both the main content area and the L3 panel. */}
+      <div data-forensic-sheet="true">
+        <FileForensicSheet forensic={forensic} />
       </div>
     </div>
   );

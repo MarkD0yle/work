@@ -11,6 +11,10 @@ import {
   type PipelineDetail,
   type ProcessingGroupSummary,
 } from "../../lib/qlik";
+import {
+  scopeFromLifecycleStage,
+  type ForensicScope,
+} from "../../lib/forensic-scope";
 
 /* PipelineDrawer — per-pipeline deep context overlay.
  *
@@ -50,14 +54,21 @@ function formatNoteTime(ts: string): string {
 export default function PipelineDrawer({
   detail,
   onClose,
+  onOpenForensic,
 }: {
   detail: PipelineDetail;
   onClose: () => void;
+  /** Spec v0.1.2 L4 §3.1 — chevron click on a breached lifecycle step
+   *  opens the L4 file forensic bottom sheet. */
+  onOpenForensic?: (scope: ForensicScope) => void;
 }) {
   const [noteText, setNoteText] = useState("");
   const [snoozeOpen, setSnoozeOpen] = useState(false);
   const [snoozing, setSnoozing] = useState(false);
   const [snoozeReason, setSnoozeReason] = useState("");
+  const [holidayOpen, setHolidayOpen] = useState(false);
+  const [markingHoliday, setMarkingHoliday] = useState(false);
+  const [holidayReason, setHolidayReason] = useState("");
   const notes = usePipelineNotes(detail.id);
 
   // Default-expand any PG that isn't clean. Single-PG mandates expand the
@@ -157,6 +168,42 @@ export default function PipelineDrawer({
     }
   }
 
+  // "Mark as holiday" — the operator asserts this lateness is expected
+  // because of a closure the calendar didn't carry. Recorded with the
+  // 'holiday' resolution reason so it's distinguishable from an auto-
+  // suppressed calendar holiday AND from a snooze ('deferred') in the audit
+  // trail — every manual mark is a signal the holiday calendar is incomplete.
+  async function confirmMarkHoliday() {
+    if (!holidayReason.trim() || detail.affectedMonitorIds.length === 0) return;
+    setMarkingHoliday(true);
+    try {
+      const ts = new Date().toISOString();
+      const sharedNote = `Marked holiday · ${holidayReason.trim()}`;
+      for (const monitorId of detail.affectedMonitorIds) {
+        await monitorActionsRepo.record(
+          {
+            monitorId,
+            qlikRefreshTimestamp: ts,
+            action: "resolve",
+            actor: ME,
+            resolutionReason: "holiday",
+            note: sharedNote,
+          },
+          { optimistic: false },
+        );
+      }
+      await pipelineNotesRepo.add(
+        detail.id,
+        ME,
+        `Marked as holiday — ${holidayReason.trim()} (${detail.affectedMonitorIds.length} monitor${detail.affectedMonitorIds.length === 1 ? "" : "s"} suppressed as expected)`,
+      );
+      setHolidayOpen(false);
+      setHolidayReason("");
+    } finally {
+      setMarkingHoliday(false);
+    }
+  }
+
   return (
     <aside
       role="region"
@@ -215,6 +262,26 @@ export default function PipelineDrawer({
           {/* Spec v0.1.1 §4 — sticky action bar above the fold.
               Primary action visible without scrolling regardless of depth. */}
           <div className="sticky top-0 z-10 border-b border-neutral-200 bg-white px-5 py-3">
+            {detail.arrival && (
+              <div className="mb-2 flex items-center gap-2 text-[11px]">
+                <span className="font-semibold tracking-widest text-neutral-400 uppercase">
+                  Arrival
+                </span>
+                <span
+                  className={
+                    detail.arrival.state === "late_unexpected"
+                      ? "text-red-700"
+                      : detail.arrival.state === "at_risk"
+                        ? "text-amber-800"
+                        : detail.arrival.state === "expected_absence"
+                          ? "text-neutral-500"
+                          : "text-neutral-600"
+                  }
+                >
+                  {detail.arrival.label}
+                </span>
+              </div>
+            )}
             {snoozeOpen ? (
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
@@ -260,6 +327,51 @@ export default function PipelineDrawer({
                   </span>
                 </div>
               </div>
+            ) : holidayOpen ? (
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-semibold tracking-widest text-neutral-500 uppercase">
+                    Mark holiday · reason required
+                  </span>
+                  <span className="text-[10px] text-neutral-500">
+                    suppresses{" "}
+                    <span className="font-semibold text-neutral-700">
+                      {detail.affectedMonitorIds.length}
+                    </span>{" "}
+                    monitor{detail.affectedMonitorIds.length === 1 ? "" : "s"} as
+                    expected
+                  </span>
+                </div>
+                <input
+                  autoFocus
+                  type="text"
+                  value={holidayReason}
+                  onChange={(e) => setHolidayReason(e.target.value)}
+                  placeholder="e.g. Regional bank holiday not on the calendar feed"
+                  className="rounded-md border border-neutral-300 bg-white px-2.5 py-1.5 text-xs"
+                />
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={confirmMarkHoliday}
+                    disabled={!holidayReason.trim() || markingHoliday}
+                    className="rounded-md bg-neutral-900 px-3 py-1.5 text-xs font-medium text-white disabled:bg-neutral-300"
+                  >
+                    {markingHoliday ? "Marking…" : "Confirm holiday"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setHolidayOpen(false)}
+                    disabled={markingHoliday}
+                    className="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-100 disabled:opacity-40"
+                  >
+                    Cancel
+                  </button>
+                  <span className="ml-auto text-[10px] text-neutral-400">
+                    Logged as expected — not a breach
+                  </span>
+                </div>
+              </div>
             ) : (
               <div className="flex items-center gap-2">
                 <button
@@ -283,6 +395,19 @@ export default function PipelineDrawer({
                   }
                 >
                   Snooze
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHolidayOpen(true)}
+                  disabled={detail.affectedMonitorIds.length === 0}
+                  className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100 disabled:opacity-40"
+                  title={
+                    detail.affectedMonitorIds.length === 0
+                      ? "Nothing to mark — pipeline has no active issues"
+                      : "Mark this lateness as expected (holiday / closure)"
+                  }
+                >
+                  Mark holiday
                 </button>
               </div>
             )}
@@ -338,6 +463,12 @@ export default function PipelineDrawer({
                   group={pg}
                   open={openPGs.has(pg.id)}
                   onToggle={() => togglePG(pg.id)}
+                  onOpenForensic={
+                    onOpenForensic
+                      ? (stage) =>
+                          onOpenForensic(scopeFromLifecycleStage(detail, stage))
+                      : undefined
+                  }
                 />
               ))}
             </div>
@@ -504,10 +635,12 @@ function ProcessingGroupCard({
   group,
   open,
   onToggle,
+  onOpenForensic,
 }: {
   group: ProcessingGroupSummary;
   open: boolean;
   onToggle: () => void;
+  onOpenForensic?: (stage: LifecycleStage) => void;
 }) {
   const pill = PG_STATUS_PILL[group.status];
   const completedCount = group.lifecycleStages.filter(
@@ -565,7 +698,12 @@ function ProcessingGroupCard({
           </div>
           <ol className="flex flex-col gap-1">
             {group.lifecycleStages.map((stage, idx) => (
-              <LifecycleRow key={stage.name} stage={stage} index={idx + 1} />
+              <LifecycleRow
+                key={stage.name}
+                stage={stage}
+                index={idx + 1}
+                onOpenForensic={onOpenForensic}
+              />
             ))}
           </ol>
         </div>
@@ -643,9 +781,11 @@ function AccountsSection({ accounts }: { accounts: AccountSummary[] }) {
 function LifecycleRow({
   stage,
   index,
+  onOpenForensic,
 }: {
   stage: LifecycleStage;
   index: number;
+  onOpenForensic?: (stage: LifecycleStage) => void;
 }) {
   const icon = STATUS_ICON[stage.status];
   const isNow =
@@ -657,6 +797,16 @@ function LifecycleRow({
   const wrapper = isNow
     ? "bg-red-50 border border-red-200 rounded-md px-2 py-1.5"
     : "px-2 py-1.5";
+  // L4 file evidence is available for every lifecycle stage, not just
+  // breached ones — PMs need to inspect file evidence on healthy stages
+  // too (e.g. to confirm a file actually landed). Chevron tone follows
+  // severity so breached rows still pull more visual weight.
+  const canDrill = !!onOpenForensic;
+  const drillTone = isNow
+    ? "border-red-200 bg-white text-red-700 hover:bg-red-100"
+    : stage.status === "complete"
+      ? "border-neutral-200 bg-white text-neutral-500 hover:bg-neutral-50 hover:text-neutral-700"
+      : "border-neutral-200 bg-white text-neutral-400 hover:bg-neutral-50 hover:text-neutral-600";
   return (
     <li className={`flex items-start gap-3 ${wrapper}`}>
       <span className="flex h-5 w-5 shrink-0 items-center justify-center text-[10px] font-mono text-neutral-400">
@@ -696,6 +846,17 @@ function LifecycleRow({
           <p className="mt-0.5 text-xs text-red-800">{stage.detail}</p>
         )}
       </div>
+      {canDrill && (
+        <button
+          type="button"
+          onClick={() => onOpenForensic?.(stage)}
+          aria-label={`Open file forensic for ${stage.name}`}
+          title="Inspect file evidence"
+          className={`shrink-0 rounded-md border px-1.5 py-0.5 text-[10px] font-semibold ${drillTone}`}
+        >
+          Files ›
+        </button>
+      )}
     </li>
   );
 }

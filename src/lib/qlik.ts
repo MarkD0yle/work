@@ -11,6 +11,18 @@
  * ------------------------------------------------------------------ */
 
 import { useSyncExternalStore } from "react";
+import {
+  CURRENT_BUSINESS_DATE,
+  REGION_CALENDAR,
+  isMarketClosed,
+} from "./calendars";
+import {
+  classifyArrival,
+  contractFromPipeline,
+  resolveDueTime,
+  type ArrivalAssessment,
+  type ArrivalOverride,
+} from "./arrival-schedule";
 
 /* ==================================================================== *
  * §1.1 — Typed contracts (confirm names against real Qlik API)
@@ -62,6 +74,7 @@ export type ResolutionReason =
   | "fixed"
   | "auto-cleared"
   | "deferred"
+  | "holiday"
   | "external-dependency"
   | "other";
 
@@ -70,6 +83,7 @@ export const RESOLUTION_REASONS: { value: ResolutionReason; label: string }[] = 
   { value: "fixed", label: "Fixed at source" },
   { value: "auto-cleared", label: "Auto-cleared" },
   { value: "deferred", label: "Deferred to next cycle" },
+  { value: "holiday", label: "Expected — holiday / closure" },
   { value: "external-dependency", label: "External dependency" },
   { value: "other", label: "Other (note required)" },
 ];
@@ -742,6 +756,15 @@ export interface PipelineStage {
   detail?: string;
 }
 
+/* Benchmark type — categorises mandates by their primary contractual product.
+ * Drives the BM Type filter on the pipeline row. */
+export type BmType =
+  | "Daily NAV"
+  | "Capstock"
+  | "P&L Daily"
+  | "Liquidity"
+  | "Reporting";
+
 export interface PipelineState {
   id: string;
   clientName: string;
@@ -757,6 +780,209 @@ export interface PipelineState {
   worstAgeMin: number;
   /** "Actuals breached · 24m 42s ago" */
   summaryLine: string;
+  /* Spec — pipeline filter row fields. Optional on the type because the
+   * inline fixtures don't carry them; augmentWithMeta() fills them in at
+   * fetch time so consumers reading from fetchPipelineStates always see
+   * populated values. */
+  bmType?: BmType;
+  assignee?: string;
+  process?: string;
+  optionA?: boolean;
+  optionB?: boolean;
+  /* Calendar-driven arrival assessment — computed at fetch time from the
+   * mandate's ArrivalContract against the market/settlement calendars.
+   * Drives the "expected absence" (gray) demotion and the due/late label. */
+  arrival?: ArrivalAssessment;
+}
+
+/* Static augmentation keyed by pipeline id. Kept separate from the
+ * fixtures so we don't have to touch 36 inline pipeline definitions to
+ * extend the schema. The fetcher merges these in. */
+interface PipelineMeta {
+  bmType: BmType;
+  assignee: string;
+  process: string;
+  optionA: boolean;
+  optionB: boolean;
+}
+
+const PIPELINE_META: Record<string, PipelineMeta> = {
+  "pl-cohen-cap": {
+    bmType: "Capstock",
+    assignee: "Howard W",
+    process: "Daily NAV Calc",
+    optionA: true,
+    optionB: false,
+  },
+  "pl-ishares-nav": {
+    bmType: "Daily NAV",
+    assignee: "Sriram K",
+    process: "Daily NAV Strike",
+    optionA: true,
+    optionB: true,
+  },
+  "pl-pimco-inc": {
+    bmType: "Daily NAV",
+    assignee: "Mary R",
+    process: "Daily NAV Calc",
+    optionA: false,
+    optionB: false,
+  },
+  "pl-vanguard-pl": {
+    bmType: "P&L Daily",
+    assignee: "Jess T",
+    process: "Unrealized P&L Calc",
+    optionA: false,
+    optionB: true,
+  },
+  "pl-fidelity-glb": {
+    bmType: "Daily NAV",
+    assignee: "Dev O",
+    process: "Daily NAV Calc",
+    optionA: true,
+    optionB: false,
+  },
+  "pl-jpm-liq": {
+    bmType: "Liquidity",
+    assignee: "Howard W",
+    process: "Liquidity Actuals",
+    optionA: false,
+    optionB: false,
+  },
+  "pl-statestreet-gx": {
+    bmType: "Daily NAV",
+    assignee: "Mark D",
+    process: "Multi-Asset Rebalance",
+    optionA: true,
+    optionB: false,
+  },
+  "pl-blackrock-eq": {
+    bmType: "Daily NAV",
+    assignee: "Sriram K",
+    process: "Equity Index NAV",
+    optionA: false,
+    optionB: true,
+  },
+  "pl-amundi-lux": {
+    bmType: "Daily NAV",
+    assignee: "Mary R",
+    process: "Lux SICAV NAV",
+    optionA: false,
+    optionB: false,
+  },
+  "pl-schroders-mthly": {
+    bmType: "Reporting",
+    assignee: "Dev O",
+    process: "Monthly Dividend Run",
+    optionA: false,
+    optionB: false,
+  },
+  "pl-dws-xtrackers": {
+    bmType: "Daily NAV",
+    assignee: "Jess T",
+    process: "Xtrackers NAV",
+    optionA: false,
+    optionB: false,
+  },
+  "pl-aviva-mmf": {
+    bmType: "Liquidity",
+    assignee: "Mark D",
+    process: "MMF Daily NAV",
+    optionA: true,
+    optionB: true,
+  },
+};
+
+const META_FALLBACK: PipelineMeta = {
+  bmType: "Daily NAV",
+  assignee: "Mark D",
+  process: "Daily NAV Calc",
+  optionA: false,
+  optionB: false,
+};
+
+function augmentWithMeta(p: PipelineState): PipelineState {
+  const meta = PIPELINE_META[p.id] ?? META_FALLBACK;
+  return { ...p, ...meta };
+}
+
+/* ==================================================================== *
+ * Arrival contracts — what "on time" means per mandate.
+ *
+ * The expected file-arrival time is distinct from the mandate cutoff: the
+ * cutoff is when the NAV must publish; expectedTime is when the upstream
+ * file should land. "Late" is measured against expectedTime. Currency
+ * decides which settlement calendar can shift the deadline (EUR → TARGET2).
+ *
+ * Monthly/ad-hoc mandates (e.g. Schroders) are intentionally omitted — no
+ * contract means no daily arrival expectation, so they never flag late.
+ * ==================================================================== */
+
+/** The clock the prototype evaluates against (local, minutes since midnight).
+ *  11:40 — late enough that an 11:15 file not yet received reads as late. */
+const CURRENT_CLOCK_MIN = 11 * 60 + 40;
+
+interface ArrivalSeed {
+  expectedTime: string;
+  currency: "USD" | "EUR" | "GBP" | "JPY";
+}
+
+const ARRIVAL_CONTRACTS: Record<string, ArrivalSeed> = {
+  "pl-cohen-cap": { expectedTime: "11:15", currency: "USD" },
+  "pl-ishares-nav": { expectedTime: "11:15", currency: "EUR" },
+  "pl-pimco-inc": { expectedTime: "12:00", currency: "USD" },
+  "pl-vanguard-pl": { expectedTime: "09:30", currency: "USD" },
+  "pl-fidelity-glb": { expectedTime: "10:00", currency: "GBP" },
+  "pl-jpm-liq": { expectedTime: "09:30", currency: "USD" },
+  "pl-statestreet-gx": { expectedTime: "11:30", currency: "USD" },
+  "pl-blackrock-eq": { expectedTime: "10:30", currency: "GBP" },
+  "pl-amundi-lux": { expectedTime: "11:15", currency: "EUR" },
+  "pl-dws-xtrackers": { expectedTime: "11:15", currency: "EUR" },
+  "pl-aviva-mmf": { expectedTime: "09:00", currency: "GBP" },
+};
+
+/* Calendar + arrival pass. Computes the four-state assessment against the
+ * market/settlement calendars and demotes any "expected absence" (calendar
+ * holiday, settlement shift, or human-marked holiday) to the gray holiday
+ * presentation so it never escalates the L0 state. */
+function applyCalendarAndArrival(p: PipelineState): PipelineState {
+  const seed = ARRIVAL_CONTRACTS[p.id];
+  if (!seed) return p; // no daily arrival contract (e.g. monthly mandate)
+
+  const contract = contractFromPipeline(p, seed.currency, seed.expectedTime);
+  const calendarClosed = isMarketClosed(REGION_CALENDAR[p.region], CURRENT_BUSINESS_DATE);
+  // A fixture isHolidayToday flag with no matching calendar closure stands in
+  // for a human "mark as holiday" override.
+  const override: ArrivalOverride =
+    p.isHolidayToday && !calendarClosed
+      ? { kind: "holiday", actor: "Ops" }
+      : { kind: "none" };
+
+  const due = resolveDueTime(contract, CURRENT_BUSINESS_DATE);
+  // Clean fixtures = the file landed on time; everything else hasn't arrived.
+  const actualArrivalMin =
+    p.worstStatus === "clean" && due.due ? due.dueAtMin! : null;
+
+  const arrival = classifyArrival(
+    contract,
+    CURRENT_BUSINESS_DATE,
+    CURRENT_CLOCK_MIN,
+    actualArrivalMin,
+    override,
+  );
+
+  if (arrival.state === "expected_absence") {
+    return {
+      ...p,
+      isHolidayToday: true,
+      worstStatus: "holiday",
+      worstAgeMin: 0,
+      stages: p.stages.map((s) => ({ ...s, status: "holiday" as const, detail: "—" })),
+      summaryLine: arrival.label,
+      arrival,
+    };
+  }
+  return { ...p, arrival };
 }
 
 /* Fixtures — twelve pipelines spanning the four regions. Counts and
@@ -1209,7 +1435,9 @@ const PIPELINE_FIXTURES: Record<OperationalState, PipelineState[]> = {
 export function fetchPipelineStates(
   fixture: OperationalState,
 ): Promise<PipelineState[]> {
-  return Promise.resolve(PIPELINE_FIXTURES[fixture]);
+  return Promise.resolve(
+    PIPELINE_FIXTURES[fixture].map(augmentWithMeta).map(applyCalendarAndArrival),
+  );
 }
 
 /* ==================================================================== *
@@ -1334,6 +1562,9 @@ export interface PipelineDetail {
 
   /** Account-level rollup within this mandate (Qlik "NPV Projects"). */
   accounts: AccountSummary[];
+
+  /** Calendar-driven arrival assessment for the mandate's primary feed. */
+  arrival?: ArrivalAssessment;
 }
 
 /* Static portion of detail keyed by pipeline id — owner / AUM / etc don't
@@ -1739,8 +1970,9 @@ export function fetchPipelineDetail(
   fixture: OperationalState,
   pipelineId: string,
 ): Promise<PipelineDetail | null> {
-  const pipeline = PIPELINE_FIXTURES[fixture].find((p) => p.id === pipelineId);
-  if (!pipeline) return Promise.resolve(null);
+  const raw = PIPELINE_FIXTURES[fixture].find((p) => p.id === pipelineId);
+  if (!raw) return Promise.resolve(null);
+  const pipeline = applyCalendarAndArrival(augmentWithMeta(raw));
   const stat = STATIC_DETAILS[pipelineId];
   if (!stat) return Promise.resolve(null);
 
@@ -1795,6 +2027,7 @@ export function fetchPipelineDetail(
     processingGroups: allPGs,
     affectedMonitorIds: Array.from(allAffected),
     accounts,
+    arrival: pipeline.arrival,
   });
 }
 
