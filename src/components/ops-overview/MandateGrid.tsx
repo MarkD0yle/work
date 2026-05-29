@@ -9,6 +9,7 @@ import {
 import { SEVERITY_TONES } from "../../lib/severity-tokens";
 import { sortPipelines, type GridSortMode } from "../../lib/grid-sort";
 import GridSortControl from "./GridSortControl";
+import { scopeFromPipeline, type ForensicScope } from "../../lib/forensic-scope";
 
 /* Mandate × stage grid — the densest at-a-glance surface.
  *
@@ -108,6 +109,7 @@ export default function MandateGrid({
   onSortChange,
   onMonitorClick,
   onPipelineClick,
+  onOpenForensic,
 }: {
   pipelines: PipelineState[];
   l0State: OperationalState;
@@ -115,6 +117,7 @@ export default function MandateGrid({
   onSortChange: (m: GridSortMode) => void;
   onMonitorClick?: (monitorId: string) => void;
   onPipelineClick?: (pipelineId: string) => void;
+  onOpenForensic?: (scope: ForensicScope) => void;
 }) {
   // Spec v0.1.2 §2 — Smart sort by default. Hard rule 22: stable across
   // refreshes (the tiebreaker chain ends in mandate name).
@@ -179,6 +182,7 @@ export default function MandateGrid({
                     ? `Open ${p.clientName} ${p.groupName} pipeline detail`
                     : undefined
                 }
+                title={p.arrival?.label}
                 className={`flex items-center gap-3 py-1 pr-4 pl-4 transition hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
                   rowClickable ? "cursor-pointer" : ""
                 }`}
@@ -221,15 +225,31 @@ export default function MandateGrid({
                     );
                   })}
                 </div>
-                <div className="w-[60px] text-right font-mono text-[11px] tabular-nums text-neutral-500">
-                  {p.worstAgeMin > 0
-                    ? p.worstAgeMin >= 60
-                      ? `${Math.floor(p.worstAgeMin / 60)}h ${p.worstAgeMin % 60}m`
-                      : `${p.worstAgeMin}m`
-                    : p.isHolidayToday
-                      ? "—"
-                      : "·"}
+                <div className="flex w-[60px] items-center justify-end gap-1.5">
+                  <span className="font-mono text-[11px] tabular-nums text-neutral-500">
+                    {p.worstAgeMin > 0
+                      ? p.worstAgeMin >= 60
+                        ? `${Math.floor(p.worstAgeMin / 60)}h ${p.worstAgeMin % 60}m`
+                        : `${p.worstAgeMin}m`
+                      : p.isHolidayToday
+                        ? "—"
+                        : "·"}
+                  </span>
                 </div>
+                {onOpenForensic && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onOpenForensic(scopeFromPipeline(p));
+                    }}
+                    title="Inspect file evidence"
+                    aria-label={`Open file forensic for ${p.clientName} ${p.groupName}`}
+                    className="ml-1 rounded-md border border-neutral-200 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800"
+                  >
+                    Files ›
+                  </button>
+                )}
               </div>
             </li>
             );

@@ -9,6 +9,7 @@ import {
   ageBand,
   mandateStatusToSeverity,
 } from "../../lib/severity-tokens";
+import { scopeFromPipeline, type ForensicScope } from "../../lib/forensic-scope";
 
 /* Per-pipeline row — colour-first design.
  *
@@ -27,7 +28,7 @@ import {
  * flat (no age weight). */
 function stripeClasses(status: PipelineRowStatus, ageMin: number): string {
   const sev = mandateStatusToSeverity(status);
-  if (sev === "holiday" || sev === "clean") {
+  if (sev === "expected_absence" || sev === "clean") {
     return `bg-neutral-200 w-1`;
   }
   const bg = SEVERITY_TONES[sev].surface.bg;
@@ -90,11 +91,13 @@ export default function PipelineRow({
   density,
   onMonitorClick,
   onPipelineClick,
+  onOpenForensic,
 }: {
   pipeline: PipelineState;
   density: "compact" | "comfortable";
   onMonitorClick?: (monitorId: string) => void;
   onPipelineClick?: (pipelineId: string) => void;
+  onOpenForensic?: (scope: ForensicScope) => void;
 }) {
   // Whole row is the drawer click target; chevrons stop propagation to drill
   // into the underlying monitor instead.
@@ -142,6 +145,15 @@ export default function PipelineRow({
           <div className="mt-1 flex items-center gap-1.5">
             <Tag>{pipeline.cadence}</Tag>
             <Tag>{pipeline.region}</Tag>
+            {pipeline.arrival?.due.dueAt && (
+              <span
+                title={pipeline.arrival.label}
+                className="inline-flex items-center rounded-full border border-neutral-200 bg-white px-2 py-0.5 font-mono text-[10px] tabular-nums text-neutral-500"
+              >
+                {pipeline.arrival.due.shifted ? "→ " : "due "}
+                {pipeline.arrival.due.dueAt}
+              </span>
+            )}
             {pipeline.isMine && (
               <span className="text-[9px] font-semibold tracking-wider text-blue-700 uppercase">
                 mine
@@ -188,6 +200,21 @@ export default function PipelineRow({
             );
           })}
         </div>
+
+        {onOpenForensic && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenForensic(scopeFromPipeline(pipeline));
+            }}
+            title="Inspect file evidence"
+            aria-label={`Open file forensic for ${pipeline.clientName} ${pipeline.groupName}`}
+            className="shrink-0 rounded-md border border-neutral-200 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800"
+          >
+            Files ›
+          </button>
+        )}
 
         {/* Compact status badge — colour-led, single glyph. */}
         <span

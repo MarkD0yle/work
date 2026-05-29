@@ -28,6 +28,7 @@ export type Severity =
   | "atrisk" // alias of required
   | "watch" // pre-breach in-progress with concern (blue) — distinct from typical
   | "working"
+  | "expected_absence" // "late" but explained by calendar/human — gray, suppressed
   | "clean";
 
 /** Five tiers carrying decreasing visual weight within a single hue. */
@@ -117,10 +118,23 @@ const TYPICAL_TONES: Record<Tier, ToneClasses> = {
   },
 };
 
+/* Expected absence — the file is "late" by the clock but a calendar fact
+ * (market closed / settlement shifted) or a human action (marked holiday /
+ * snoozed) explains it. Deliberately the quietest non-clean tone: neutral
+ * gray, no colour pull. This is the "red → gray demotion" target. */
+const EXPECTED_ABSENCE_TONES: Record<Tier, ToneClasses> = {
+  banner: { bg: "bg-neutral-50", text: "text-neutral-500", border: "border-neutral-200" },
+  surface: { bg: "bg-neutral-100", text: "text-neutral-400", border: "border-neutral-200" },
+  muted: { bg: "bg-neutral-50", text: "text-neutral-400", border: "border-neutral-100" },
+  subtle: { bg: "bg-white", text: "text-neutral-400", border: "border-neutral-100" },
+  outline: { bg: "bg-transparent", text: "text-neutral-500", border: "border-neutral-300" },
+};
+
 export const SEVERITY_TONES: Record<Severity, Record<Tier, ToneClasses>> = {
   benchmark: BENCHMARK_TONES,
   required: REQUIRED_TONES,
   typical: TYPICAL_TONES,
+  expected_absence: EXPECTED_ABSENCE_TONES,
   // Deprecated aliases — kept so v0.1.1 callers compile during migration.
   broken: BENCHMARK_TONES,
   atrisk: REQUIRED_TONES,
@@ -250,12 +264,36 @@ export function mandateStatusToSeverity(
     | "working"
     | "clean"
     | "holiday",
-): Severity | "holiday" {
+): Severity {
   if (status === "at_risk") return "atrisk";
   if (status === "broken") return "broken";
   if (status === "watch") return "watch";
   if (status === "working") return "working";
+  // Holiday rows map to the gray "expected absence" tone (the explained,
+  // suppressed state) rather than collapsing into clean.
+  if (status === "holiday") return "expected_absence";
   return "clean";
+}
+
+/** Map an arrival-scheduler state to a severity tone. */
+export function arrivalStateToSeverity(
+  state: "on_time" | "at_risk" | "late_unexpected" | "expected_absence",
+  tier?: "typical" | "required" | "benchmark",
+): Severity {
+  switch (state) {
+    case "on_time":
+      return "clean";
+    case "at_risk":
+      return "required";
+    case "expected_absence":
+      return "expected_absence";
+    case "late_unexpected":
+      return tier === "benchmark"
+        ? "benchmark"
+        : tier === "required"
+          ? "required"
+          : "typical";
+  }
 }
 
 export function monitorStatusToSeverity(
