@@ -44,6 +44,7 @@ import PipelineDrawer from "../components/ops-overview/PipelineDrawer";
 import CleanDayPanel from "../components/ops-overview/CleanDayPanel";
 import HolidayHeaderStrip from "../components/ops-overview/HolidayHeaderStrip";
 import StageTrendStrip from "../components/ops-overview/StageTrendStrip";
+import ExceptionHeatmap from "../components/ops-overview/ExceptionHeatmap";
 
 export const title = "Ops Overview";
 export const fullWidth = true;
@@ -436,6 +437,11 @@ export default function OpsOverview() {
             onPipelineClick={openPipelineDrawer}
             onOpenForensic={forensic.open}
           />
+
+          {/* Exception heat map — exception type × pipeline stage. Cells
+              encode severity of non-clean mandates; the SLA-breach mode
+              drops hue for a light/dark + icon-only encoding. */}
+          <ExceptionHeatmap />
 
             <Footnotes fixtureKey={fixtureKey} />
           </div>
