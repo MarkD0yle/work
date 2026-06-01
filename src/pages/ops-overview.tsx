@@ -450,9 +450,17 @@ export default function OpsOverview() {
           data-l3-panel="true"
           className="relative w-[440px] shrink-0 border-l border-neutral-200 bg-white"
         >
-          {/* Spec v0.1.1 §8 — clean state replaces the monitor list with
-              a streak + next-event + audit panel. */}
-          {state === "clean" ? (
+          {/* Spec v0.1.1 §3 — the right rail is one surface that drills down
+              in place: the monitor queue, or the selected mandate detail. No
+              stacked overlay — selecting a mandate swaps the panel content,
+              and the drawer's own close (X) returns to the queue. */}
+          {drawerDetail ? (
+            <PipelineDrawer
+              detail={drawerDetail}
+              onClose={closePipelineDrawer}
+              onOpenForensic={forensic.open}
+            />
+          ) : state === "clean" ? (
             <CleanDayPanel monitors={monitors} now={now} />
           ) : (
             <MonitorList
@@ -461,27 +469,6 @@ export default function OpsOverview() {
               now={now}
               pulseMonitorId={pulseMonitorId}
             />
-          )}
-          {drawerDetail && (
-            <>
-              {/* Subtle backdrop — dims the monitors slightly, signals
-                  "this is now the focus, monitors are paused". */}
-              <button
-                type="button"
-                aria-label="Close pipeline detail"
-                onClick={closePipelineDrawer}
-                className="absolute inset-0 z-30 bg-neutral-900/15 backdrop-blur-[1px] cursor-default"
-              />
-              {/* Sheet — same 440px slot, slid in. Monitor queue underneath
-                  is intact (Esc / backdrop / X all return to it). */}
-              <div className="absolute inset-0 z-40 bg-white shadow-xl border-l border-neutral-200">
-                <PipelineDrawer
-                  detail={drawerDetail}
-                  onClose={closePipelineDrawer}
-                  onOpenForensic={forensic.open}
-                />
-              </div>
-            </>
           )}
         </aside>
       </div>
