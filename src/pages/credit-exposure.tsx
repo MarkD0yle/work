@@ -1,4 +1,13 @@
 import { useMemo, useState, type ReactNode } from "react";
+import {
+  AllCommunityModule,
+  ModuleRegistry,
+  themeQuartz,
+  type ColDef,
+  type ICellRendererParams,
+  type ValueGetterParams,
+} from "ag-grid-community";
+import { AgGridReact } from "ag-grid-react";
 
 export const title = "Counterparty Credit";
 export const fullWidth = true;
@@ -308,6 +317,100 @@ const worstTone = (cp: Counterparty): "ok" | "warn" | "breach" =>
     if (t === "warn" && acc !== "breach") return "warn";
     return acc;
   }, "ok");
+
+/* ------------------------------------------------------------------ *
+ * AG Grid — counterparty list in the left panel
+ * ------------------------------------------------------------------ */
+
+ModuleRegistry.registerModules([AllCommunityModule]);
+
+const creditGridTheme = themeQuartz.withParams({
+  accentColor: "#171717",
+  fontFamily: "inherit",
+  fontSize: 12,
+  headerFontWeight: 600,
+  headerTextColor: "#737373",
+  headerBackgroundColor: "#fafafa",
+  borderColor: "#e5e5e5",
+  rowBorder: { color: "#f5f5f5" },
+  rowHoverColor: "#fafafa",
+  headerHeight: 32,
+  rowHeight: 40,
+  cellHorizontalPadding: 8,
+  wrapperBorderRadius: 0,
+});
+
+const CP_COL_DEFS: ColDef<Counterparty>[] = [
+  {
+    colId: "name",
+    headerName: "Counterparty",
+    flex: 2,
+    minWidth: 90,
+    cellRenderer: ({ data }: ICellRendererParams<Counterparty>) => {
+      if (!data) return null;
+      const tone = TONE[worstTone(data)];
+      return (
+        <div className="flex min-w-0 items-center gap-1.5">
+          <span className={`h-2 w-2 shrink-0 rounded-full ${tone.dot}`} />
+          <div className="min-w-0">
+            <div className="truncate text-xs font-semibold text-neutral-900">{data.name}</div>
+            {data.watchlist && (
+              <span className="rounded bg-amber-100 px-1 py-0.5 text-[8px] font-semibold uppercase tracking-wide text-amber-800">
+                Watch
+              </span>
+            )}
+          </div>
+        </div>
+      );
+    },
+  },
+  {
+    colId: "rating",
+    headerName: "Rtg",
+    width: 44,
+    cellClass: "font-mono text-[11px] tabular-nums text-neutral-600",
+    valueGetter: ({ data }: ValueGetterParams<Counterparty>) => data?.internalRating ?? "",
+  },
+  {
+    colId: "cds",
+    headerName: "CDS",
+    width: 56,
+    type: "rightAligned",
+    valueGetter: ({ data }: ValueGetterParams<Counterparty>) => data?.cds5y ?? 0,
+    cellRenderer: ({ data }: ICellRendererParams<Counterparty>) => {
+      if (!data) return null;
+      const up = data.cds5yChange1d > 0;
+      const dn = data.cds5yChange1d < 0;
+      return (
+        <span className={`font-mono text-[11px] tabular-nums ${up ? "text-rose-600" : dn ? "text-emerald-600" : "text-neutral-600"}`}>
+          {data.cds5y}bp
+        </span>
+      );
+    },
+  },
+  {
+    colId: "srUtil",
+    headerName: "SR util",
+    width: 60,
+    type: "rightAligned",
+    valueGetter: ({ data }: ValueGetterParams<Counterparty>) => {
+      if (!data) return 0;
+      const sr = data.limits.find((l) => l.key === "sr");
+      return sr && sr.hard > 0 ? Math.round((sr.current / sr.hard) * 100) : 0;
+    },
+    cellRenderer: ({ data }: ICellRendererParams<Counterparty>) => {
+      if (!data) return null;
+      const sr = data.limits.find((l) => l.key === "sr");
+      if (!sr || sr.hard <= 0)
+        return <span className="font-mono text-[11px] tabular-nums text-neutral-400">—</span>;
+      const u = Math.round((sr.current / sr.hard) * 100);
+      const tone = limitTone(sr.current, sr.soft, sr.hard);
+      const cls =
+        tone === "breach" ? "text-rose-600" : tone === "warn" ? "text-amber-600" : "text-neutral-600";
+      return <span className={`font-mono text-[11px] font-semibold tabular-nums ${cls}`}>{u}%</span>;
+    },
+  },
+];
 
 /* ------------------------------------------------------------------ *
  * Limit bar — clean single bar with optional projected delta segment.
@@ -982,20 +1085,28 @@ export default function CreditExposure() {
               ))}
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto">
-            {filtered.map((cp) => (
-              <CounterpartyRow
-                key={cp.id}
-                cp={cp}
-                selected={cp.id === selectedId}
-                onSelect={() => setSelectedId(cp.id)}
-              />
-            ))}
-            {filtered.length === 0 && (
-              <div className="px-4 py-16 text-center text-xs text-neutral-400">
-                No counterparties match.
-              </div>
-            )}
+          <div className="min-h-0 flex-1">
+            <AgGridReact<Counterparty>
+              theme={creditGridTheme}
+              columnDefs={CP_COL_DEFS}
+              rowData={filtered}
+              suppressMovableColumns
+              suppressCellFocus
+              noRowsOverlayComponent={() => (
+                <div className="px-4 py-8 text-center text-xs text-neutral-400">
+                  No counterparties match.
+                </div>
+              )}
+              onRowClicked={(e) => {
+                if (!e.data) return;
+                setSelectedId(e.data.id);
+              }}
+              getRowStyle={(params) =>
+                params.data?.id === selectedId
+                  ? { background: "#f9fafb", borderLeft: "2px solid #171717" }
+                  : undefined
+              }
+            />
           </div>
         </aside>
 

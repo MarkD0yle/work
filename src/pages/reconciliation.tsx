@@ -1,4 +1,14 @@
 import { useMemo, useState, type ReactNode } from "react";
+import {
+  AllCommunityModule,
+  ModuleRegistry,
+  themeQuartz,
+  type ColDef,
+  type ICellRendererParams,
+  type ValueFormatterParams,
+  type ValueGetterParams,
+} from "ag-grid-community";
+import { AgGridReact } from "ag-grid-react";
 
 export const title = "Trade Recon Workbench";
 export const fullWidth = true;
@@ -398,6 +408,114 @@ const fmtAge = (m: number) => {
   const d = Math.floor(h / 24);
   return `${d}d ${h % 24}h`;
 };
+
+/* ------------------------------------------------------------------ *
+ * AG Grid — break list in the left panel
+ * ------------------------------------------------------------------ */
+
+ModuleRegistry.registerModules([AllCommunityModule]);
+
+const breakGridTheme = themeQuartz.withParams({
+  accentColor: "#171717",
+  fontFamily: "inherit",
+  fontSize: 12,
+  headerFontWeight: 600,
+  headerTextColor: "#737373",
+  headerBackgroundColor: "#fafafa",
+  borderColor: "#e5e5e5",
+  rowBorder: { color: "#f5f5f5" },
+  rowHoverColor: "#fafafa",
+  headerHeight: 32,
+  rowHeight: 36,
+  cellHorizontalPadding: 8,
+  wrapperBorderRadius: 0,
+});
+
+const BREAK_COL_DEFS: ColDef<Break>[] = [
+  {
+    colId: "breakId",
+    field: "id",
+    headerName: "Break",
+    width: 80,
+    cellRenderer: ({ data }: ICellRendererParams<Break>) => {
+      if (!data) return null;
+      const ageTone =
+        data.ageMins >= 1440
+          ? "text-rose-600"
+          : data.ageMins >= 240
+            ? "text-amber-600"
+            : "text-neutral-500";
+      return (
+        <div className="flex items-center gap-1.5">
+          <span
+            className={`h-1.5 w-1.5 shrink-0 rounded-full ${KIND_META[data.kind].dot}`}
+          />
+          <span className={`font-mono text-[11px] font-semibold tabular-nums ${ageTone}`}>
+            {data.id}
+          </span>
+        </div>
+      );
+    },
+  },
+  {
+    colId: "ticker",
+    headerName: "Security",
+    flex: 1,
+    minWidth: 60,
+    valueGetter: ({ data }: ValueGetterParams<Break>) =>
+      data?.internal?.ticker ?? data?.custodian?.ticker ?? "—",
+    cellClass: "text-xs font-semibold text-neutral-900",
+  },
+  {
+    colId: "notional",
+    headerName: "At risk",
+    width: 68,
+    type: "rightAligned",
+    valueGetter: ({ data }: ValueGetterParams<Break>) => data?.notionalAtRisk ?? 0,
+    cellRenderer: ({ data }: ICellRendererParams<Break>) => {
+      if (!data || !data.notionalAtRisk) return <span className="font-mono text-[11px] tabular-nums text-neutral-400">—</span>;
+      return (
+        <span className="font-mono text-[11px] tabular-nums text-neutral-700">
+          {ccyFmt(data.notionalAtRisk, data.ccyAtRisk)}
+        </span>
+      );
+    },
+  },
+  {
+    colId: "status",
+    headerName: "Status",
+    field: "status",
+    width: 58,
+    cellRenderer: ({ data }: ICellRendererParams<Break>) => {
+      if (!data) return null;
+      const s = STATUS_META[data.status];
+      const short: Record<Break["status"], string> = {
+        open: "Open",
+        investigating: "Invest.",
+        "pending-cp": "Pend. CP",
+        resolved: "Resolved",
+      };
+      return (
+        <span
+          className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${s.bg} ${s.text}`}
+        >
+          {short[data.status]}
+        </span>
+      );
+    },
+  },
+  {
+    colId: "age",
+    field: "ageMins",
+    headerName: "Age",
+    width: 48,
+    type: "rightAligned",
+    sort: "desc",
+    cellClass: "font-mono text-[11px] tabular-nums text-neutral-500",
+    valueFormatter: ({ value }: ValueFormatterParams<Break>) =>
+      fmtAge(value as number),
+  },
+];
 
 /* ------------------------------------------------------------------ *
  * Side-by-side compare — two real cards, with diff rows marked by
@@ -1005,33 +1123,31 @@ export default function Reconciliation() {
             <span className="text-[10px] font-semibold tracking-wider uppercase text-neutral-500">
               {filtered.length} breaks
             </span>
-            <span className="text-[10px] text-neutral-400">
-              Sorted by age ▾
-            </span>
           </div>
-          <div className="flex-1 overflow-y-auto">
-            {filtered.map((b) => (
-              <BreakRow
-                key={b.id}
-                brk={b}
-                selected={b.id === selectedId}
-                onSelect={() => {
-                  setSelectedId(b.id);
-                  setAcceptedSuggestion(null);
-                }}
-              />
-            ))}
-            {filtered.length === 0 && (
-              <div className="px-4 py-16 text-center">
-                <div className="text-2xl">🟢</div>
-                <div className="mt-2 text-sm font-medium text-neutral-700">
-                  No breaks in this view
+          <div className="min-h-0 flex-1">
+            <AgGridReact<Break>
+              theme={breakGridTheme}
+              columnDefs={BREAK_COL_DEFS}
+              rowData={filtered}
+              suppressMovableColumns
+              suppressCellFocus
+              noRowsOverlayComponent={() => (
+                <div className="px-4 py-8 text-center">
+                  <div className="text-lg">🟢</div>
+                  <div className="mt-1 text-xs font-medium text-neutral-700">No breaks</div>
                 </div>
-                <div className="mt-1 text-xs text-neutral-500">
-                  Everything in this bucket has cleared.
-                </div>
-              </div>
-            )}
+              )}
+              onRowClicked={(e) => {
+                if (!e.data) return;
+                setSelectedId(e.data.id);
+                setAcceptedSuggestion(null);
+              }}
+              getRowStyle={(params) =>
+                params.data?.id === selectedId
+                  ? { background: "#f9fafb", borderLeft: "2px solid #171717" }
+                  : undefined
+              }
+            />
           </div>
         </aside>
 

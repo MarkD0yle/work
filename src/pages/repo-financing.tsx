@@ -1,4 +1,14 @@
 import { useState } from "react";
+import {
+  AllCommunityModule,
+  ModuleRegistry,
+  themeQuartz,
+  type ColDef,
+  type ICellRendererParams,
+  type ValueFormatterParams,
+  type ValueGetterParams,
+} from "ag-grid-community";
+import { AgGridReact } from "ag-grid-react";
 
 export const title = "Repo & Securities Financing";
 export const fullWidth = true;
@@ -292,6 +302,151 @@ const CLASS_SUMMARY: ClassSummary[] = (["UST", "Bund", "Gilt", "IG Corp", "Agenc
   repo:    TRADES.filter(t => t.collateralClass === cls && t.direction === "Repo").reduce((s, t) => s + t.notional, 0),
   reverse: TRADES.filter(t => t.collateralClass === cls && t.direction === "Reverse").reduce((s, t) => s + t.notional, 0),
 }));
+
+/* ---------- AG Grid setup ---------- */
+
+ModuleRegistry.registerModules([AllCommunityModule]);
+
+const repoGridTheme = themeQuartz.withParams({
+  accentColor: "#0ea5e9",
+  fontFamily: "inherit",
+  fontSize: 12,
+  headerFontWeight: 600,
+  headerTextColor: "#737373",
+  headerBackgroundColor: "#ffffff",
+  borderColor: "#e5e5e5",
+  rowBorder: { color: "#f5f5f5" },
+  rowHoverColor: "#f0f9ff",
+  headerHeight: 34,
+  rowHeight: 38,
+  cellHorizontalPadding: 12,
+  wrapperBorderRadius: 0,
+});
+
+const REPO_COL_DEFS: ColDef<Trade>[] = [
+  {
+    field: "counterparty",
+    headerName: "Counterparty",
+    flex: 2,
+    minWidth: 130,
+    cellRenderer: ({ data }: ICellRendererParams<Trade>) => {
+      if (!data) return null;
+      const isOn = data.tenor === "O/N";
+      return (
+        <div className="flex min-w-0 items-center gap-1.5">
+          {isOn && (
+            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" title="Matures overnight" />
+          )}
+          <span className="truncate text-xs font-medium text-neutral-800">{data.counterparty}</span>
+        </div>
+      );
+    },
+  },
+  {
+    field: "direction",
+    headerName: "Dir",
+    width: 80,
+    cellRenderer: ({ value }: ICellRendererParams<Trade>) => (
+      <span
+        className={`rounded px-1.5 py-0.5 text-[9px] font-semibold tracking-wide uppercase ${
+          value === "Repo" ? "bg-neutral-100 text-neutral-600" : "bg-sky-50 text-sky-700"
+        }`}
+      >
+        {value as string}
+      </span>
+    ),
+  },
+  {
+    field: "collateral",
+    headerName: "Collateral",
+    flex: 1,
+    minWidth: 100,
+    cellRenderer: ({ data }: ICellRendererParams<Trade>) => {
+      if (!data) return null;
+      return (
+        <div className="flex min-w-0 items-center gap-1.5">
+          <span className={`h-2 w-2 shrink-0 rounded-sm ${CLASS_DOT[data.collateralClass]}`} />
+          <span className="truncate text-xs text-neutral-700">{data.collateral}</span>
+        </div>
+      );
+    },
+  },
+  {
+    field: "tenor",
+    headerName: "Tenor",
+    width: 58,
+    cellRenderer: ({ data, value }: ICellRendererParams<Trade>) => {
+      const isOn = data?.tenor === "O/N";
+      return (
+        <span className={`font-mono text-xs tabular-nums ${isOn ? "font-semibold text-amber-700" : "text-neutral-600"}`}>
+          {value as string}
+        </span>
+      );
+    },
+  },
+  {
+    field: "notional",
+    headerName: "Notional",
+    width: 90,
+    type: "rightAligned",
+    cellClass: "font-mono text-xs tabular-nums text-neutral-800",
+    valueFormatter: ({ value }: ValueFormatterParams<Trade>) => compact(value as number),
+  },
+  {
+    field: "rate",
+    headerName: "Rate",
+    width: 64,
+    type: "rightAligned",
+    cellClass: "font-mono text-xs tabular-nums text-neutral-700",
+    valueFormatter: ({ value }: ValueFormatterParams<Trade>) =>
+      `${(value as number).toFixed(2)}%`,
+  },
+  {
+    colId: "spreadBp",
+    headerName: "Spd bp",
+    width: 64,
+    type: "rightAligned",
+    valueGetter: ({ data }: ValueGetterParams<Trade>) => (data ? spreadBp(data) : 0),
+    cellRenderer: ({ data }: ICellRendererParams<Trade>) => {
+      if (!data) return null;
+      const bp = spreadBp(data);
+      const cls =
+        bp > 10 ? "text-red-600" : bp > 5 ? "text-amber-600" : "text-neutral-500";
+      return (
+        <span className={`font-mono text-xs font-semibold tabular-nums ${cls}`}>
+          {bp > 0 ? `+${bp}` : bp}
+        </span>
+      );
+    },
+  },
+  {
+    field: "haircut",
+    headerName: "Haircut",
+    width: 62,
+    type: "rightAligned",
+    cellClass: "font-mono text-xs tabular-nums text-neutral-500",
+    valueFormatter: ({ value }: ValueFormatterParams<Trade>) =>
+      `${((value as number) * 100).toFixed(1)}%`,
+  },
+  {
+    field: "maturityLabel",
+    headerName: "Maturity",
+    width: 62,
+    type: "rightAligned",
+    cellRenderer: ({ data, value }: ICellRendererParams<Trade>) => {
+      const isOn = data?.tenor === "O/N";
+      return (
+        <span
+          className={`font-mono text-xs tabular-nums ${
+            isOn ? "font-semibold text-amber-700" : "text-neutral-500"
+          }`}
+        >
+          {value as string}
+        </span>
+      );
+    },
+  },
+];
 
 /* ---------- Atoms ---------- */
 
@@ -707,112 +862,24 @@ export default function RepoFinancing() {
                   </span>
                 </div>
 
-                {/* Table header */}
-                <div className="grid grid-cols-[1.6fr_80px_1fr_60px_90px_64px_64px_60px_60px] items-center gap-2 border-b border-neutral-100 px-4 py-2 text-[10px] font-semibold tracking-wider text-neutral-400 uppercase">
-                  <span>Counterparty</span>
-                  <span>Dir</span>
-                  <span>Collateral</span>
-                  <span>Tenor</span>
-                  <span className="text-right">Notional</span>
-                  <span className="text-right">Rate</span>
-                  <span className="text-right">Spd bp</span>
-                  <span className="text-right">Haircut</span>
-                  <span className="text-right">Maturity</span>
-                </div>
-
-                {/* Rows */}
-                <ul>
-                  {filteredTrades.map(trade => {
-                    const bp      = spreadBp(trade);
-                    const isOn    = trade.tenor === "O/N";
-                    const active  = trade.id === selectedId;
-                    return (
-                      <li key={trade.id}>
-                        <button
-                          type="button"
-                          onClick={() => setSelectedId(active ? null : trade.id)}
-                          className={`grid w-full grid-cols-[1.6fr_80px_1fr_60px_90px_64px_64px_60px_60px] items-center gap-2 border-t border-neutral-100 px-4 py-2.5 text-left transition first:border-t-0 ${
-                            active ? "bg-sky-50/60" : "hover:bg-neutral-50"
-                          }`}
-                        >
-                          {/* Counterparty */}
-                          <div className="flex min-w-0 items-center gap-2">
-                            {isOn && (
-                              <span
-                                className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400"
-                                title="Matures overnight"
-                              />
-                            )}
-                            <span className="truncate text-xs font-medium text-neutral-800">
-                              {trade.counterparty}
-                            </span>
-                          </div>
-
-                          {/* Direction badge */}
-                          <span>
-                            <span
-                              className={`rounded px-1.5 py-0.5 text-[9px] font-semibold tracking-wide uppercase ${
-                                trade.direction === "Repo"
-                                  ? "bg-neutral-100 text-neutral-600"
-                                  : "bg-sky-50 text-sky-700"
-                              }`}
-                            >
-                              {trade.direction}
-                            </span>
-                          </span>
-
-                          {/* Collateral */}
-                          <div className="flex min-w-0 items-center gap-1.5">
-                            <span className={`h-2 w-2 shrink-0 rounded-sm ${CLASS_DOT[trade.collateralClass]}`} />
-                            <span className="truncate text-xs text-neutral-700">{trade.collateral}</span>
-                          </div>
-
-                          {/* Tenor */}
-                          <span
-                            className={`font-mono text-xs tabular-nums ${
-                              isOn ? "font-semibold text-amber-700" : "text-neutral-600"
-                            }`}
-                          >
-                            {trade.tenor}
-                          </span>
-
-                          {/* Notional */}
-                          <span className="text-right font-mono text-xs tabular-nums text-neutral-800">
-                            {compact(trade.notional)}
-                          </span>
-
-                          {/* Rate */}
-                          <span className="text-right font-mono text-xs tabular-nums text-neutral-700">
-                            {trade.rate.toFixed(2)}%
-                          </span>
-
-                          {/* Spread bp */}
-                          <span
-                            className={`text-right font-mono text-xs font-semibold tabular-nums ${
-                              bp > 10 ? "text-red-600" : bp > 5 ? "text-amber-600" : "text-neutral-500"
-                            }`}
-                          >
-                            {bp > 0 ? `+${bp}` : bp}
-                          </span>
-
-                          {/* Haircut */}
-                          <span className="text-right font-mono text-xs tabular-nums text-neutral-500">
-                            {(trade.haircut * 100).toFixed(1)}%
-                          </span>
-
-                          {/* Maturity */}
-                          <span
-                            className={`text-right font-mono text-xs tabular-nums ${
-                              isOn ? "font-semibold text-amber-700" : "text-neutral-500"
-                            }`}
-                          >
-                            {trade.maturityLabel}
-                          </span>
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
+                <AgGridReact<Trade>
+                  theme={repoGridTheme}
+                  columnDefs={REPO_COL_DEFS}
+                  rowData={filteredTrades}
+                  domLayout="autoHeight"
+                  suppressMovableColumns
+                  suppressCellFocus
+                  defaultColDef={{ sortable: true }}
+                  onRowClicked={(e) => {
+                    const id = e.data?.id ?? null;
+                    setSelectedId((prev) => (prev === id ? null : id));
+                  }}
+                  getRowStyle={(params) =>
+                    params.data?.id === selectedId
+                      ? { background: "rgba(240,249,255,0.6)" }
+                      : undefined
+                  }
+                />
 
                 {/* Selected trade detail strip */}
                 {selected && (
