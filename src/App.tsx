@@ -1,10 +1,12 @@
 import { useMemo, useState, type ComponentType } from "react";
 import Sidebar from "./components/Sidebar";
+import { sectionForSlug } from "./lib/pageSections";
 
 type PageModule = {
   default: ComponentType;
   title?: string;
   fullWidth?: boolean;
+  section?: string;
 };
 
 const pageModules = import.meta.glob<PageModule>("./pages/*.tsx", {
@@ -20,6 +22,7 @@ function formatTitle(slug: string) {
 type PageEntry = {
   slug: string;
   title: string;
+  section: string;
   Component: ComponentType;
   fullWidth: boolean;
 };
@@ -30,6 +33,7 @@ const pages: PageEntry[] = Object.entries(pageModules)
     return {
       slug,
       title: mod.title ?? formatTitle(slug),
+      section: sectionForSlug(slug, mod.section),
       Component: mod.default,
       fullWidth: mod.fullWidth ?? false,
     };
@@ -51,7 +55,11 @@ function App() {
   return (
     <div className="flex min-h-screen bg-neutral-50 text-neutral-900 antialiased">
       <Sidebar
-        pages={pages.map(({ slug, title }) => ({ slug, title }))}
+        pages={pages.map(({ slug, title, section }) => ({
+          slug,
+          title,
+          section,
+        }))}
         activeSlug={activeSlug}
         onSelect={setActiveSlug}
         collapsed={collapsed}

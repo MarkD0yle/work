@@ -1,0 +1,94 @@
+/* Section metadata for the sidebar.
+ *
+ * Pages are auto-discovered from src/pages (see App.tsx). To keep the
+ * sidebar organised, each page is assigned to a section. A page can opt
+ * into a section explicitly via `export const section = "..."`; otherwise
+ * we fall back to the slug → section map below. Anything unmapped lands in
+ * the catch-all "Other" section so new files still show up.
+ */
+
+export type SectionDef = {
+  id: string;
+  label: string;
+  /** Inline SVG path (20x20 viewBox) used as the section icon. */
+  iconPath: string;
+};
+
+export const OTHER_SECTION_ID = "other";
+
+export const SECTIONS: SectionDef[] = [
+  {
+    id: "operations",
+    label: "Operations",
+    iconPath:
+      "M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.53 1.53 0 0 1-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 0 1 .947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 0 1 2.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 0 1 2.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 0 1 .947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 0 1-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 0 1-2.287-.947ZM10 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z",
+  },
+  {
+    id: "risk",
+    label: "Risk & Exposure",
+    iconPath:
+      "M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z",
+  },
+  {
+    id: "trading",
+    label: "Trading & Liquidity",
+    iconPath:
+      "M15.98 1.804a1 1 0 0 0-1.96 0l-.24 1.192a1 1 0 0 1-.784.785l-1.192.238a1 1 0 0 0 0 1.962l1.192.238a1 1 0 0 1 .785.785l.238 1.192a1 1 0 0 0 1.962 0l.238-1.192a1 1 0 0 1 .785-.785l1.192-.238a1 1 0 0 0 0-1.962l-1.192-.238a1 1 0 0 1-.785-.785l-.238-1.192ZM6.949 5.684a1 1 0 0 0-1.898 0l-.683 2.051a1 1 0 0 1-.633.633l-2.051.683a1 1 0 0 0 0 1.898l2.051.684a1 1 0 0 1 .633.632l.683 2.051a1 1 0 0 0 1.898 0l.683-2.051a1 1 0 0 1 .633-.633l2.051-.683a1 1 0 0 0 0-1.898l-2.051-.683a1 1 0 0 1-.633-.633L6.95 5.684ZM13.949 13.684a1 1 0 0 0-1.898 0l-.184.551a1 1 0 0 1-.632.633l-.551.183a1 1 0 0 0 0 1.898l.551.183a1 1 0 0 1 .633.633l.183.551a1 1 0 0 0 1.898 0l.184-.551a1 1 0 0 1 .632-.633l.551-.183a1 1 0 0 0 0-1.898l-.551-.184a1 1 0 0 1-.633-.632l-.183-.551Z",
+  },
+  {
+    id: "patterns",
+    label: "Patterns & Tools",
+    iconPath:
+      "M17.663 3.118c.225.015.45.032.673.05C19.876 3.298 21 4.604 21 6.109v9.642a3 3 0 0 1-3 3V16.5c0-5.922-4.576-10.775-10.384-11.217.324-1.132 1.3-2.01 2.548-2.114.224-.019.448-.036.673-.051A3 3 0 0 1 13.5 1.5H15a3 3 0 0 1 2.663 1.618ZM12 4.5A1.5 1.5 0 0 1 13.5 3H15a1.5 1.5 0 0 1 1.5 1.5H12Z M3 8.625c0-1.036.84-1.875 1.875-1.875h.375A3.75 3.75 0 0 1 9 10.5v1.875c0 1.036.84 1.875 1.875 1.875h1.875A3.75 3.75 0 0 1 16.5 18v.375c0 1.036-.84 1.875-1.875 1.875h-9.75A1.875 1.875 0 0 1 3 18.375V8.625Z",
+  },
+];
+
+/* slug → section id. Keep grouped by section for readability. */
+const SLUG_SECTION: Record<string, string> = {
+  // Operations
+  "ops-overview": "operations",
+  oversight: "operations",
+  "my-queue": "operations",
+  "nav-signoff": "operations",
+  reconciliation: "operations",
+  "trade-investigation": "operations",
+  "payments-center": "operations",
+  "corp-actions": "operations",
+  "counterparty-onboarding": "operations",
+  "settlement-timeline": "operations",
+
+  // Risk & Exposure
+  "credit-exposure": "risk",
+  "counterparty-360": "risk",
+  "limit-monitor": "risk",
+  "stress-scenarios": "risk",
+  "exposure-treemap": "risk",
+  oprisk: "risk",
+  "xva-desk": "risk",
+
+  // Trading & Liquidity
+  blotter: "trading",
+  "tca-execution": "trading",
+  "liquidity-ladder": "trading",
+  "repo-financing": "trading",
+  "collateral-optimizer": "trading",
+  ccymgmt: "trading",
+  heatmap: "trading",
+  "tracs-heatmap": "trading",
+
+  // Patterns & Tools
+  "pattern-gallery": "patterns",
+  "github-cheatsheet": "patterns",
+  "date-picker-business-day": "patterns",
+  "date-picker-settlement": "patterns",
+  "date-picker-range": "patterns",
+};
+
+export function sectionForSlug(slug: string, explicit?: string): string {
+  if (explicit) return explicit;
+  return SLUG_SECTION[slug] ?? OTHER_SECTION_ID;
+}
+
+export function sectionLabel(id: string): string {
+  return SECTIONS.find((s) => s.id === id)?.label ?? "Other";
+}
