@@ -45,12 +45,20 @@ function App() {
   const [activeSlug, setActiveSlug] = useState<string>(
     () => pages[0]?.slug ?? "",
   );
+  const [recentSlugs, setRecentSlugs] = useState<string[]>(
+    () => (pages[0]?.slug ? [pages[0].slug] : []),
+  );
 
   const activePage = useMemo(
     () => pages.find((p) => p.slug === activeSlug),
     [activeSlug],
   );
   const ActivePage = activePage?.Component;
+
+  function handleSelect(slug: string) {
+    setActiveSlug(slug);
+    setRecentSlugs((prev) => [slug, ...prev.filter((s) => s !== slug)].slice(0, 8));
+  }
 
   return (
     <div className="flex min-h-screen bg-neutral-50 text-neutral-900 antialiased">
@@ -61,7 +69,8 @@ function App() {
           section,
         }))}
         activeSlug={activeSlug}
-        onSelect={setActiveSlug}
+        onSelect={handleSelect}
+        recentSlugs={recentSlugs}
         collapsed={collapsed}
         onToggleCollapsed={() => setCollapsed((c) => !c)}
       />
