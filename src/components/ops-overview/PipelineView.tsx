@@ -63,9 +63,10 @@ export default function PipelineView({
   function removeFilter(key: keyof PipelineFiltersState) {
     const v = filters[key];
     const next: PipelineFiltersState = { ...filters };
-    if (Array.isArray(v)) (next as Record<string, unknown>)[key] = [];
-    else if (typeof v === "boolean") (next as Record<string, unknown>)[key] = false;
-    else (next as Record<string, unknown>)[key] = null;
+    const bag = next as unknown as Record<string, unknown>;
+    if (Array.isArray(v)) bag[key] = [];
+    else if (typeof v === "boolean") bag[key] = false;
+    else bag[key] = null;
     setFilters(next);
   }
 
