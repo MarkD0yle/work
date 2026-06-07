@@ -216,25 +216,7 @@ function slug(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 
-const SECTION_KEYS = ["client", "mandate", "bmtype", "user", "process"] as const;
-type SectionKey = (typeof SECTION_KEYS)[number];
-
-function sectionForFilterKey(k: keyof PipelineFilters): SectionKey | null {
-  switch (k) {
-    case "clients":
-      return "client";
-    case "mandates":
-      return "mandate";
-    case "bmTypes":
-      return "bmtype";
-    case "usernames":
-      return "user";
-    case "processes":
-      return "process";
-    default:
-      return null;
-  }
-}
+type SectionKey = "client" | "mandate" | "bmtype" | "user" | "process";
 
 export function readUrlFilters(allPipelines: PipelineState[]): PipelineFilters {
   if (typeof window === "undefined") return EMPTY_FILTERS;

@@ -452,7 +452,6 @@ export default function Counterparty360Page() {
             </div>
           )}
           {filtered.map((cp) => {
-            const usage = cp.totalUsed / cp.totalLimit;
             const active = cp.id === selectedId;
             const sev = severityFor(cp);
             const dot =

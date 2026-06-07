@@ -1,6 +1,7 @@
-import { useMemo, useState, type ComponentType } from "react";
+import { useMemo, type ComponentType } from "react";
 import Sidebar from "./components/Sidebar";
 import { sectionForSlug } from "./lib/pageSections";
+import { useLocalStorage } from "./hooks/useLocalStorage";
 
 type PageModule = {
   default: ComponentType;
@@ -41,24 +42,21 @@ const pages: PageEntry[] = Object.entries(pageModules)
   .sort((a, b) => a.title.localeCompare(b.title));
 
 function App() {
-  const [collapsed, setCollapsed] = useState(false);
-  const [activeSlug, setActiveSlug] = useState<string>(
-    () => pages[0]?.slug ?? "",
+  const [collapsed, setCollapsed] = useLocalStorage("sidebar.collapsed", false);
+  const [storedSlug, setActiveSlug] = useLocalStorage<string>(
+    "active.slug",
+    pages[0]?.slug ?? "",
   );
-  const [recentSlugs, setRecentSlugs] = useState<string[]>(
-    () => (pages[0]?.slug ? [pages[0].slug] : []),
-  );
+  // Guard against a persisted slug whose page no longer exists.
+  const activeSlug = pages.some((p) => p.slug === storedSlug)
+    ? storedSlug
+    : (pages[0]?.slug ?? "");
 
   const activePage = useMemo(
     () => pages.find((p) => p.slug === activeSlug),
     [activeSlug],
   );
   const ActivePage = activePage?.Component;
-
-  function handleSelect(slug: string) {
-    setActiveSlug(slug);
-    setRecentSlugs((prev) => [slug, ...prev.filter((s) => s !== slug)].slice(0, 8));
-  }
 
   return (
     <div className="flex min-h-screen bg-neutral-50 text-neutral-900 antialiased">
@@ -69,8 +67,7 @@ function App() {
           section,
         }))}
         activeSlug={activeSlug}
-        onSelect={handleSelect}
-        recentSlugs={recentSlugs}
+        onSelect={setActiveSlug}
         collapsed={collapsed}
         onToggleCollapsed={() => setCollapsed((c) => !c)}
       />

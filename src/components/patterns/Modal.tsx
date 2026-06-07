@@ -26,6 +26,7 @@ const SIZES = {
   sm: 384,
   md: 448,
   lg: 576,
+  xl: 768,
 } as const;
 
 export default function Modal({
