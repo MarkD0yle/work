@@ -13,15 +13,18 @@ import {
   type YearMonth,
 } from "../components/date-picker/calendar-utils";
 import { isWeekend } from "../lib/calendars";
+import Modal from "../components/patterns/Modal";
 
 export const title = "Date Range Picker";
 
 /* Date Range Picker
  *
- * A lookback-window control for the reporting / trend / blotter screens. Two
- * months side by side; click a start, click an end, drag-hover previews the
- * span. Presets cover the windows an ops desk actually reaches for (MTD, last
- * full week, T-30 …).
+ * A lookback-window control for the reporting / trend / blotter screens. The
+ * page shows a trigger field with the committed window and its day counts;
+ * clicking it opens a modal with two months side by side — click a start,
+ * click an end, drag-hover previews the span. Presets cover the windows an ops
+ * desk actually reaches for (MTD, last full week, T-30 …). The window is
+ * provisional until Apply commits it.
  *
  * Range maths run against the NY calendar so the "business days" count
  * excludes weekends and US closures — the count operators care about when the
@@ -77,18 +80,51 @@ function ymPrefix(year: number, month: number): string {
   return `${year}-${String(month + 1).padStart(2, "0")}`;
 }
 
-export default function DateRangePicker() {
-  const [range, setRange] = useState<Range>(() =>
-    PRESETS[1].compute(),
+/** Inclusive calendar-day span of a range (0 when no start). */
+function spanOf(range: Range): number {
+  if (!range.start) return 0;
+  if (!range.end) return 1;
+  return (
+    Math.round(
+      (Date.parse(`${range.end}T12:00:00Z`) -
+        Date.parse(`${range.start}T12:00:00Z`)) /
+        86_400_000,
+    ) + 1
   );
+}
+
+function businessDaysOf(range: Range): number {
+  if (!range.start) return 0;
+  return countBusinessDays(RANGE_CALENDAR, range.start, range.end ?? range.start);
+}
+
+export default function DateRangePicker() {
+  // Committed window — what the page summarises.
+  const [range, setRange] = useState<Range>(() => PRESETS[1].compute());
+
+  // Provisional window while the modal is open.
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState<Range>(range);
   const [hover, setHover] = useState<string | null>(null);
   const [leftMonth, setLeftMonth] = useState<YearMonth>(() =>
-    addMonths(yearMonthOf(TODAY), -1),
+    addMonths(yearMonthOf(range.start ?? TODAY), -1),
   );
   const rightMonth = addMonths(leftMonth, 1);
 
+  function openPicker() {
+    setDraft(range);
+    setHover(null);
+    setLeftMonth(addMonths(yearMonthOf(range.start ?? TODAY), -1));
+    setOpen(true);
+  }
+
+  function apply() {
+    setRange(draft);
+    setOpen(false);
+  }
+
   function handleSelect(date: string) {
-    setRange((cur) => {
+    setDraft((cur) => {
       // No start, or a complete range already → begin a fresh range.
       if (!cur.start || (cur.start && cur.end)) {
         return { start: date, end: null };
@@ -101,17 +137,17 @@ export default function DateRangePicker() {
 
   function applyPreset(p: Preset) {
     const r = p.compute();
-    setRange(r);
-    if (r.start) setLeftMonth(yearMonthOf(r.start));
+    setDraft(r);
+    if (r.start) setLeftMonth(addMonths(yearMonthOf(r.start), -1));
   }
 
   // The effective end while mid-selection (start chosen, hovering a cell).
-  const previewEnd = range.start && !range.end ? hover : null;
+  const previewEnd = draft.start && !draft.end ? hover : null;
 
   const getDayState = useMemo(
     () =>
       (date: string): DayState => {
-        const { start, end } = range;
+        const { start, end } = draft;
         const closure = holidayOn(RANGE_CALENDAR, date);
         const weekend = isWeekend(date);
 
@@ -146,25 +182,16 @@ export default function DateRangePicker() {
           title: closure ? closure.name : weekend ? "Weekend" : undefined,
         };
       },
-    [range, previewEnd],
+    [draft, previewEnd],
   );
 
-  const spanDays =
-    range.start && range.end
-      ? Math.round(
-          (Date.parse(`${range.end}T12:00:00Z`) -
-            Date.parse(`${range.start}T12:00:00Z`)) /
-            86_400_000,
-        ) + 1
+  const spanDays = spanOf(range);
+  const businessDays = businessDaysOf(range);
+  const rangeLabel = range.start
+    ? range.end && range.end !== range.start
+      ? `${range.start} → ${range.end}`
       : range.start
-        ? 1
-        : 0;
-  const businessDays =
-    range.start && range.end
-      ? countBusinessDays(RANGE_CALENDAR, range.start, range.end)
-      : range.start
-        ? countBusinessDays(RANGE_CALENDAR, range.start, range.start)
-        : 0;
+    : "No range selected";
 
   return (
     <div>
@@ -182,99 +209,177 @@ export default function DateRangePicker() {
         </p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_auto]">
-        {/* Dual-month calendar */}
-        <div
-          className="rounded-lg border border-neutral-200 bg-white p-4"
-          onMouseLeave={() => setHover(null)}
+      {/* Trigger field — opens the dual-month calendar in a modal. */}
+      <div className="mb-6 max-w-sm">
+        <label className="mb-1.5 block text-[10px] font-semibold tracking-widest text-neutral-400 uppercase">
+          Lookback window
+        </label>
+        <button
+          type="button"
+          onClick={openPicker}
+          className="flex w-full items-center gap-3 rounded-md border border-neutral-300 bg-white px-3 py-2 text-left transition-colors hover:border-neutral-400 focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900/10 focus:outline-none"
         >
-          <div className="grid gap-8 sm:grid-cols-2">
-            <MonthGrid
-              month={leftMonth}
-              onMonthChange={setLeftMonth}
-              getDayState={getDayState}
-              onSelect={handleSelect}
-              onHover={setHover}
+          <span
+            className={
+              "font-mono text-sm " +
+              (range.start ? "text-neutral-900" : "text-neutral-400")
+            }
+          >
+            {rangeLabel}
+          </span>
+          <svg
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            className="ml-auto h-4 w-4 text-neutral-400"
+          >
+            <path
+              fillRule="evenodd"
+              d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z"
+              clipRule="evenodd"
             />
-            <MonthGrid
-              month={rightMonth}
-              onMonthChange={(m) => setLeftMonth(addMonths(m, -1))}
-              getDayState={getDayState}
-              onSelect={handleSelect}
-              onHover={setHover}
-            />
+          </svg>
+        </button>
+      </div>
+
+      {/* Selection summary — read-only, reflects the committed window. */}
+      <div className="max-w-sm rounded-lg border border-neutral-200 bg-white p-5">
+        <div className="mb-2 text-[10px] font-semibold tracking-widest text-neutral-400 uppercase">
+          Selected window
+        </div>
+        <div className="space-y-2 text-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-neutral-400">From</span>
+            <span className="font-mono text-neutral-900">
+              {range.start ?? "—"}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-neutral-400">To</span>
+            <span className="font-mono text-neutral-900">
+              {range.end ?? "—"}
+            </span>
           </div>
         </div>
-
-        {/* Presets + summary */}
-        <div className="w-full lg:w-64">
-          <div className="rounded-lg border border-neutral-200 bg-white p-4">
-            <div className="mb-2 text-[10px] font-semibold tracking-widest text-neutral-400 uppercase">
-              Presets
-            </div>
-            <div className="flex flex-col gap-1">
-              {PRESETS.map((p) => (
-                <button
-                  key={p.label}
-                  type="button"
-                  onClick={() => applyPreset(p)}
-                  className="rounded-md px-2.5 py-1.5 text-left text-sm text-neutral-700 hover:bg-neutral-100"
-                >
-                  {p.label}
-                </button>
-              ))}
-            </div>
+        {range.start && (
+          <div className="mt-3 border-t border-neutral-100 pt-3 text-xs text-neutral-500">
+            {range.start === range.end || !range.end
+              ? formatLong(range.start)
+              : `${formatLong(range.start)} → ${formatLong(range.end)}`}
           </div>
-
-          <div className="mt-4 rounded-lg border border-neutral-200 bg-white p-4">
-            <div className="mb-2 text-[10px] font-semibold tracking-widest text-neutral-400 uppercase">
-              Selected window
+        )}
+        <div className="mt-3 flex gap-4 text-sm">
+          <div>
+            <div className="text-xl font-semibold text-neutral-900">
+              {spanDays}
             </div>
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-neutral-400">From</span>
-                <span className="font-mono text-neutral-900">
-                  {range.start ?? "—"}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-neutral-400">To</span>
-                <span className="font-mono text-neutral-900">
-                  {range.end ?? (range.start ? "select end…" : "—")}
-                </span>
-              </div>
+            <div className="text-[11px] text-neutral-400">calendar days</div>
+          </div>
+          <div>
+            <div className="text-xl font-semibold text-neutral-900">
+              {businessDays}
             </div>
-            {range.start && (
-              <div className="mt-3 border-t border-neutral-100 pt-3 text-xs text-neutral-500">
-                {range.start === range.end || !range.end
-                  ? formatLong(range.start)
-                  : `${formatLong(range.start)} → ${formatLong(range.end)}`}
-              </div>
-            )}
-            <div className="mt-3 flex gap-4 text-sm">
-              <div>
-                <div className="text-xl font-semibold text-neutral-900">
-                  {spanDays}
-                </div>
-                <div className="text-[11px] text-neutral-400">calendar days</div>
-              </div>
-              <div>
-                <div className="text-xl font-semibold text-neutral-900">
-                  {businessDays}
-                </div>
-                <div className="text-[11px] text-neutral-400">business days</div>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setRange({ start: null, end: null })}
-              className="mt-3 w-full rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-100"
-            >
-              Clear
-            </button>
+            <div className="text-[11px] text-neutral-400">business days</div>
           </div>
         </div>
       </div>
+
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Select date range"
+        description="Click a start then an end, or pick a preset. Business-day count excludes weekends and NYSE closures."
+        size="xl"
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => setDraft({ start: null, end: null })}
+              className="mr-auto rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-100"
+            >
+              Clear
+            </button>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-100"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={apply}
+              disabled={!draft.start}
+              className="rounded-md bg-neutral-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-neutral-800 disabled:opacity-40"
+            >
+              Apply
+            </button>
+          </>
+        }
+      >
+        {/* Presets */}
+        <div className="mb-4 flex flex-wrap gap-1.5">
+          {PRESETS.map((p) => (
+            <button
+              key={p.label}
+              type="button"
+              onClick={() => applyPreset(p)}
+              className="rounded-md border border-neutral-300 bg-white px-2.5 py-1 text-xs font-medium text-neutral-600 hover:bg-neutral-100"
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Dual-month calendar */}
+        <div className="grid gap-8 sm:grid-cols-2" onMouseLeave={() => setHover(null)}>
+          <MonthGrid
+            month={leftMonth}
+            onMonthChange={setLeftMonth}
+            getDayState={getDayState}
+            onSelect={handleSelect}
+            onHover={setHover}
+          />
+          <MonthGrid
+            month={rightMonth}
+            onMonthChange={(m) => setLeftMonth(addMonths(m, -1))}
+            getDayState={getDayState}
+            onSelect={handleSelect}
+            onHover={setHover}
+          />
+        </div>
+
+        {/* Draft summary */}
+        <div className="mt-4 flex items-center justify-between border-t border-neutral-100 pt-3 text-xs">
+          <div className="flex gap-6">
+            <span className="text-neutral-500">
+              From{" "}
+              <span className="font-mono text-neutral-900">
+                {draft.start ?? "—"}
+              </span>
+            </span>
+            <span className="text-neutral-500">
+              To{" "}
+              <span className="font-mono text-neutral-900">
+                {draft.end ?? (draft.start ? "select end…" : "—")}
+              </span>
+            </span>
+          </div>
+          <div className="flex gap-4">
+            <span className="text-neutral-500">
+              <span className="font-semibold text-neutral-900">
+                {spanOf(draft)}
+              </span>{" "}
+              cal
+            </span>
+            <span className="text-neutral-500">
+              <span className="font-semibold text-neutral-900">
+                {businessDaysOf(draft)}
+              </span>{" "}
+              biz
+            </span>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
