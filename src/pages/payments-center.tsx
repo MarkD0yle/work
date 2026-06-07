@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 export const title = "Payments Center";
 export const fullWidth = true;
@@ -48,8 +48,6 @@ const FLOWS = [
   { day: "Sat", in: 0.9, out: 0.7 },
   { day: "Sun", in: 0.5, out: 0.4 },
 ];
-
-type Confidence = "high" | "medium" | "low";
 
 interface NextAction {
   title: string;
@@ -315,7 +313,7 @@ export default function PaymentsCenter() {
 }
 
 /* ================================================================== *
- * Atoms — Badge, Section, Kpi, Bar
+ * Atoms — Badge, Section, Kpi
  * ================================================================== */
 
 function Badge({
@@ -430,39 +428,6 @@ function Kpi({
           {delta.value}
         </span>
         <span className="text-[11px] text-neutral-400">{hint}</span>
-      </div>
-    </div>
-  );
-}
-
-function Bar({
-  label,
-  value,
-  tone = "info",
-}: {
-  label: string;
-  value: number;
-  tone?: "info" | "muted" | "warn";
-}) {
-  const fill =
-    tone === "warn"
-      ? "bg-amber-500"
-      : tone === "muted"
-        ? "bg-neutral-400"
-        : "bg-sky-500";
-  return (
-    <div>
-      <div className="flex items-baseline justify-between">
-        <span className="text-[11px] text-neutral-500">{label}</span>
-        <span className="font-mono text-[11px] font-semibold tabular-nums text-neutral-700">
-          {value}%
-        </span>
-      </div>
-      <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-neutral-100">
-        <div
-          className={`h-full rounded-full ${fill}`}
-          style={{ width: `${clamp(value)}%` }}
-        />
       </div>
     </div>
   );
