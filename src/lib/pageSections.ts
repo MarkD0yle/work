@@ -76,6 +76,10 @@ const SLUG_SECTION: Record<string, string> = {
   "exposure-treemap": "risk",
   oprisk: "risk",
   "xva-desk": "risk",
+  "op-risk-event": "risk",
+  "control-attestation": "risk",
+  "limit-breach": "risk",
+  "new-product-approval": "risk",
 
   // Trading & Liquidity
   blotter: "trading",
@@ -86,6 +90,12 @@ const SLUG_SECTION: Record<string, string> = {
   ccymgmt: "trading",
   heatmap: "trading",
   "tracs-heatmap": "trading",
+  "trade-amendment": "trading",
+  "block-allocation": "trading",
+  "fx-hedge-order": "trading",
+  "settlement-instruction": "trading",
+  "margin-call": "trading",
+  "collateral-substitution": "trading",
 
   // Patterns & Tools
   "pattern-gallery": "patterns",
