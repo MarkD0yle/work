@@ -1,7 +1,8 @@
-import { useMemo, type ComponentType } from "react";
+import { useEffect, useMemo, type ComponentType } from "react";
 import Sidebar from "./components/Sidebar";
 import { sectionForSlug } from "./lib/pageSections";
 import { useLocalStorage } from "./hooks/useLocalStorage";
+import { onNavigate } from "./lib/navigation";
 
 type PageModule = {
   default: ComponentType;
@@ -41,16 +42,26 @@ const pages: PageEntry[] = Object.entries(pageModules)
   })
   .sort((a, b) => a.title.localeCompare(b.title));
 
+// Prefer the File Gallery as the landing page when present; otherwise fall
+// back to the first page alphabetically.
+const DEFAULT_SLUG = pages.some((p) => p.slug === "gallery")
+  ? "gallery"
+  : (pages[0]?.slug ?? "");
+
 function App() {
   const [collapsed, setCollapsed] = useLocalStorage("sidebar.collapsed", false);
   const [storedSlug, setActiveSlug] = useLocalStorage<string>(
     "active.slug",
-    pages[0]?.slug ?? "",
+    DEFAULT_SLUG,
   );
+
+  // Pages render standalone, so in-app navigation (e.g. opening a card from
+  // the File Gallery) comes through a window event.
+  useEffect(() => onNavigate(setActiveSlug), [setActiveSlug]);
   // Guard against a persisted slug whose page no longer exists.
   const activeSlug = pages.some((p) => p.slug === storedSlug)
     ? storedSlug
-    : (pages[0]?.slug ?? "");
+    : DEFAULT_SLUG;
 
   const activePage = useMemo(
     () => pages.find((p) => p.slug === activeSlug),
