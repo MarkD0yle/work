@@ -33,6 +33,7 @@ export const SECTION_ACCENT: Record<string, Accent> = {
   risk: { from: "#f43f5e", to: "#f59e0b" }, // rose → amber
   trading: { from: "#10b981", to: "#14b8a6" }, // emerald → teal
   forms: { from: "#8b5cf6", to: "#d946ef" }, // violet → fuchsia
+  wealth: { from: "#f59e0b", to: "#059669" }, // amber → emerald
   patterns: { from: "#06b6d4", to: "#6366f1" }, // cyan → indigo
   other: { from: "#64748b", to: "#475569" }, // slate
 };
@@ -47,6 +48,7 @@ const DEFAULT_MOTIF: Record<string, Motif> = {
   risk: "chart",
   trading: "grid",
   forms: "form",
+  wealth: "panel",
   patterns: "panel",
   other: "panel",
 };
@@ -224,6 +226,38 @@ export const GALLERY_META: Record<string, GalleryMeta> = {
     description: "Application settings and preferences grouped into clear sections.",
     tags: ["settings", "preferences", "config"],
     motif: "form",
+  },
+
+  // Wealth & Clients
+  "client-overview": {
+    description:
+      "Advisor's book at a glance — households, AUM, net new money and who's due a review.",
+    tags: ["clients", "overview", "advisory"],
+    motif: "panel",
+  },
+  "portfolio-performance": {
+    description:
+      "Time-weighted returns against benchmark, period table, monthly grid and attribution.",
+    tags: ["performance", "returns", "benchmark"],
+    motif: "chart",
+  },
+  "wealth-summary": {
+    description:
+      "Household net-worth statement — assets versus liabilities with a balance-sheet breakdown.",
+    tags: ["wealth", "net worth", "balance sheet"],
+    motif: "panel",
+  },
+  "asset-allocation": {
+    description:
+      "Current versus target allocation with drift bands and suggested rebalancing trades.",
+    tags: ["allocation", "rebalance", "drift"],
+    motif: "treemap",
+  },
+  "financial-goals": {
+    description:
+      "Goal-based planning — funding progress, projections and on-track status per goal.",
+    tags: ["goals", "planning", "projection"],
+    motif: "chart",
   },
 
   // Patterns & Tools
