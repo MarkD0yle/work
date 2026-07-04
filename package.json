@@ -7,12 +7,15 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy": "./scripts/deploy.sh",
+    "deploy:nobuild": "./scripts/deploy.sh --skip-build"
   },
   "dependencies": {
     "ag-grid-community": "^35.3.0",
     "ag-grid-enterprise": "^35.3.0",
     "ag-grid-react": "^35.3.0",
+    "firebase": "^12.15.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"
   },
