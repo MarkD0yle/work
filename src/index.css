@@ -1,5 +1,174 @@
 @import "tailwindcss";
 
+/* ------------------------------------------------------------------
+ * Scoped dark mode for the Asset Screener — Upgrade page.
+ * A `.screener-dark` wrapper remaps the neutral/indigo utility tokens
+ * used on that page so the whole surface flips coherently without
+ * touching every className. Scoped so no other page is affected.
+ * ------------------------------------------------------------------ */
+.screener-dark {
+  color-scheme: dark;
+  /* the root carries both `.screener-dark` and `.bg-neutral-50`; the descendant
+     rules below can't self-target it, so set the base surface here directly. */
+  background-color: #141414 !important;
+}
+/* surfaces */
+.screener-dark .bg-white { background-color: #171717 !important; }
+.screener-dark .bg-neutral-50 { background-color: #141414 !important; }
+.screener-dark .bg-neutral-100 { background-color: #262626 !important; }
+.screener-dark .bg-neutral-200 { background-color: #3f3f3f !important; }
+.screener-dark .bg-neutral-900 { background-color: #6366f1 !important; }
+.screener-dark .hover\:bg-neutral-50:hover { background-color: #262626 !important; }
+.screener-dark .hover\:bg-neutral-100:hover { background-color: #2e2e2e !important; }
+.screener-dark .hover\:bg-neutral-200:hover { background-color: #404040 !important; }
+.screener-dark .hover\:bg-indigo-200:hover { background-color: rgba(99, 102, 241, 0.3) !important; }
+/* borders */
+.screener-dark .border-neutral-200 { border-color: #2a2a2a !important; }
+.screener-dark .border-neutral-100 { border-color: #1f1f1f !important; }
+/* text */
+.screener-dark .text-neutral-950,
+.screener-dark .text-neutral-900 { color: #f5f5f5 !important; }
+.screener-dark .text-neutral-800 { color: #e5e5e5 !important; }
+.screener-dark .text-neutral-700 { color: #d4d4d4 !important; }
+.screener-dark .text-neutral-600 { color: #a8a8a8 !important; }
+.screener-dark .text-neutral-500 { color: #8f8f8f !important; }
+.screener-dark .text-neutral-400 { color: #707070 !important; }
+.screener-dark .text-neutral-300 { color: #525252 !important; }
+/* indigo accents */
+.screener-dark .bg-indigo-50 { background-color: rgba(99, 102, 241, 0.16) !important; }
+.screener-dark .text-indigo-800,
+.screener-dark .text-indigo-700 { color: #a5b4fc !important; }
+.screener-dark .text-indigo-400 { color: #818cf8 !important; }
+.screener-dark .border-indigo-200 { border-color: rgba(99, 102, 241, 0.35) !important; }
+/* ag-grid chrome: keep the grid surface dark (rows/cells come from the grid theme) */
+.screener-dark .ag-root-wrapper,
+.screener-dark .ag-root-wrapper-body,
+.screener-dark .ag-body,
+.screener-dark .ag-body-clipper,
+.screener-dark .ag-body-viewport,
+.screener-dark .ag-center-cols-clipper,
+.screener-dark .ag-center-cols-viewport,
+.screener-dark .ag-center-cols-container,
+.screener-dark .ag-header,
+.screener-dark .ag-header-viewport,
+.screener-dark .ag-header-container,
+.screener-dark .ag-pinned-left-header,
+.screener-dark .ag-pinned-left-cols-container,
+.screener-dark .ag-pinned-right-header,
+.screener-dark .ag-pinned-right-cols-container,
+.screener-dark .ag-body-horizontal-scroll,
+.screener-dark .ag-body-horizontal-scroll-viewport,
+.screener-dark .ag-body-horizontal-scroll-container,
+.screener-dark .ag-body-vertical-scroll,
+.screener-dark .ag-body-vertical-scroll-viewport,
+.screener-dark .ag-body-vertical-scroll-container,
+.screener-dark .ag-horizontal-left-spacer,
+.screener-dark .ag-horizontal-right-spacer,
+.screener-dark .ag-floating-top,
+.screener-dark .ag-floating-bottom,
+.screener-dark .ag-side-bar,
+.screener-dark .ag-side-buttons,
+.screener-dark .ag-status-bar,
+.screener-dark .ag-paging-panel,
+.screener-dark .ag-overlay-no-rows-center {
+  background-color: #171717 !important;
+  color: #e5e5e5;
+}
+.screener-dark .ag-root-wrapper { border-color: #2a2a2a !important; }
+/* dark scrollbars inside the grid so tracks aren't white */
+.screener-dark .ag-root-wrapper ::-webkit-scrollbar { width: 10px; height: 10px; }
+.screener-dark .ag-root-wrapper ::-webkit-scrollbar-track { background: #171717; }
+.screener-dark .ag-root-wrapper ::-webkit-scrollbar-thumb { background: #3a3a3a; border-radius: 6px; }
+.screener-dark .ag-root-wrapper ::-webkit-scrollbar-corner { background: #171717; }
+/* form controls: keep typed text readable on the dark surface */
+.screener-dark input,
+.screener-dark select,
+.screener-dark textarea {
+  color: #e5e5e5 !important;
+}
+.screener-dark input::placeholder { color: #6f6f6f !important; }
+.screener-dark select option {
+  background-color: #171717;
+  color: #e5e5e5;
+}
+/* semantic tag chips inside the grid (sector / rating / signal): tone the
+   bright pastel fills down to translucent dark so they read on the dark grid */
+.screener-dark .bg-emerald-50 { background-color: rgba(16, 185, 129, 0.15) !important; }
+.screener-dark .bg-sky-50 { background-color: rgba(14, 165, 233, 0.15) !important; }
+.screener-dark .bg-amber-50 { background-color: rgba(245, 158, 11, 0.15) !important; }
+.screener-dark .bg-rose-50 { background-color: rgba(244, 63, 94, 0.15) !important; }
+.screener-dark .bg-violet-50 { background-color: rgba(139, 92, 246, 0.15) !important; }
+.screener-dark .bg-lime-50 { background-color: rgba(132, 204, 22, 0.15) !important; }
+.screener-dark .bg-teal-50 { background-color: rgba(20, 184, 166, 0.15) !important; }
+.screener-dark .bg-orange-50 { background-color: rgba(249, 115, 22, 0.15) !important; }
+.screener-dark .bg-blue-50 { background-color: rgba(59, 130, 246, 0.15) !important; }
+.screener-dark .bg-yellow-50 { background-color: rgba(234, 179, 8, 0.15) !important; }
+.screener-dark .bg-green-50 { background-color: rgba(34, 197, 94, 0.15) !important; }
+.screener-dark .bg-slate-100 { background-color: rgba(100, 116, 139, 0.2) !important; }
+.screener-dark .bg-stone-100 { background-color: rgba(120, 113, 108, 0.2) !important; }
+.screener-dark .bg-zinc-100 { background-color: rgba(113, 113, 122, 0.2) !important; }
+.screener-dark .text-emerald-700 { color: #6ee7b7 !important; }
+.screener-dark .text-sky-700 { color: #7dd3fc !important; }
+.screener-dark .text-amber-700 { color: #fcd34d !important; }
+.screener-dark .text-rose-700 { color: #fda4af !important; }
+.screener-dark .text-violet-700 { color: #c4b5fd !important; }
+.screener-dark .text-lime-700 { color: #bef264 !important; }
+.screener-dark .text-teal-700 { color: #5eead4 !important; }
+.screener-dark .text-orange-700 { color: #fdba74 !important; }
+.screener-dark .text-blue-700 { color: #93c5fd !important; }
+.screener-dark .text-yellow-700 { color: #fde047 !important; }
+.screener-dark .text-green-700 { color: #86efac !important; }
+.screener-dark .text-slate-700 { color: #cbd5e1 !important; }
+.screener-dark .text-stone-700 { color: #d6d3d1 !important; }
+.screener-dark .text-zinc-700 { color: #d4d4d8 !important; }
+/* soften the light chip ring borders */
+.screener-dark .ring-emerald-200,
+.screener-dark .ring-sky-200,
+.screener-dark .ring-amber-200,
+.screener-dark .ring-rose-200,
+.screener-dark .ring-violet-200,
+.screener-dark .ring-lime-200,
+.screener-dark .ring-teal-200,
+.screener-dark .ring-orange-200,
+.screener-dark .ring-blue-200,
+.screener-dark .ring-yellow-200,
+.screener-dark .ring-green-200,
+.screener-dark .ring-slate-200,
+.screener-dark .ring-stone-200,
+.screener-dark .ring-zinc-200,
+.screener-dark .ring-indigo-200 { --tw-ring-color: rgba(255, 255, 255, 0.12) !important; }
+/* ag-grid selection checkboxes: dark-appropriate so they aren't bright squares */
+.screener-dark .ag-checkbox-input-wrapper { background-color: #262626 !important; box-shadow: none !important; }
+/* guarantee dark rows/cells/headers regardless of the grid theme applying */
+.screener-dark .ag-row { background-color: #171717 !important; }
+.screener-dark .ag-row-odd { background-color: #1b1b1b !important; }
+.screener-dark .ag-row.ag-row-hover { background-color: #262626 !important; }
+.screener-dark .ag-row.ag-row-selected { background-color: rgba(99, 102, 241, 0.22) !important; }
+.screener-dark .ag-cell { background-color: transparent !important; color: #e5e5e5; }
+.screener-dark .ag-header-row,
+.screener-dark .ag-header-cell,
+.screener-dark .ag-header-group-cell { background-color: #1f1f1f !important; color: #a3a3a3; }
+/* dark-mode remap for the SVG charts (bubble / tree map / historical) */
+.screener-dark .bond-chart rect[fill="#fff"] { fill: #171717 !important; }
+.screener-dark .bond-chart rect[fill="#ffffff"] { fill: #171717 !important; }
+.screener-dark .bond-chart rect[fill="#eef2ff"] { fill: #1e293b !important; }
+.screener-dark .bond-chart rect[stroke="#e5e5e5"] { stroke: #2a2a2a !important; }
+.screener-dark .bond-chart line[stroke="#f1f1f1"] { stroke: #262626 !important; }
+.screener-dark .bond-chart line[stroke="#f7f7f7"] { stroke: #1f1f1f !important; }
+.screener-dark .bond-chart .fill-neutral-400 { fill: #6f6f6f !important; }
+.screener-dark .bond-chart .fill-neutral-500 { fill: #8f8f8f !important; }
+.screener-dark .bond-chart .fill-neutral-600 { fill: #a8a8a8 !important; }
+.screener-dark .bond-chart .fill-neutral-700 { fill: #d4d4d4 !important; }
+/* generic SVG viz dark remap (used by the Portfolio Analytics tool pages) */
+.screener-dark .viz rect[fill="#fff"],
+.screener-dark .viz rect[fill="#ffffff"] { fill: #171717 !important; }
+.screener-dark .viz line[stroke="#f1f1f1"] { stroke: #262626 !important; }
+.screener-dark .viz line[stroke="#e5e5e5"] { stroke: #2a2a2a !important; }
+.screener-dark .viz .fill-neutral-400 { fill: #707070 !important; }
+.screener-dark .viz .fill-neutral-500 { fill: #8f8f8f !important; }
+.screener-dark .viz .fill-neutral-600 { fill: #a8a8a8 !important; }
+.screener-dark .viz .fill-neutral-700 { fill: #d4d4d4 !important; }
+
 /* Spec v0.1.2 L4 §2.1 — slide-up animation for the file forensic
  * bottom sheet. 240ms ease-out from below the viewport. */
 @keyframes forensic-slide-up {

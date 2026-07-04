@@ -42,6 +42,12 @@ export const SECTIONS: SectionDef[] = [
       "M4 2.5A1.5 1.5 0 0 0 2.5 4v12A1.5 1.5 0 0 0 4 17.5h12a1.5 1.5 0 0 0 1.5-1.5V4A1.5 1.5 0 0 0 16 2.5H4ZM6 6.25a.75.75 0 0 1 .75-.75h6.5a.75.75 0 0 1 0 1.5h-6.5A.75.75 0 0 1 6 6.25Zm0 3.5a.75.75 0 0 1 .75-.75h6.5a.75.75 0 0 1 0 1.5h-6.5a.75.75 0 0 1-.75-.75Zm.75 2.75a.75.75 0 0 0 0 1.5h3.5a.75.75 0 0 0 0-1.5h-3.5Z",
   },
   {
+    id: "portfolio-analytics",
+    label: "Portfolio Analytics",
+    iconPath:
+      "M3 3a1 1 0 0 0-1 1v12a2 2 0 0 0 2 2h13a1 1 0 1 0 0-2H4V4a1 1 0 0 0-1-1Zm11.71 3.29a1 1 0 0 1 0 1.42l-3.5 3.5a1 1 0 0 1-1.42 0L8 8.41l-2.29 2.3a1 1 0 1 1-1.42-1.42l3-3a1 1 0 0 1 1.42 0L10.5 8.09l2.79-2.8a1 1 0 0 1 1.42 0Z",
+  },
+  {
     id: "patterns",
     label: "Patterns & Tools",
     iconPath:
@@ -51,6 +57,10 @@ export const SECTIONS: SectionDef[] = [
 
 /* slug → section id. Keep grouped by section for readability. */
 const SLUG_SECTION: Record<string, string> = {
+  // Portfolio Analytics
+  "asset-screener": "portfolio-analytics",
+  "bond-replacement": "portfolio-analytics",
+
   // Operations
   "ops-overview": "operations",
   oversight: "operations",
