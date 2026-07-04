@@ -1,5 +1,4 @@
 import { useEffect, useMemo, type ComponentType } from "react";
-import Sidebar from "./components/Sidebar";
 import { sectionForSlug } from "./lib/pageSections";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { onNavigate } from "./lib/navigation";
@@ -49,7 +48,6 @@ const DEFAULT_SLUG = pages.some((p) => p.slug === "gallery")
   : (pages[0]?.slug ?? "");
 
 function App() {
-  const [collapsed, setCollapsed] = useLocalStorage("sidebar.collapsed", false);
   const [storedSlug, setActiveSlug] = useLocalStorage<string>(
     "active.slug",
     DEFAULT_SLUG,
@@ -69,19 +67,32 @@ function App() {
   );
   const ActivePage = activePage?.Component;
 
+  // The home page (File Gallery) is the primary navigation surface, so the
+  // sidebar is hidden. When drilled into another page, a floating pill returns
+  // you home.
+  const onHome = activeSlug === DEFAULT_SLUG;
+
   return (
     <div className="flex min-h-screen bg-neutral-50 text-neutral-900 antialiased">
-      <Sidebar
-        pages={pages.map(({ slug, title, section }) => ({
-          slug,
-          title,
-          section,
-        }))}
-        activeSlug={activeSlug}
-        onSelect={setActiveSlug}
-        collapsed={collapsed}
-        onToggleCollapsed={() => setCollapsed((c) => !c)}
-      />
+      {!onHome && DEFAULT_SLUG && (
+        <button
+          type="button"
+          onClick={() => setActiveSlug(DEFAULT_SLUG)}
+          className="fixed left-5 top-5 z-50 inline-flex items-center gap-2 rounded-full border border-white/40 bg-white/70 px-4 py-2 text-sm font-medium text-neutral-800 shadow-lg shadow-neutral-900/10 backdrop-blur-md transition hover:bg-white/90 hover:text-neutral-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900/30"
+          aria-label="Back to home"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            className="h-4 w-4"
+            aria-hidden
+          >
+            <path d="M9.293 2.293a1 1 0 0 1 1.414 0l7 7a1 1 0 0 1-1.414 1.414L16 10.414V17a1 1 0 0 1-1 1h-3a1 1 0 0 1-1-1v-3H9v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-6.586l-.293.293a1 1 0 0 1-1.414-1.414l7-7Z" />
+          </svg>
+          Home
+        </button>
+      )}
       <main className="flex-1 overflow-hidden">
         {ActivePage ? (
           activePage?.fullWidth ? (
