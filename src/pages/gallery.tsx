@@ -127,46 +127,84 @@ export default function GalleryPage() {
   }
 
   return (
-    <div className="h-screen overflow-y-auto bg-neutral-50 text-neutral-900">
+    <div className="relative h-screen overflow-y-auto bg-neutral-100 text-neutral-900">
+      {/* ---------- Ambient glass backdrop ----------
+       * Soft colour fields fixed behind the whole page so the frosted-glass
+       * cards and bars have something to refract. */}
+      <div aria-hidden className="pointer-events-none fixed inset-0 -z-0">
+        <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 via-neutral-50 to-rose-50" />
+        <div
+          className="absolute -left-32 top-1/4 h-[32rem] w-[32rem] rounded-full opacity-40 blur-3xl"
+          style={{
+            background:
+              "radial-gradient(circle at center, #818cf8 0%, transparent 70%)",
+          }}
+        />
+        <div
+          className="absolute right-0 top-1/2 h-[28rem] w-[28rem] rounded-full opacity-30 blur-3xl"
+          style={{
+            background:
+              "radial-gradient(circle at center, #fb7185 0%, transparent 70%)",
+          }}
+        />
+        <div
+          className="absolute bottom-0 left-1/3 h-[30rem] w-[30rem] rounded-full opacity-30 blur-3xl"
+          style={{
+            background:
+              "radial-gradient(circle at center, #34d399 0%, transparent 70%)",
+          }}
+        />
+      </div>
+
       {/* ---------- Hero ---------- */}
-      <section className="relative overflow-hidden border-b border-neutral-200 bg-neutral-950 text-white">
+      <section className="relative overflow-hidden border-b border-white/60 bg-gradient-to-b from-white via-indigo-50/40 to-white text-neutral-900">
         {/* decorative gradient blobs */}
         <div
           aria-hidden
-          className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full opacity-40 blur-3xl"
+          className="animate-blob-a pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full opacity-50 blur-3xl"
           style={{
             background:
-              "radial-gradient(circle at center, #6366f1 0%, transparent 70%)",
+              "radial-gradient(circle at center, #93c5fd 0%, transparent 70%)",
           }}
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute -right-16 top-10 h-80 w-80 rounded-full opacity-30 blur-3xl"
+          className="animate-blob-b pointer-events-none absolute -right-16 top-10 h-80 w-80 rounded-full opacity-40 blur-3xl"
           style={{
             background:
-              "radial-gradient(circle at center, #f43f5e 0%, transparent 70%)",
+              "radial-gradient(circle at center, #a5b4fc 0%, transparent 70%)",
           }}
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute bottom-0 left-1/3 h-64 w-64 rounded-full opacity-25 blur-3xl"
+          className="animate-blob-c pointer-events-none absolute bottom-0 left-1/3 h-64 w-64 rounded-full opacity-40 blur-3xl"
           style={{
             background:
-              "radial-gradient(circle at center, #10b981 0%, transparent 70%)",
+              "radial-gradient(circle at center, #60a5fa 0%, transparent 70%)",
+          }}
+        />
+
+        {/* pencil grid overlay */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-[0.06]"
+          style={{
+            backgroundImage:
+              "linear-gradient(to right, #64748b 1px, transparent 1px), linear-gradient(to bottom, #64748b 1px, transparent 1px)",
+            backgroundSize: "28px 28px",
           }}
         />
 
         <div className="relative mx-auto max-w-6xl px-8 py-16">
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[11px] font-medium uppercase tracking-widest text-white/70 backdrop-blur-sm">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/60 px-3 py-1 text-[11px] font-medium uppercase tracking-widest text-neutral-600 shadow-sm backdrop-blur-sm">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
             {ALL_ITEMS.length} files
           </div>
-          <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-tight sm:text-5xl">
-            Your file gallery
+          <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-tight text-neutral-900 sm:text-5xl">
+            UX Markets Gallery
           </h1>
-          <p className="mt-4 max-w-xl text-base leading-relaxed text-white/60">
-            Every page in the workspace, as a browsable board. Search, filter by
-            section or tag, and jump straight in.
+          <p className="mt-4 max-w-xl text-base leading-relaxed text-neutral-500">
+            Inspiration board
           </p>
 
           {/* Search */}
@@ -177,7 +215,7 @@ export default function GalleryPage() {
                 viewBox="0 0 20 20"
                 fill="currentColor"
                 aria-hidden
-                className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-white/40"
+                className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-neutral-400"
               >
                 <path
                   fillRule="evenodd"
@@ -191,7 +229,7 @@ export default function GalleryPage() {
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search files, descriptions, tags…"
                 aria-label="Search files"
-                className="w-full rounded-xl border border-white/15 bg-white/10 py-3.5 pl-12 pr-4 text-sm text-white placeholder:text-white/40 backdrop-blur-sm focus:border-white/30 focus:bg-white/15 focus:outline-none focus:ring-2 focus:ring-white/20"
+                className="w-full rounded-xl border border-white/70 bg-white/70 py-3.5 pl-12 pr-4 text-sm text-neutral-900 shadow-sm placeholder:text-neutral-400 backdrop-blur-sm focus:border-indigo-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200"
               />
             </div>
           </div>
@@ -199,7 +237,7 @@ export default function GalleryPage() {
       </section>
 
       {/* ---------- Filter bar ---------- */}
-      <div className="sticky top-0 z-10 border-b border-neutral-200 bg-white/85 backdrop-blur-md">
+      <div className="sticky top-0 z-20 border-b border-white/40 bg-white/50 backdrop-blur-xl backdrop-saturate-150">
         <div className="mx-auto max-w-6xl px-8 py-3">
           <div className="flex flex-wrap items-center gap-2">
             <button
@@ -209,7 +247,7 @@ export default function GalleryPage() {
               className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
                 activeSection === null
                   ? "bg-neutral-900 text-white"
-                  : "border border-neutral-200 bg-white text-neutral-600 hover:border-neutral-400 hover:text-neutral-900"
+                  : "border border-white/50 bg-white/40 text-neutral-600 backdrop-blur-sm hover:border-white/70 hover:bg-white/70 hover:text-neutral-900"
               }`}
             >
               All
@@ -228,7 +266,7 @@ export default function GalleryPage() {
                   className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
                     active
                       ? "bg-neutral-900 text-white"
-                      : "border border-neutral-200 bg-white text-neutral-600 hover:border-neutral-400 hover:text-neutral-900"
+                      : "border border-white/50 bg-white/40 text-neutral-600 backdrop-blur-sm hover:border-white/70 hover:bg-white/70 hover:text-neutral-900"
                   }`}
                 >
                   {chip.label}
@@ -239,7 +277,7 @@ export default function GalleryPage() {
 
             {/* Sort + clear, pushed right */}
             <div className="ml-auto flex items-center gap-2">
-              <div className="flex items-center gap-0.5 rounded-full border border-neutral-200 bg-white p-0.5">
+              <div className="flex items-center gap-0.5 rounded-full border border-white/50 bg-white/40 p-0.5 backdrop-blur-sm">
                 {SORTS.map((s) => (
                   <button
                     key={s.key}
@@ -298,14 +336,14 @@ export default function GalleryPage() {
       </div>
 
       {/* ---------- Grid ---------- */}
-      <div className="mx-auto max-w-6xl px-8 py-8">
+      <div className="relative z-10 mx-auto max-w-6xl px-8 py-8">
         <div className="mb-4 text-xs text-neutral-500">
           {filtered.length} {filtered.length === 1 ? "file" : "files"}
           {hasFilters ? " match your filters" : ""}
         </div>
 
         {filtered.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-neutral-300 bg-white px-6 py-16 text-center">
+          <div className="rounded-2xl border border-dashed border-white/60 bg-white/40 px-6 py-16 text-center backdrop-blur-xl">
             <div className="text-3xl text-neutral-300">🔍</div>
             <p className="mt-2 text-sm font-medium text-neutral-700">
               No files match

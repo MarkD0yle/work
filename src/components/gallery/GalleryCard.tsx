@@ -52,7 +52,7 @@ export default function GalleryCard({
 }: Props) {
   return (
     <article
-      className="group relative flex flex-col overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm transition duration-200 hover:-translate-y-1 hover:border-neutral-300 hover:shadow-xl"
+      className="group relative flex flex-col overflow-hidden rounded-2xl border border-white/50 bg-white/40 shadow-lg shadow-neutral-900/5 ring-1 ring-white/20 backdrop-blur-xl backdrop-saturate-150 transition duration-200 hover:-translate-y-1 hover:border-white/70 hover:bg-white/55 hover:shadow-2xl hover:shadow-neutral-900/10"
     >
       {/* Thumbnail — clicking opens the page */}
       <button
@@ -111,7 +111,7 @@ export default function GalleryCard({
               key={tag}
               type="button"
               onClick={() => onTagClick(tag)}
-              className="rounded-full border border-neutral-200 bg-neutral-50 px-2 py-0.5 text-[10px] font-medium text-neutral-600 transition hover:border-neutral-400 hover:bg-neutral-100 hover:text-neutral-900"
+              className="rounded-full border border-white/50 bg-white/40 px-2 py-0.5 text-[10px] font-medium text-neutral-600 backdrop-blur-sm transition hover:border-white/70 hover:bg-white/70 hover:text-neutral-900"
             >
               #{tag}
             </button>

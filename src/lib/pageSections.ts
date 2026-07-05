@@ -48,6 +48,12 @@ export const SECTIONS: SectionDef[] = [
       "M3 3a1 1 0 0 0-1 1v12a2 2 0 0 0 2 2h13a1 1 0 1 0 0-2H4V4a1 1 0 0 0-1-1Zm11.71 3.29a1 1 0 0 1 0 1.42l-3.5 3.5a1 1 0 0 1-1.42 0L8 8.41l-2.29 2.3a1 1 0 1 1-1.42-1.42l3-3a1 1 0 0 1 1.42 0L10.5 8.09l2.79-2.8a1 1 0 0 1 1.42 0Z",
   },
   {
+    id: "wealth",
+    label: "Wealth & Clients",
+    iconPath:
+      "M10 9a3 3 0 100-6 3 3 0 000 6ZM6 8a2 2 0 11-4 0 2 2 0 014 0ZM1.49 15.326a.78.78 0 01-.358-.442 3 3 0 014.308-3.516 6.484 6.484 0 00-1.905 3.959c-.023.222-.014.442.025.654a4.97 4.97 0 01-2.07-.655ZM16.44 15.98a4.97 4.97 0 002.07-.654.78.78 0 00.357-.442 3 3 0 00-4.308-3.517 6.484 6.484 0 011.907 3.96 2.32 2.32 0 01-.026.654ZM18 8a2 2 0 11-4 0 2 2 0 014 0ZM5.304 16.19a.844.844 0 01-.277-.71 5 5 0 019.947 0 .843.843 0 01-.277.71A6.975 6.975 0 0110 18a6.974 6.974 0 01-4.696-1.81Z",
+  },
+  {
     id: "patterns",
     label: "Patterns & Tools",
     iconPath:
@@ -106,6 +112,13 @@ const SLUG_SECTION: Record<string, string> = {
   "settlement-instruction": "trading",
   "margin-call": "trading",
   "collateral-substitution": "trading",
+
+  // Wealth & Clients
+  "client-overview": "wealth",
+  "portfolio-performance": "wealth",
+  "wealth-summary": "wealth",
+  "asset-allocation": "wealth",
+  "financial-goals": "wealth",
 
   // Patterns & Tools
   "pattern-gallery": "patterns",
