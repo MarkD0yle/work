@@ -157,44 +157,54 @@ export default function GalleryPage() {
       </div>
 
       {/* ---------- Hero ---------- */}
-      <section className="relative overflow-hidden border-b border-neutral-200 bg-neutral-950 text-white">
+      <section className="relative overflow-hidden border-b border-white/60 bg-gradient-to-b from-white via-indigo-50/40 to-white text-neutral-900">
         {/* decorative gradient blobs */}
         <div
           aria-hidden
-          className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full opacity-40 blur-3xl"
+          className="animate-blob-a pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full opacity-50 blur-3xl"
           style={{
             background:
-              "radial-gradient(circle at center, #6366f1 0%, transparent 70%)",
+              "radial-gradient(circle at center, #93c5fd 0%, transparent 70%)",
           }}
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute -right-16 top-10 h-80 w-80 rounded-full opacity-30 blur-3xl"
+          className="animate-blob-b pointer-events-none absolute -right-16 top-10 h-80 w-80 rounded-full opacity-40 blur-3xl"
           style={{
             background:
-              "radial-gradient(circle at center, #f43f5e 0%, transparent 70%)",
+              "radial-gradient(circle at center, #a5b4fc 0%, transparent 70%)",
           }}
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute bottom-0 left-1/3 h-64 w-64 rounded-full opacity-25 blur-3xl"
+          className="animate-blob-c pointer-events-none absolute bottom-0 left-1/3 h-64 w-64 rounded-full opacity-40 blur-3xl"
           style={{
             background:
-              "radial-gradient(circle at center, #10b981 0%, transparent 70%)",
+              "radial-gradient(circle at center, #60a5fa 0%, transparent 70%)",
+          }}
+        />
+
+        {/* pencil grid overlay */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-[0.06]"
+          style={{
+            backgroundImage:
+              "linear-gradient(to right, #64748b 1px, transparent 1px), linear-gradient(to bottom, #64748b 1px, transparent 1px)",
+            backgroundSize: "28px 28px",
           }}
         />
 
         <div className="relative mx-auto max-w-6xl px-8 py-16">
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[11px] font-medium uppercase tracking-widest text-white/70 backdrop-blur-sm">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/60 px-3 py-1 text-[11px] font-medium uppercase tracking-widest text-neutral-600 shadow-sm backdrop-blur-sm">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
             {ALL_ITEMS.length} files
           </div>
-          <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-tight sm:text-5xl">
-            Your file gallery
+          <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-tight text-neutral-900 sm:text-5xl">
+            UX Markets Gallery
           </h1>
-          <p className="mt-4 max-w-xl text-base leading-relaxed text-white/60">
-            Every page in the workspace, as a browsable board. Search, filter by
-            section or tag, and jump straight in.
+          <p className="mt-4 max-w-xl text-base leading-relaxed text-neutral-500">
+            Inspiration board
           </p>
 
           {/* Search */}
@@ -205,7 +215,7 @@ export default function GalleryPage() {
                 viewBox="0 0 20 20"
                 fill="currentColor"
                 aria-hidden
-                className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-white/40"
+                className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-neutral-400"
               >
                 <path
                   fillRule="evenodd"
@@ -219,7 +229,7 @@ export default function GalleryPage() {
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search files, descriptions, tags…"
                 aria-label="Search files"
-                className="w-full rounded-xl border border-white/15 bg-white/10 py-3.5 pl-12 pr-4 text-sm text-white placeholder:text-white/40 backdrop-blur-sm focus:border-white/30 focus:bg-white/15 focus:outline-none focus:ring-2 focus:ring-white/20"
+                className="w-full rounded-xl border border-white/70 bg-white/70 py-3.5 pl-12 pr-4 text-sm text-neutral-900 shadow-sm placeholder:text-neutral-400 backdrop-blur-sm focus:border-indigo-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200"
               />
             </div>
           </div>
