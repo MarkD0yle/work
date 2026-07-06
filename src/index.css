@@ -1,5 +1,15 @@
 @import "tailwindcss";
 
+/* ------------------------------------------------------------------
+ * HARD RULE: 0 radius on all shadcn components.
+ * shadcn derives every rounded-sm/md/lg/xl token from --radius, so
+ * pinning it to 0 forces square corners across every component.
+ * Do NOT reintroduce a non-zero --radius.
+ * ------------------------------------------------------------------ */
+:root {
+  --radius: 0rem;
+}
+
 /* Spec v0.1.2 L4 §2.1 — slide-up animation for the file forensic
  * bottom sheet. 240ms ease-out from below the viewport. */
 @keyframes forensic-slide-up {
