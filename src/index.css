@@ -1,6 +1,16 @@
 @import "tailwindcss";
 
 /* ------------------------------------------------------------------
+ * HARD RULE: 0 radius on all shadcn components.
+ * shadcn derives every rounded-sm/md/lg/xl token from --radius, so
+ * pinning it to 0 forces square corners across every component.
+ * Do NOT reintroduce a non-zero --radius.
+ * ------------------------------------------------------------------ */
+:root {
+  --radius: 0rem;
+}
+
+/* ------------------------------------------------------------------
  * Scoped dark mode for the Asset Screener — Upgrade page.
  * A `.screener-dark` wrapper remaps the neutral/indigo utility tokens
  * used on that page so the whole surface flips coherently without
