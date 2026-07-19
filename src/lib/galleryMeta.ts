@@ -35,6 +35,7 @@ export const SECTION_ACCENT: Record<string, Accent> = {
   forms: { from: "#8b5cf6", to: "#d946ef" }, // violet → fuchsia
   wealth: { from: "#f59e0b", to: "#059669" }, // amber → emerald
   patterns: { from: "#06b6d4", to: "#6366f1" }, // cyan → indigo
+  pitch: { from: "#0ea5e9", to: "#22c55e" }, // sky → green
   other: { from: "#64748b", to: "#475569" }, // slate
 };
 
@@ -50,6 +51,7 @@ const DEFAULT_MOTIF: Record<string, Motif> = {
   forms: "form",
   wealth: "panel",
   patterns: "panel",
+  pitch: "flow",
   other: "panel",
 };
 
@@ -289,6 +291,20 @@ export const GALLERY_META: Record<string, GalleryMeta> = {
       "Range date picker with presets and a dual-month view for quick spans.",
     tags: ["date", "range", "component"],
     motif: "calendar",
+  },
+
+  // Sales & Pitch
+  "pitch-builder": {
+    description:
+      "Build a client pitch section by section, with internal data auto-gathered, an AI reviewer scoring each section, and a full-pitch grade before you save it.",
+    tags: ["pitch", "sales", "ai review"],
+    motif: "flow",
+  },
+  "pitch-library": {
+    description:
+      "Every pitch saved from the Pitch Builder, browsable with its grade — open one to see the full compiled report.",
+    tags: ["pitch", "library", "grading"],
+    motif: "panel",
   },
 };
 
