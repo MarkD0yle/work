@@ -2,8 +2,11 @@ import { useState } from "react";
 import Modal from "../../patterns/Modal";
 import { KnowledgeBrowser } from "../KnowledgeBrowser";
 import { KnowledgeItemCard } from "../KnowledgeItemCard";
+import { AIInsightPanel } from "../AIInsightPanel";
+import { AIPulseDot } from "../AIPulseDot";
 import { KNOWLEDGE_LIBRARY } from "../../../lib/pitchPerfect/knowledgeData";
 import { suggestKnowledgeForOpportunity } from "../../../lib/pitchPerfect/knowledgeSearch";
+import { suggestNextSteps } from "../../../lib/pitchPerfect/pitchSuggestions";
 import type { KnowledgeAttachmentRef, KnowledgeItem, Opportunity } from "../../../lib/pitchPerfect/types";
 
 export function KnowledgeTab({
@@ -19,6 +22,7 @@ export function KnowledgeTab({
     .map((a) => KNOWLEDGE_LIBRARY.find((k) => k.id === a.itemId))
     .filter((k): k is KnowledgeItem => Boolean(k));
   const suggested = suggestKnowledgeForOpportunity(opportunity);
+  const aiSuggestions = suggestNextSteps(opportunity).filter((s) => s.targetTab === "knowledge");
 
   function attach(item: KnowledgeItem) {
     onSaveAttachments([...opportunity.knowledgeAttachments, { itemId: item.id, attachedAt: new Date().toISOString() }]);
@@ -29,6 +33,8 @@ export function KnowledgeTab({
 
   return (
     <div className="mx-auto max-w-4xl space-y-4 p-6">
+      <AIInsightPanel suggestions={aiSuggestions} emptyLabel="Enough is attached here for now — nothing to flag." />
+
       <div className="rounded-xl border border-neutral-200 bg-white p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -73,7 +79,10 @@ export function KnowledgeTab({
 
       {suggested.length > 0 && (
         <div className="rounded-xl border border-neutral-200 bg-white p-4">
-          <div className="text-[10px] font-semibold tracking-widest text-neutral-400 uppercase">Suggested for this opportunity</div>
+          <div className="flex items-center gap-2">
+            <AIPulseDot active={suggested.length > 0} />
+            <div className="text-[10px] font-semibold tracking-widest text-neutral-400 uppercase">AI suggested for this opportunity</div>
+          </div>
           <div className="mt-3 space-y-2">
             {suggested.map((item) => (
               <KnowledgeItemCard

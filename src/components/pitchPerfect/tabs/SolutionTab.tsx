@@ -1,9 +1,10 @@
 import { CAPABILITY_CATALOG } from "../../../lib/pitchPerfect/capabilityData";
 import { KNOWLEDGE_LIBRARY } from "../../../lib/pitchPerfect/knowledgeData";
-import { solutionCompleteness } from "../../../lib/pitchPerfect/solutionMapping";
+import { suggestNextSteps } from "../../../lib/pitchPerfect/pitchSuggestions";
 import type { KnowledgeItem, Opportunity, PainPoint, SolutionItem } from "../../../lib/pitchPerfect/types";
 import { ReadEditSection } from "../ReadEditSection";
 import { SolutionMappingEditor } from "../SolutionMappingEditor";
+import { AIInsightPanel } from "../AIInsightPanel";
 
 function SolutionTable({ solution, painPoints }: { solution: SolutionItem[]; painPoints: PainPoint[] }) {
   return (
@@ -36,18 +37,14 @@ function SolutionTable({ solution, painPoints }: { solution: SolutionItem[]; pai
 
 export function SolutionTab({ opportunity, onSaveSolution }: { opportunity: Opportunity; onSaveSolution: (solution: SolutionItem[]) => void }) {
   const painPoints = opportunity.intelligence.painPoints;
-  const { unmapped } = solutionCompleteness(opportunity.intelligence, opportunity.solution);
+  const aiSuggestions = suggestNextSteps(opportunity).filter((s) => s.targetTab === "solution");
   const competitiveGuidance = opportunity.knowledgeAttachments
     .map((a) => KNOWLEDGE_LIBRARY.find((k) => k.id === a.itemId))
     .filter((k): k is KnowledgeItem => k !== undefined && k.category === "Competitive guidance");
 
   return (
     <div className="mx-auto max-w-4xl space-y-4 p-6">
-      {unmapped.length > 0 && (
-        <div className="rounded-md border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-xs text-amber-800">
-          {unmapped.length} pain point{unmapped.length === 1 ? "" : "s"} not yet mapped to a capability: {unmapped.map((p) => p.label).join(", ")}
-        </div>
-      )}
+      <AIInsightPanel suggestions={aiSuggestions} emptyLabel="Every pain point is mapped with a clear differentiator." />
 
       <ReadEditSection<SolutionItem[]>
         title="Solution design"

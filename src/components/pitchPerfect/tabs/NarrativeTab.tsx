@@ -8,6 +8,7 @@ import type { NarrativeSection, NarrativeSectionId, Opportunity } from "../../..
 import { NarrativeRail } from "../NarrativeRail";
 import { NarrativeEditor } from "../NarrativeEditor";
 import { NarrativeReport } from "../NarrativeReport";
+import { AIPulseDot } from "../AIPulseDot";
 import { ReviewPanel } from "../../pitch/ReviewPanel";
 
 const CAPABILITIES_BY_ID = Object.fromEntries(CAPABILITY_CATALOG.map((c) => [c.id, c]));
@@ -74,8 +75,11 @@ export function NarrativeTab({
     <div className="mx-auto max-w-6xl p-6">
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h2 className="text-sm font-semibold text-neutral-900">Editing narrative</h2>
-          <p className="mt-0.5 text-xs text-neutral-500">Draft, review, and approve each beat of the story.</p>
+          <div className="flex items-center gap-2">
+            <AIPulseDot active={activeSection.status !== "approved"} />
+            <h2 className="text-sm font-semibold text-neutral-900">Editing narrative</h2>
+          </div>
+          <p className="mt-0.5 text-xs text-neutral-500">AI reviews each beat as you draft it — approve once it reads right.</p>
         </div>
         <div className="flex items-center gap-2">
           {!hasAnyDraft && (

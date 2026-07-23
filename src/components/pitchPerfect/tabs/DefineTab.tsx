@@ -1,5 +1,7 @@
 import { ReadEditSection } from "../ReadEditSection";
+import { AIInsightPanel } from "../AIInsightPanel";
 import { SelectField, TextField, TextareaField, controlClass } from "../../forms";
+import { suggestNextSteps } from "../../../lib/pitchPerfect/pitchSuggestions";
 import type { Attendee, AudienceProfile, Opportunity, PitchType } from "../../../lib/pitchPerfect/types";
 
 type DefineFields = {
@@ -74,8 +76,11 @@ export function DefineTab({ opportunity, onSave }: { opportunity: Opportunity; o
     audience: opportunity.audience,
   };
 
+  const suggestions = suggestNextSteps(opportunity).filter((s) => s.targetTab === "define");
+
   return (
-    <div className="mx-auto max-w-4xl p-6">
+    <div className="mx-auto max-w-4xl space-y-4 p-6">
+      <AIInsightPanel suggestions={suggestions} emptyLabel="The brief looks complete — nothing to flag here." />
       <ReadEditSection<DefineFields>
         title="Opportunity brief"
         description="The context that drives everything else — who this is for and what you're trying to achieve."

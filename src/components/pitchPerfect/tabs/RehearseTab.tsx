@@ -2,6 +2,7 @@ import { useState } from "react";
 import { objectionsForOpportunity } from "../../../lib/pitchPerfect/rehearsal";
 import type { Opportunity, RehearsalSession, ReviewBand } from "../../../lib/pitchPerfect/types";
 import { ObjectionDrill } from "../ObjectionDrill";
+import { AIPulseDot } from "../AIPulseDot";
 
 const BAND_STYLE: Record<ReviewBand, string> = {
   Strong: "bg-emerald-50 text-emerald-700",
@@ -41,7 +42,10 @@ export function RehearseTab({
     <div className="mx-auto max-w-4xl space-y-4 p-6">
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-neutral-200 bg-white p-4">
         <div>
-          <div className="text-[10px] font-semibold tracking-widest text-neutral-400 uppercase">Rehearse</div>
+          <div className="flex items-center gap-2">
+            <AIPulseDot active={opportunity.rehearsal.length === 0} />
+            <div className="text-[10px] font-semibold tracking-widest text-neutral-400 uppercase">AI-scored rehearsal</div>
+          </div>
           <p className="mt-0.5 text-xs text-neutral-500">
             Practice responses to {objections.length} likely objections and competitive questions, with scored coaching feedback.
           </p>

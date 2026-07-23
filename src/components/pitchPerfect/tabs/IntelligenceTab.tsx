@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ReadEditSection } from "../ReadEditSection";
 import { SectionNav, type SectionNavItem } from "../SectionNav";
 import { GapChecklist } from "../GapChecklist";
+import { AIPulseDot } from "../AIPulseDot";
 import { TextareaField, SelectField, controlClass } from "../../forms";
 import { checkIntelligenceGaps } from "../../../lib/pitchPerfect/intelligenceGaps";
 import type { CompetitiveSituation, Intelligence, Opportunity, PainPoint, Stakeholder } from "../../../lib/pitchPerfect/types";
@@ -444,7 +445,10 @@ export function IntelligenceTab({
   return (
     <div className="mx-auto max-w-6xl space-y-4 p-6">
       <div className="rounded-xl border border-neutral-200 bg-white p-4">
-        <div className="text-[10px] font-semibold tracking-widest text-neutral-400 uppercase">Intelligence gaps</div>
+        <div className="flex items-center gap-2">
+          <AIPulseDot active={gaps.some((g) => !g.pass)} />
+          <div className="text-[10px] font-semibold tracking-widest text-neutral-400 uppercase">AI-reviewed intelligence gaps</div>
+        </div>
         <p className="mt-1 text-xs text-neutral-500">
           {gaps.filter((g) => g.pass).length}/{gaps.length} checks passing — what's still missing to confidently pursue this opportunity.
         </p>
