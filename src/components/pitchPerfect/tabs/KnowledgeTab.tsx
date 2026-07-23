@@ -2,11 +2,9 @@ import { useState } from "react";
 import Modal from "../../patterns/Modal";
 import { KnowledgeBrowser } from "../KnowledgeBrowser";
 import { KnowledgeItemCard } from "../KnowledgeItemCard";
-import { AIInsightPanel } from "../AIInsightPanel";
 import { AIPulseDot } from "../AIPulseDot";
 import { KNOWLEDGE_LIBRARY } from "../../../lib/pitchPerfect/knowledgeData";
 import { suggestKnowledgeForOpportunity } from "../../../lib/pitchPerfect/knowledgeSearch";
-import { suggestNextSteps } from "../../../lib/pitchPerfect/pitchSuggestions";
 import type { KnowledgeAttachmentRef, KnowledgeItem, Opportunity } from "../../../lib/pitchPerfect/types";
 
 export function KnowledgeTab({
@@ -22,7 +20,6 @@ export function KnowledgeTab({
     .map((a) => KNOWLEDGE_LIBRARY.find((k) => k.id === a.itemId))
     .filter((k): k is KnowledgeItem => Boolean(k));
   const suggested = suggestKnowledgeForOpportunity(opportunity);
-  const aiSuggestions = suggestNextSteps(opportunity).filter((s) => s.targetTab === "knowledge");
 
   function attach(item: KnowledgeItem) {
     onSaveAttachments([...opportunity.knowledgeAttachments, { itemId: item.id, attachedAt: new Date().toISOString() }]);
@@ -33,8 +30,6 @@ export function KnowledgeTab({
 
   return (
     <div className="mx-auto max-w-4xl space-y-4 p-6">
-      <AIInsightPanel suggestions={aiSuggestions} emptyLabel="Enough is attached here for now — nothing to flag." />
-
       <div className="rounded-xl border border-neutral-200 bg-white p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
