@@ -13,6 +13,7 @@ import { NarrativeTab } from "../tabs/NarrativeTab";
 import { AssetsTab } from "../tabs/AssetsTab";
 import { RehearseTab } from "../tabs/RehearseTab";
 import { OutcomeTab } from "../tabs/OutcomeTab";
+import { PitchPreviewTab } from "../tabs/PitchPreviewTab";
 
 /* The opportunity workspace: a persistent header + tab strip (with a
  * leading Dashboard entry) over the 8 capability tabs. Defaults to the
@@ -40,7 +41,8 @@ export function WorkspaceView({ opportunity }: { opportunity: Opportunity }) {
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.16, ease: "easeOut" }}
           >
-            {screen === "dashboard" && <Dashboard opportunity={opportunity} onSelectTab={setScreen} />}
+            {screen === "dashboard" && <Dashboard opportunity={opportunity} onSelectScreen={setScreen} />}
+            {screen === "preview" && <PitchPreviewTab opportunity={opportunity} onNavigate={setScreen} />}
             {screen === "define" && <DefineTab opportunity={opportunity} onSave={(fields) => patch(fields)} />}
             {screen === "intelligence" && (
               <IntelligenceTab opportunity={opportunity} onSaveIntelligence={(intelligence) => patch({ intelligence })} />
