@@ -3,8 +3,7 @@ import { useOpportunities } from "../hooks/useOpportunities";
 import { opportunityRepo } from "../lib/pitchPerfect/repo";
 import type { Opportunity } from "../lib/pitchPerfect/types";
 import { GlobalHeader } from "../components/pitchPerfect/GlobalHeader";
-import { NewOpportunityForm } from "../components/pitchPerfect/NewOpportunityForm";
-import { OpportunityListView } from "../components/pitchPerfect/views/OpportunityListView";
+import { OpportunitiesHome, type BrowseTab } from "../components/pitchPerfect/views/OpportunitiesHome";
 import { WorkspaceView } from "../components/pitchPerfect/views/WorkspaceView";
 import { InsightsView } from "../components/pitchPerfect/InsightsView";
 
@@ -26,7 +25,7 @@ export default function PitchPerfectPage() {
   const [clientId, setClientId] = useState<string | null>(null);
   const [opportunityId, setOpportunityId] = useState<string | null>(null);
   const [screen, setScreen] = useState<Screen>("browse");
-  const [modalOpen, setModalOpen] = useState(false);
+  const [browseTab, setBrowseTab] = useState<BrowseTab>("opportunities");
 
   const selected = opportunityId ? (opportunities.find((o) => o.id === opportunityId) ?? null) : null;
 
@@ -55,8 +54,18 @@ export default function PitchPerfectPage() {
 
   function handleCreate(opportunity: Opportunity) {
     opportunityRepo.save(opportunity);
-    setModalOpen(false);
+    setBrowseTab("opportunities");
     openOpportunity(opportunity);
+  }
+
+  function goBrowse() {
+    setScreen("browse");
+    setBrowseTab("opportunities");
+  }
+
+  function startNewOpportunity() {
+    setScreen("browse");
+    setBrowseTab("new");
   }
 
   return (
@@ -67,16 +76,17 @@ export default function PitchPerfectPage() {
         opportunities={opportunities}
         onSelectClient={handleSelectClient}
         onSelectOpportunity={handleSelectOpportunity}
-        onNewOpportunity={() => setModalOpen(true)}
-        onBrowseAll={() => setScreen("browse")}
+        onNewOpportunity={startNewOpportunity}
+        onBrowseAll={goBrowse}
         onInsights={() => setScreen("insights")}
       />
       <div className="min-h-0 flex-1">
         {screen === "insights" && <InsightsView onBack={() => setScreen(selected ? "workspace" : "browse")} />}
         {screen === "workspace" && selected && <WorkspaceView key={selected.id} opportunity={selected} />}
-        {screen === "browse" && <OpportunityListView onOpen={handleOpenById} onNewOpportunity={() => setModalOpen(true)} />}
+        {screen === "browse" && (
+          <OpportunitiesHome tab={browseTab} onTabChange={setBrowseTab} onOpen={handleOpenById} onCreate={handleCreate} />
+        )}
       </div>
-      <NewOpportunityForm open={modalOpen} onClose={() => setModalOpen(false)} onCreate={handleCreate} />
     </div>
   );
 }
