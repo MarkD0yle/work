@@ -1,5 +1,7 @@
-import { opportunityReadiness } from "../../lib/pitchPerfect/opportunity";
+import { opportunityReadiness, overallReadinessFraction } from "../../lib/pitchPerfect/opportunity";
+import { suggestNextSteps } from "../../lib/pitchPerfect/pitchSuggestions";
 import type { Opportunity, TabId } from "../../lib/pitchPerfect/types";
+import type { WorkspaceScreen } from "./OpportunityTabs";
 import { ReadinessBadge } from "./ReadinessBadge";
 
 type Tile = { tab: TabId; title: string; description: string };
@@ -34,11 +36,28 @@ const GROUPS: { label: string; tiles: Tile[] }[] = [
   },
 ];
 
-export function Dashboard({ opportunity, onSelectTab }: { opportunity: Opportunity; onSelectTab: (tab: TabId) => void }) {
+export function Dashboard({ opportunity, onSelectScreen }: { opportunity: Opportunity; onSelectScreen: (screen: WorkspaceScreen) => void }) {
   const readiness = opportunityReadiness(opportunity);
+  const { done, total } = overallReadinessFraction(opportunity);
+  const suggestionCount = suggestNextSteps(opportunity).length;
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-6">
+      <button
+        type="button"
+        onClick={() => onSelectScreen("preview")}
+        className="flex w-full items-center justify-between gap-4 rounded-2xl border border-neutral-200 bg-gradient-to-br from-neutral-900 to-neutral-800 p-5 text-left shadow-sm transition hover:shadow-md"
+      >
+        <div className="min-w-0">
+          <div className="text-[10px] font-semibold tracking-widest text-white/50 uppercase">Live · updates as you build</div>
+          <div className="mt-1 text-lg font-semibold text-white">Watch your pitch come together</div>
+          <p className="mt-0.5 text-xs text-white/60">
+            {done}/{total} sections ready · {suggestionCount === 0 ? "nothing outstanding" : `${suggestionCount} AI suggestion${suggestionCount === 1 ? "" : "s"}`}
+          </p>
+        </div>
+        <span className="shrink-0 rounded-full bg-white px-4 py-2 text-sm font-medium text-neutral-900">Open Your Pitch →</span>
+      </button>
+
       {GROUPS.map((group) => (
         <div key={group.label}>
           <div className="text-[11px] font-semibold tracking-widest text-neutral-400 uppercase">{group.label}</div>
@@ -47,7 +66,7 @@ export function Dashboard({ opportunity, onSelectTab }: { opportunity: Opportuni
               <button
                 key={tile.tab}
                 type="button"
-                onClick={() => onSelectTab(tile.tab)}
+                onClick={() => onSelectScreen(tile.tab)}
                 className="flex flex-col items-start gap-1.5 rounded-xl border border-neutral-200 bg-white p-4 text-left shadow-sm transition hover:border-neutral-300 hover:shadow-md"
               >
                 <div className="flex w-full items-center justify-between gap-2">
