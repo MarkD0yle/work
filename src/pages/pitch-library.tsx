@@ -88,13 +88,22 @@ export default function PitchLibraryPage() {
               Every pitch built and saved from the Pitch Builder, with its grade.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => navigateToPage("pitch-builder")}
-            className="rounded-md bg-neutral-900 px-3.5 py-2 text-sm font-medium text-white hover:bg-neutral-800"
-          >
-            + New pitch
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => navigateToPage("pitch-perfect")}
+              className="rounded-md border border-neutral-300 bg-white px-3.5 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
+            >
+              Try Pitch Perfect
+            </button>
+            <button
+              type="button"
+              onClick={() => navigateToPage("pitch-builder")}
+              className="rounded-md bg-neutral-900 px-3.5 py-2 text-sm font-medium text-white hover:bg-neutral-800"
+            >
+              + New pitch
+            </button>
+          </div>
         </div>
 
         <div className="mt-3 flex flex-wrap items-center gap-2">

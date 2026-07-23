@@ -136,6 +136,7 @@ const SLUG_SECTION: Record<string, string> = {
   // Sales & Pitch
   "pitch-builder": "pitch",
   "pitch-library": "pitch",
+  "pitch-perfect": "pitch",
 };
 
 export function sectionForSlug(slug: string, explicit?: string): string {
