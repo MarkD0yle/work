@@ -1,9 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useOpportunities } from "../hooks/useOpportunities";
-import { opportunityRepo } from "../lib/pitchPerfect/repo";
 import type { Opportunity } from "../lib/pitchPerfect/types";
 import { GlobalHeader } from "../components/pitchPerfect/GlobalHeader";
-import { OpportunitiesHome, type BrowseTab } from "../components/pitchPerfect/views/OpportunitiesHome";
 import { WorkspaceView } from "../components/pitchPerfect/views/WorkspaceView";
 import { InsightsView } from "../components/pitchPerfect/InsightsView";
 
@@ -36,10 +34,9 @@ export default function PitchPerfectPage() {
   const opportunities = useOpportunities();
   const [clientId, setClientId] = useState<string | null>(null);
   const [opportunityId, setOpportunityId] = useState<string | null>(null);
-  const [browseTab, setBrowseTab] = useState<BrowseTab>("opportunities");
   const [activeSection, setActiveSection] = useState<Section>("dashboard");
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const sectionRefsRef = useRef<Record<Section, HTMLDivElement | null>>({
+  const scrollContainerRef = useRef<HTMLElement>(null);
+  const sectionRefsRef = useRef<Record<Section, HTMLElement | null>>({
     dashboard: null,
     yourpitch: null,
     define: null,
@@ -69,17 +66,6 @@ export default function PitchPerfectPage() {
   function handleSelectOpportunity(id: string) {
     const opp = opportunities.find((o) => o.id === id);
     if (opp) openOpportunity(opp);
-  }
-
-  function handleOpenById(id: string) {
-    const opp = opportunities.find((o) => o.id === id);
-    if (opp) openOpportunity(opp);
-  }
-
-  function handleCreate(opportunity: Opportunity) {
-    opportunityRepo.save(opportunity);
-    setBrowseTab("opportunities");
-    openOpportunity(opportunity);
   }
 
   function scrollToSection(section: Section) {
@@ -129,13 +115,9 @@ export default function PitchPerfectPage() {
         onNewOpportunity={() => {
           setClientId(null);
           setOpportunityId(null);
-          setBrowseTab("new");
           scrollToSection("dashboard");
         }}
-        onBrowseAll={() => {
-          setBrowseTab("opportunities");
-          scrollToSection("dashboard");
-        }}
+        onBrowseAll={() => scrollToSection("dashboard")}
         onInsights={() => scrollToSection("insights")}
       />
       <div className="flex min-h-0 flex-1 overflow-hidden">
