@@ -16,6 +16,8 @@
     "ag-grid-enterprise": "^35.3.0",
     "ag-grid-react": "^35.3.0",
     "clsx": "^2.1.1",
+    "devextreme": "^26.1.4",
+    "devextreme-react": "^26.1.4",
     "firebase": "^12.15.0",
     "framer-motion": "^12.42.2",
     "react": "^19.2.6",

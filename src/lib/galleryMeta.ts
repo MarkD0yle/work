@@ -163,6 +163,12 @@ export const GALLERY_META: Record<string, GalleryMeta> = {
     tags: ["ag-grid", "trades", "live"],
     motif: "grid",
   },
+  "devextreme-blotter": {
+    description:
+      "Cross-asset execution blotter on DevExtreme DataGrid — banded columns, master detail and live prints.",
+    tags: ["devextreme", "trades", "live"],
+    motif: "grid",
+  },
   "tca-execution": {
     description:
       "Transaction cost analysis benchmarking execution quality against arrival and VWAP.",
