@@ -105,6 +105,7 @@ const SLUG_SECTION: Record<string, string> = {
 
   // Trading & Liquidity
   blotter: "trading",
+  "devextreme-blotter": "trading",
   "tca-execution": "trading",
   "liquidity-ladder": "trading",
   "repo-financing": "trading",
