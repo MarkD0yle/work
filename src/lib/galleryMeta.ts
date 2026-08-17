@@ -281,6 +281,12 @@ export const GALLERY_META: Record<string, GalleryMeta> = {
     tags: ["patterns", "components", "ui"],
     motif: "panel",
   },
+  "right-panel-patterns": {
+    description:
+      "Ten contextual right panels from across global markets — ticket, tabs, triage, live depth, copilot and more.",
+    tags: ["patterns", "panel", "trading", "ui"],
+    motif: "panel",
+  },
   "github-cheatsheet": {
     description:
       "Handy reference of the Git and GitHub commands you reach for most often.",
