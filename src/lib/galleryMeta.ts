@@ -268,6 +268,13 @@ export const GALLERY_META: Record<string, GalleryMeta> = {
     motif: "chart",
   },
 
+  "highcharts-gallery": {
+    description:
+      "Ten Highcharts types over one trading book — drilldown columns, stacked area, bubbles, heatmap, treemap, sankey, gauge, radar, waterfall and candlestick, each with its own controls.",
+    tags: ["highcharts", "charts", "interactive", "analytics"],
+    motif: "chart",
+  },
+
   // Patterns & Tools
   "app-home": {
     description:

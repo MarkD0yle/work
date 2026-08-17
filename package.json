@@ -20,6 +20,7 @@
     "devextreme-react": "^26.1.4",
     "firebase": "^12.15.0",
     "framer-motion": "^12.42.2",
+    "highcharts": "^13.0.1",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"
   },
