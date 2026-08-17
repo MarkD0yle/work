@@ -71,7 +71,10 @@ export default function HighchartsGalleryPage() {
   ] as const;
 
   return (
-    <div className="min-h-screen bg-neutral-50">
+    /* h-full + own scroll container: the app wraps full-width pages in a fixed
+       h-screen box with overflow hidden, so a page that grows past the viewport
+       has to scroll itself or the overflow is simply clipped. */
+    <div className="h-full overflow-y-auto bg-neutral-50">
       {/* pl-36 clears the app's fixed "Home" pill, which floats over the
           top-left corner of every full-width page. */}
       <header className="sticky top-0 z-20 border-b border-neutral-200 bg-white/95 py-4 pr-6 pl-36 backdrop-blur">
