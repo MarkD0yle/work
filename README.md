@@ -72,7 +72,7 @@ export default function MyScreen() {
 - **Trading & Liquidity** — blotter, TCA, liquidity ladder, repo financing, collateral optimizer, heatmaps, …
 - **Forms & Flows** — client/counterparty onboarding, sign-up, settings
 - **Wealth & Clients** — client overview, portfolio performance, wealth summary, asset allocation, goals
-- **Patterns & Tools** — pattern gallery, date pickers, GitHub cheat sheet
+- **Patterns & Tools** — pattern gallery, date pickers, GitHub cheat sheet, Awesome Quant resource directory
 - **Other** — catch-all for any page not yet mapped (so new files always show up)
 
 A page's section is resolved by `sectionForSlug(slug, explicitSection)`: an explicit `export const section` wins, otherwise the slug→section map is used, otherwise it falls into **Other**.
