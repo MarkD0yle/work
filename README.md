@@ -17,6 +17,7 @@ Think of it as a design/UX sandbox rather than a wired-up product. There's no ba
 | Language | TypeScript |
 | Styling | Tailwind CSS v4 (via `@tailwindcss/vite`) |
 | Data grids | AG Grid (Community + Enterprise) |
+| Charts | Highcharts (+ Stock), via a local wrapper in `src/components/highcharts` |
 | Hosting | Firebase Hosting (project `absurdalpha`) |
 | Lint | ESLint + typescript-eslint |
 
