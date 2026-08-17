@@ -87,8 +87,8 @@ export default function AwesomeQuant() {
             Awesome Quant
           </h1>
           <p className="mt-0.5 text-xs text-neutral-500">
-            {ALL_RESOURCES.length} quant libraries, data sources and services
-            across {AWESOME_QUANT.length} categories. Mirrored from{" "}
+            {ALL_RESOURCES.length} financial charting libraries and front-end
+            tools across {AWESOME_QUANT.length} categories. Narrowed from{" "}
             <a
               href={AWESOME_QUANT_URL}
               target="_blank"
