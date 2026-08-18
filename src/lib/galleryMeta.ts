@@ -225,6 +225,12 @@ export const GALLERY_META: Record<string, GalleryMeta> = {
     tags: ["onboarding", "documents", "approval"],
     motif: "form",
   },
+  "fund-connect": {
+    description:
+      "Fund instruction form with Excel import, a maker-checker state machine and a field-level audit trail.",
+    tags: ["import", "review", "audit", "forms"],
+    motif: "form",
+  },
   "sign-up": {
     description: "Account sign-up flow with password rules and field validation.",
     tags: ["sign-up", "auth", "validation"],
