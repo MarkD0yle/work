@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export const title = "Div Claim - Stage Path";
+export const title = "Claim - Stage Path";
 export const section = "processing";
 export const fullWidth = true;
 

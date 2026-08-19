@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export const title = "Div Claim - Clean Approval";
+export const title = "Claim - Clean Approval";
 export const section = "processing";
 export const fullWidth = true;
 

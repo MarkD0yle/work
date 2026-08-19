@@ -1,4 +1,4 @@
-export const title = "Div Claim - Dark Console";
+export const title = "Claim - Dark Console";
 export const section = "processing";
 export const fullWidth = true;
 

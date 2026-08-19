@@ -1,4 +1,4 @@
-export const title = "Div Claim - Activity Feed";
+export const title = "Claim - Activity Feed";
 export const section = "processing";
 export const fullWidth = true;
 

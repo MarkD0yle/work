@@ -1,4 +1,4 @@
-export const title = "Div Claim - Ops Workspace";
+export const title = "Claim - Ops Workspace";
 export const section = "processing";
 export const fullWidth = true;
 
