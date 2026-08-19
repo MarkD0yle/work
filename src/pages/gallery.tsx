@@ -56,11 +56,16 @@ const ALL_ITEMS: GalleryItem[] = Object.entries(pageModules)
   .filter((item) => item.slug !== "gallery")
   .sort((a, b) => a.title.localeCompare(b.title));
 
-type SortKey = "title" | "section";
+// Unix time each page was first added (injected at build time — see
+// vite.config.ts). Missing slugs sort last under "Recent".
+const ADDED_AT: Record<string, number> = __PAGES_ADDED_AT__;
+
+type SortKey = "title" | "section" | "recent";
 
 const SORTS: { key: SortKey; label: string }[] = [
   { key: "title", label: "A–Z" },
   { key: "section", label: "Section" },
+  { key: "recent", label: "Recent" },
 ];
 
 // Section chip order: known sections first, then Other if present.
@@ -103,6 +108,13 @@ export default function GalleryPage() {
       return [...items].sort(
         (a, b) =>
           a.sectionLabel.localeCompare(b.sectionLabel) ||
+          a.title.localeCompare(b.title),
+      );
+    }
+    if (sort === "recent") {
+      return [...items].sort(
+        (a, b) =>
+          (ADDED_AT[b.slug] ?? 0) - (ADDED_AT[a.slug] ?? 0) ||
           a.title.localeCompare(b.title),
       );
     }
