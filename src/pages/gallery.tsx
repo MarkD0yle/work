@@ -79,6 +79,9 @@ export default function GalleryPage() {
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [activeTags, setActiveTags] = useState<Set<string>>(new Set());
   const [sort, setSort] = useState<SortKey>("title");
+  // Direction for the Recent sort: "desc" = newest first (default).
+  // Clicking Recent while it is already active flips the direction.
+  const [recentDir, setRecentDir] = useState<"desc" | "asc">("desc");
 
   const trimmed = query.trim().toLowerCase();
 
@@ -112,14 +115,15 @@ export default function GalleryPage() {
       );
     }
     if (sort === "recent") {
+      const dir = recentDir === "desc" ? 1 : -1;
       return [...items].sort(
         (a, b) =>
-          (ADDED_AT[b.slug] ?? 0) - (ADDED_AT[a.slug] ?? 0) ||
+          dir * ((ADDED_AT[b.slug] ?? 0) - (ADDED_AT[a.slug] ?? 0)) ||
           a.title.localeCompare(b.title),
       );
     }
     return items; // already A–Z
-  }, [trimmed, activeSection, activeTags, sort]);
+  }, [trimmed, activeSection, activeTags, sort, recentDir]);
 
   function toggleTag(tag: string) {
     setActiveTags((prev) => {
@@ -290,21 +294,56 @@ export default function GalleryPage() {
             {/* Sort + clear, pushed right */}
             <div className="ml-auto flex items-center gap-2">
               <div className="flex items-center gap-0.5 rounded-full border border-white/50 bg-white/40 p-0.5 backdrop-blur-sm">
-                {SORTS.map((s) => (
-                  <button
-                    key={s.key}
-                    type="button"
-                    onClick={() => setSort(s.key)}
-                    aria-pressed={sort === s.key}
-                    className={`rounded-full px-2.5 py-1 text-xs font-medium transition ${
-                      sort === s.key
-                        ? "bg-neutral-900 text-white"
-                        : "text-neutral-500 hover:text-neutral-900"
-                    }`}
-                  >
-                    {s.label}
-                  </button>
-                ))}
+                {SORTS.map((s) => {
+                  const active = sort === s.key;
+                  return (
+                    <button
+                      key={s.key}
+                      type="button"
+                      onClick={() => {
+                        if (s.key === "recent" && active) {
+                          // Second click on Recent flips newest/oldest first.
+                          setRecentDir((d) => (d === "desc" ? "asc" : "desc"));
+                        } else {
+                          setSort(s.key);
+                          if (s.key === "recent") setRecentDir("desc");
+                        }
+                      }}
+                      aria-pressed={active}
+                      title={
+                        s.key === "recent" && active
+                          ? recentDir === "desc"
+                            ? "Newest first — click to show oldest first"
+                            : "Oldest first — click to show newest first"
+                          : undefined
+                      }
+                      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition ${
+                        active
+                          ? "bg-neutral-900 text-white"
+                          : "text-neutral-500 hover:text-neutral-900"
+                      }`}
+                    >
+                      {s.label}
+                      {s.key === "recent" && active && (
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                          aria-hidden
+                          className={`h-3 w-3 transition-transform ${
+                            recentDir === "asc" ? "rotate-180" : ""
+                          }`}
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M10 3a.75.75 0 0 1 .75.75v10.638l3.96-4.158a.75.75 0 1 1 1.08 1.04l-5.25 5.5a.75.75 0 0 1-1.08 0l-5.25-5.5a.75.75 0 1 1 1.08-1.04l3.96 4.158V3.75A.75.75 0 0 1 10 3Z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
               {hasFilters && (
                 <button
