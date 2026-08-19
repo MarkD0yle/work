@@ -113,3 +113,36 @@ Live URLs: https://absurdalpha.web.app · https://absurdalpha.firebaseapp.com
 2. (Optional) add `export const title`, `section`, and/or `fullWidth`.
 3. If you want it in a specific sidebar group, add the slug to `SLUG_SECTION` in [`src/lib/pageSections.ts`](src/lib/pageSections.ts) (or set `export const section`).
 4. `npm run dev` — it appears in the sidebar automatically.
+
+## Div Claim Automation — demo guide
+
+The **Div Claim Automation** page (Claim Processing section) is a fully wired
+dividend-processing prototype: mock data only, maker-checker approvals, role
+switching, notifications, and a light/dark theme toggle. Golden-path script for
+stakeholder demos:
+
+1. Land on Home (Maker role) → click **"My requests: 1 rejected"** → My Requests
+   opens filtered → open the rejected request → see the stepper, diff, and
+   rejection reason → **Revise & Resubmit** → the form opens pre-filled → change
+   a field → Diff Preview shows Before/After → Submit → follow the toast link to
+   the new request.
+2. Go to **Dividend Claim Rules** → filter by Country via the inline filter bar
+   → clear it via the chip → click a row → drawer opens → step rows with
+   Prev/Next (or ↑/↓, J/K) → **Edit** → change Claim Transmission → submit
+   through the diff preview.
+3. **+ Create Rule** — create a brand-new rule, including a Settlement Date
+   Condition via the condition builder → submit.
+4. Switch role to **Approver** → the bell and Approvals badge update → open the
+   pending queue → **Approve** the first request → open REQ-006 (submitted by
+   the approver) → approve/reject are disabled with the self-approval tooltip →
+   open another → **Reject** (button stays disabled until a reason is typed).
+5. Switch back to **Maker** → the bell shows the rejection → click it → lands on
+   the request with the reason visible → the approved rule from step 4 now shows
+   a "new" dot in the production Dividend Claim Rules table.
+6. Switch to **Operations** → Home → **"Claims with discrepancies"** → Claims
+   opens filtered to Discrepancy → open a claim → expected-vs-received breakdown
+   → **Mark resolved** with a comment → the row status updates.
+7. Toggle dark mode at any point — every screen, badge, drawer, and modal
+   follows the theme tokens.
+
+"Reset demo data" (sidebar footer) restores the seeded state.
