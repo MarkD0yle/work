@@ -247,3 +247,67 @@
     animation: none;
   }
 }
+
+/* ------------------------------------------------------------------
+ * DevExtreme Trade Blotter (src/pages/devextreme-blotter.tsx).
+ * The Fluent theme ships its own type scale, 4px radii and blue accent;
+ * this block re-skins the grid to the app's neutral/indigo language and
+ * pins every corner square (see the --radius rule at the top of the file).
+ * Scoped to `.dx-blotter` so no other page picks up the overrides.
+ * ------------------------------------------------------------------ */
+.dx-blotter {
+  --dx-border-radius: 0px;
+  --dx-color-primary: #4f46e5;
+  --dx-color-border: #e5e5e5;
+  --dx-color-text: #171717;
+  --dx-font-size: 12px;
+}
+.dx-blotter .dx-widget,
+.dx-blotter .dx-datagrid {
+  font-family: inherit;
+}
+.dx-blotter .dx-datagrid-headers {
+  background-color: #f5f5f5;
+  color: #525252;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.dx-blotter .dx-datagrid-rowsview .dx-row > td {
+  padding-top: 4px;
+  padding-bottom: 4px;
+  vertical-align: middle;
+}
+/* the app leans on tabular figures for anything numeric */
+.dx-blotter .cell-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.dx-blotter .cell-muted {
+  color: #737373;
+}
+.dx-blotter .dx-datagrid-total-footer,
+.dx-blotter .dx-datagrid-summary-item {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  color: #171717;
+}
+/* row state tints, applied from onRowPrepared */
+.dx-blotter .dx-datagrid-rowsview .dx-row.row-void > td {
+  opacity: 0.55;
+}
+.dx-blotter .dx-datagrid-rowsview .dx-row.row-reject > td {
+  background-color: #fff1f2;
+}
+.dx-blotter .dx-datagrid-rowsview .dx-row.row-fail > td:first-child {
+  box-shadow: inset 2px 0 0 #f43f5e;
+}
+/* master detail sits on the page surface rather than the grid's white */
+.dx-blotter .dx-master-detail-cell {
+  background-color: #fafafa;
+  padding: 0;
+}
+.dx-blotter .dx-tabpanel .dx-tabs {
+  background-color: transparent;
+}

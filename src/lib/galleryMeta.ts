@@ -36,6 +36,7 @@ export const SECTION_ACCENT: Record<string, Accent> = {
   wealth: { from: "#f59e0b", to: "#059669" }, // amber → emerald
   patterns: { from: "#06b6d4", to: "#6366f1" }, // cyan → indigo
   processing: { from: "#0ea5e9", to: "#22d3ee" }, // sky → cyan
+  pitch: { from: "#0ea5e9", to: "#22c55e" }, // sky → green
   other: { from: "#64748b", to: "#475569" }, // slate
 };
 
@@ -52,6 +53,7 @@ const DEFAULT_MOTIF: Record<string, Motif> = {
   wealth: "panel",
   patterns: "panel",
   processing: "flow",
+  pitch: "flow",
   other: "panel",
 };
 
@@ -171,6 +173,12 @@ export const GALLERY_META: Record<string, GalleryMeta> = {
     tags: ["ag-grid", "trades", "live"],
     motif: "grid",
   },
+  "devextreme-blotter": {
+    description:
+      "Cross-asset execution blotter on DevExtreme DataGrid — banded columns, master detail and live prints.",
+    tags: ["devextreme", "trades", "live"],
+    motif: "grid",
+  },
   "tca-execution": {
     description:
       "Transaction cost analysis benchmarking execution quality against arrival and VWAP.",
@@ -227,6 +235,12 @@ export const GALLERY_META: Record<string, GalleryMeta> = {
     tags: ["onboarding", "documents", "approval"],
     motif: "form",
   },
+  "fund-connect": {
+    description:
+      "Fund instruction form with Excel import, a maker-checker state machine and a field-level audit trail.",
+    tags: ["import", "review", "audit", "forms"],
+    motif: "form",
+  },
   "sign-up": {
     description: "Account sign-up flow with password rules and field validation.",
     tags: ["sign-up", "auth", "validation"],
@@ -270,11 +284,30 @@ export const GALLERY_META: Record<string, GalleryMeta> = {
     motif: "chart",
   },
 
+  "highcharts-gallery": {
+    description:
+      "Ten Highcharts types over one trading book — drilldown columns, stacked area, bubbles, heatmap, treemap, sankey, gauge, radar, waterfall and candlestick, each with its own controls.",
+    tags: ["highcharts", "charts", "interactive", "analytics"],
+    motif: "chart",
+  },
+
   // Patterns & Tools
+  "app-home": {
+    description:
+      "Platform landing page — a launchpad grid of icon-and-title app tiles over a two-column release notes and key contacts block.",
+    tags: ["home", "launchpad", "navigation"],
+    motif: "grid",
+  },
   "pattern-gallery": {
     description:
       "A live harness wiring the reusable UI patterns — grid, context panel and modal.",
     tags: ["patterns", "components", "ui"],
+    motif: "panel",
+  },
+  "right-panel-patterns": {
+    description:
+      "Ten contextual right panels from across global markets — ticket, tabs, triage, live depth, copilot and more.",
+    tags: ["patterns", "panel", "trading", "ui"],
     motif: "panel",
   },
   "github-cheatsheet": {
@@ -299,6 +332,20 @@ export const GALLERY_META: Record<string, GalleryMeta> = {
       "Range date picker with presets and a dual-month view for quick spans.",
     tags: ["date", "range", "component"],
     motif: "calendar",
+  },
+
+  // Sales & Pitch
+  "pitch-builder": {
+    description:
+      "Build a client pitch section by section, with internal data auto-gathered, an AI reviewer scoring each section, and a full-pitch grade before you save it.",
+    tags: ["pitch", "sales", "ai review"],
+    motif: "flow",
+  },
+  "pitch-library": {
+    description:
+      "Every pitch saved from the Pitch Builder, browsable with its grade — open one to see the full compiled report.",
+    tags: ["pitch", "library", "grading"],
+    motif: "panel",
   },
 };
 
