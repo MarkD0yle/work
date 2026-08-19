@@ -514,7 +514,7 @@ export function DataTable<T>(props: Props<T>) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={props.searchPlaceholder ?? "Search…"}
-            className="dca-input h-7 w-64 pl-8 text-[12px]"
+            className="dca-input h-7 w-64 !pl-8 text-[12px]"
           />
         </div>
       </div>
