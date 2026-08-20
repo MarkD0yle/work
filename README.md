@@ -114,3 +114,4 @@ Live URLs: https://absurdalpha.web.app · https://absurdalpha.firebaseapp.com
 2. (Optional) add `export const title`, `section`, and/or `fullWidth`.
 3. If you want it in a specific sidebar group, add the slug to `SLUG_SECTION` in [`src/lib/pageSections.ts`](src/lib/pageSections.ts) (or set `export const section`).
 4. `npm run dev` — it appears in the sidebar automatically.
+

@@ -18,6 +18,10 @@ dist-ssr
 # Claude local settings (machine-specific permission allowlist)
 .claude/settings.local.json
 
+# Personal working files — never commit
+CLAUDE.md
+.claude/pre-push/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

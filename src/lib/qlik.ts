@@ -352,10 +352,10 @@ type MonitorSeed = Omit<QlikMonitor, "lastRefresh"> & {
   lastRefreshOffsetMin: number;
 };
 
-/* 17 monitors mirroring the State Street Qlik dashboard. Names match
- * the actual Qlik conventions verbatim where possible (GAM/CH prefixes,
- * "none detected" / "no relevant activity detected" status copy, "DoD
- * Matches" for day-over-day patterns). */
+/* 17 monitors for the ops monitoring dashboard. Names follow common
+ * monitoring-tool conventions (GAM/CH prefixes, "none detected" /
+ * "no relevant activity detected" status copy, "DoD Matches" for
+ * day-over-day patterns). */
 const MONITOR_SEEDS_BASE: MonitorSeed[] = [
   {
     id: "mon-01",

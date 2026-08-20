@@ -35,6 +35,7 @@ export const SECTION_ACCENT: Record<string, Accent> = {
   forms: { from: "#8b5cf6", to: "#d946ef" }, // violet → fuchsia
   wealth: { from: "#f59e0b", to: "#059669" }, // amber → emerald
   patterns: { from: "#06b6d4", to: "#6366f1" }, // cyan → indigo
+  processing: { from: "#0ea5e9", to: "#22d3ee" }, // sky → cyan
   pitch: { from: "#0ea5e9", to: "#22c55e" }, // sky → green
   other: { from: "#64748b", to: "#475569" }, // slate
 };
@@ -51,6 +52,7 @@ const DEFAULT_MOTIF: Record<string, Motif> = {
   forms: "form",
   wealth: "panel",
   patterns: "panel",
+  processing: "flow",
   pitch: "flow",
   other: "panel",
 };
