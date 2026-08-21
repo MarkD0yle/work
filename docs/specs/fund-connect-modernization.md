@@ -1,7 +1,7 @@
-# Fund Connect — modernization prototype
+# Audit Trail Client Onboarding — modernization prototype
 
 Prototype screen: [`src/pages/fund-connect.tsx`](../../src/pages/fund-connect.tsx)
-(sidebar: **Forms & Flows → Fund Connect**).
+(sidebar: **Forms & Flows → Audit Trail Client Onboarding**).
 
 ## What it replaces
 
@@ -69,7 +69,7 @@ approve other people's records but not her own).
 
 - **Simultaneous cross-section visibility.** The design assumes users do not
   need several sections open at once. The prototype carries an "Open all
-  sections" toggle specifically so this can be tested with real Fund Connect
+  sections" toggle specifically so this can be tested with real Audit Trail Client Onboarding
   users before the condensing behaviour is committed to.
 - **Excel import feasibility** — data source and format variability, and
   whether compliance is happy with a pasted range as an input.

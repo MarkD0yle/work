@@ -201,7 +201,7 @@ export default function GalleryPage() {
             {ALL_ITEMS.length} files
           </div>
           <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-tight text-neutral-900 sm:text-5xl">
-            UX Markets Gallery
+            Absurd Alpha
           </h1>
           <p className="mt-4 max-w-xl text-base leading-relaxed text-neutral-500">
             Inspiration board

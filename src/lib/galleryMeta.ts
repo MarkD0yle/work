@@ -227,7 +227,7 @@ export const GALLERY_META: Record<string, GalleryMeta> = {
   },
   "fund-connect": {
     description:
-      "Fund instruction form with Excel import, a maker-checker state machine and a field-level audit trail.",
+      "Client onboarding form with Excel import, a maker-checker state machine and a field-level audit trail.",
     tags: ["import", "review", "audit", "forms"],
     motif: "form",
   },
