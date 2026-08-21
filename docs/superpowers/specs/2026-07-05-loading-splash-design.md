@@ -23,7 +23,7 @@ provided `BackgroundCircles` component (Kokonut UI).
 - **Trigger:** splash once on app start → fade into gallery.
 - **Radius:** the animated rings stay `rounded-full` (intentional geometry, akin
   to a spinner). No other rounded chrome is introduced.
-- **Text:** title = "UX Markets".
+- **Text:** title = "Absurd Alpha".
 - **Variant:** `senary` (blue) to match the existing blue-blob hero theme.
 
 ## Components
@@ -43,7 +43,7 @@ authored convention.
 Owns the timer and the transition:
 - `loading` starts `true`; `setTimeout(…, 2000)` flips it to `false` (cleared on
   unmount).
-- While loading: full-screen `<BackgroundCircles title="UX Markets"
+- While loading: full-screen `<BackgroundCircles title="Absurd Alpha"
   variant="senary" />`.
 - `AnimatePresence` fades the splash out as the app fades in.
 

@@ -28,7 +28,7 @@ export function LoadingGate({ children }: { children: ReactNode }) {
                         transition={{ duration: 0.6, ease: "easeInOut" }}
                     >
                         <BackgroundCircles
-                            title="UX Markets"
+                            title="Absurd Alpha"
                             description="Mark, Atib & Juho"
                             variant="senary"
                         />
