@@ -229,7 +229,7 @@ export const GALLERY_META: Record<string, GalleryMeta> = {
   },
   "fund-connect": {
     description:
-      "Fund instruction form with Excel import, a maker-checker state machine and a field-level audit trail.",
+      "Client onboarding form with Excel import, a maker-checker state machine and a field-level audit trail.",
     tags: ["import", "review", "audit", "forms"],
     motif: "form",
   },
@@ -284,12 +284,6 @@ export const GALLERY_META: Record<string, GalleryMeta> = {
   },
 
   // Patterns & Tools
-  "app-home": {
-    description:
-      "Platform landing page — a launchpad grid of icon-and-title app tiles over a two-column release notes and key contacts block.",
-    tags: ["home", "launchpad", "navigation"],
-    motif: "grid",
-  },
   "pattern-gallery": {
     description:
       "A live harness wiring the reusable UI patterns — grid, context panel and modal.",

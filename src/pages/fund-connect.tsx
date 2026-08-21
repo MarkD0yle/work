@@ -46,11 +46,11 @@ import { SEED_RECORDS } from "../lib/fundConnect/seed";
 import { STATE_PILL } from "../lib/fundConnect/tone";
 import type { FundRecord, RecordState } from "../lib/fundConnect/types";
 
-export const title = "Fund Connect";
+export const title = "Audit Trail Client Onboarding";
 export const section = "forms";
 export const fullWidth = true;
 
-/* Fund Connect — modernized instruction form.
+/* Audit Trail Client Onboarding — modernized instruction form.
  *
  * The workflow this replaces was one long page of sectioned forms filled in
  * by retyping values out of Excel, with no draft, no review and no record
@@ -211,7 +211,7 @@ export default function FundConnectPage() {
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <span className="text-[11px] font-semibold tracking-[0.2em] text-neutral-400 uppercase">
-                Fund Connect
+                Audit Trail Client Onboarding
               </span>
               <span
                 className={`inline-flex rounded-full border px-2 py-[1px] text-[10px] font-medium tracking-wide uppercase ${STATE_PILL[record.state]}`}
