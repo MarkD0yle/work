@@ -620,6 +620,39 @@ export default function FundConnect2Page() {
         {/* Second row — work strip on the grid, status + actions on a record. */}
         {!record ? (
           <div className="flex flex-wrap items-stretch gap-2 px-6 pb-3 pl-36">
+            {/* "All ETFs" is the strip's home state — always visible, so
+                getting back to the full register is one obvious click. */}
+            <button
+              type="button"
+              onClick={() => setWorkFilter(null)}
+              aria-pressed={workFilter === null}
+              title="Show the full register"
+              className={`flex min-w-28 flex-col justify-center gap-0.5 border px-3 py-2 text-left ${
+                workFilter === null
+                  ? "border-neutral-900 bg-neutral-900 text-white"
+                  : "border-neutral-300 bg-white shadow-sm hover:border-neutral-400"
+              }`}
+            >
+              <span className="flex items-center gap-1.5">
+                <span
+                  className={`text-base leading-none font-semibold tabular-nums ${
+                    workFilter === null ? "text-white" : "text-neutral-900"
+                  }`}
+                >
+                  {records.length}
+                </span>
+                <span
+                  className={`text-[10px] font-medium tracking-[0.12em] uppercase ${
+                    workFilter === null ? "text-neutral-300" : "text-neutral-400"
+                  }`}
+                >
+                  All ETFs
+                </span>
+              </span>
+              <span className={`text-[10px] ${workFilter === null ? "text-neutral-300" : "text-neutral-500"}`}>
+                the full register
+              </span>
+            </button>
             {cards.map((c) => {
               const selected = workFilter === c.id;
               const idle = c.count === 0;
@@ -871,9 +904,10 @@ export default function FundConnect2Page() {
                   setWorkFilter(null);
                   setVisible(PAGE_SIZE);
                 }}
-                className="text-[11px] text-neutral-400 underline underline-offset-2 hover:text-neutral-700"
+                title="Clear every filter and show the full register"
+                className="rounded-md border border-neutral-900 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-900 hover:bg-neutral-900 hover:text-white"
               >
-                Clear all
+                ✕ Show all ({records.length})
               </button>
             )}
             <span className="ml-auto text-[11px] text-neutral-500 tabular-nums">
