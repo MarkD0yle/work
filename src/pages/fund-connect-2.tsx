@@ -156,6 +156,8 @@ export default function FundConnect2Page() {
   const [statusF, setStatusF] = useState<GridStatus | "">("");
   const [workFilter, setWorkFilter] = useState<string | null>(null);
   const [visible, setVisible] = useState(PAGE_SIZE);
+  const [sortKey, setSortKey] = useState<string | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   const user = userById(userId) ?? USERS[0];
   const record = openId ? (records.find((r) => r.id === openId) ?? null) : null;
@@ -369,13 +371,54 @@ export default function FundConnect2Page() {
         : r.state === "active"
           ? 2
           : 1;
-    return records
-      .filter(matches)
-      .sort(
+    const filtered = records.filter(matches);
+    if (!sortKey) {
+      // Default order: rows needing this user's action first, then freshest.
+      return filtered.sort(
         (a, b) =>
           actionRank(a) - actionRank(b) || Date.parse(b.updatedAt) - Date.parse(a.updatedAt),
       );
-  }, [records, q, regionF, providerF, statusF, activeCard, user]);
+    }
+    // Header sort. Status orders by pipeline position, fund number
+    // numerically, everything else as text.
+    const statusRank: Record<GridStatus, number> = {
+      draft: 0,
+      returned: 1,
+      submitted: 2,
+      in_review: 3,
+      approved: 4,
+      active: 5,
+    };
+    const value = (r: FundRecord2): string | number => {
+      if (sortKey === "status") return statusRank[gridStatus(r)];
+      if (sortKey === "fundNumber") return Number(r.values.fundNumber) || 0;
+      if (sortKey === "fundLongName") return (r.values.fundLongName || r.title).toLowerCase();
+      return (r.values[sortKey] ?? "").toLowerCase();
+    };
+    const dir = sortDir === "asc" ? 1 : -1;
+    return filtered.sort((a, b) => {
+      const va = value(a);
+      const vb = value(b);
+      const cmp =
+        typeof va === "number" && typeof vb === "number"
+          ? va - vb
+          : String(va).localeCompare(String(vb));
+      return dir * cmp || Date.parse(b.updatedAt) - Date.parse(a.updatedAt);
+    });
+  }, [records, q, regionF, providerF, statusF, activeCard, user, sortKey, sortDir]);
+
+  /** Header click cycles ascending → descending → back to default order. */
+  function toggleSort(key: string) {
+    if (sortKey !== key) {
+      setSortKey(key);
+      setSortDir("asc");
+    } else if (sortDir === "asc") {
+      setSortDir("desc");
+    } else {
+      setSortKey(null);
+      setSortDir("asc");
+    }
+  }
 
   function rowAction(r: FundRecord2): { label: string; urgent: boolean } {
     if (isReturned(r) && canEdit(r, user).allowed) return { label: "Fix & resubmit", urgent: true };
@@ -939,15 +982,44 @@ export default function FundConnect2Page() {
             <table className="w-full text-left text-xs">
               <thead className="bg-white text-[10px] tracking-wide text-neutral-500 uppercase">
                 <tr>
-                  <th className="px-3 py-2 font-medium">Region</th>
-                  <th className="px-3 py-2 font-medium">Provider</th>
-                  <th className="px-3 py-2 font-medium">Fund long name</th>
-                  <th className="hidden px-3 py-2 font-medium xl:table-cell">Short name</th>
-                  <th className="hidden px-3 py-2 font-medium lg:table-cell">Fund code</th>
-                  <th className="px-3 py-2 font-medium">No.</th>
-                  <th className="px-3 py-2 font-medium">Ticker</th>
-                  <th className="hidden px-3 py-2 font-medium xl:table-cell">Trust</th>
-                  <th className="px-3 py-2 font-medium">Status</th>
+                  {(
+                    [
+                      ["Region", "region", ""],
+                      ["Provider", "provider", ""],
+                      ["Fund long name", "fundLongName", ""],
+                      ["Short name", "fundShortName", "hidden xl:table-cell"],
+                      ["Fund code", "fundCode", "hidden lg:table-cell"],
+                      ["No.", "fundNumber", ""],
+                      ["Ticker", "ticker", ""],
+                      ["Trust", "trust", "hidden xl:table-cell"],
+                      ["Status", "status", ""],
+                    ] as [string, string, string][]
+                  ).map(([label, key, cls]) => {
+                    const active = sortKey === key;
+                    return (
+                      <th key={key} className={`px-3 py-2 font-medium ${cls}`}>
+                        <button
+                          type="button"
+                          onClick={() => toggleSort(key)}
+                          title={
+                            active
+                              ? sortDir === "asc"
+                                ? `${label} ascending — click for descending`
+                                : `${label} descending — click for the default order`
+                              : `Sort by ${label}`
+                          }
+                          className={`inline-flex items-center gap-1 tracking-wide uppercase ${
+                            active ? "text-neutral-900" : "hover:text-neutral-900"
+                          }`}
+                        >
+                          {label}
+                          <span aria-hidden className={active ? "text-neutral-900" : "text-neutral-300"}>
+                            {active ? (sortDir === "asc" ? "▲" : "▼") : "↕"}
+                          </span>
+                        </button>
+                      </th>
+                    );
+                  })}
                   <th className="px-3 py-2" />
                 </tr>
               </thead>
