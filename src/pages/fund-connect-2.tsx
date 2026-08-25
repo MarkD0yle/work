@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Modal, { ConfirmDialog } from "../components/patterns/Modal";
 import FieldRow from "../components/fund-connect/FieldRow";
 import SectionCard from "../components/fund-connect/SectionCard";
@@ -132,6 +132,103 @@ function StatusPill({ status }: { status: GridStatus }) {
 
 const PAGE_SIZE = 50;
 
+/* The grid's columns, in order. `cls` carries the responsive hiding for
+ * narrow screens; the column chooser removes a column entirely. Fund long
+ * name is the row's identity, so it cannot be hidden. */
+const COLUMN_DEFS: { key: string; label: string; cls: string; locked?: boolean }[] = [
+  { key: "region", label: "Region", cls: "" },
+  { key: "provider", label: "Provider", cls: "" },
+  { key: "fundLongName", label: "Fund long name", cls: "", locked: true },
+  { key: "fundShortName", label: "Short name", cls: "hidden xl:table-cell" },
+  { key: "fundCode", label: "Fund code", cls: "hidden lg:table-cell" },
+  { key: "fundNumber", label: "No.", cls: "" },
+  { key: "ticker", label: "Ticker", cls: "" },
+  { key: "trust", label: "Trust", cls: "hidden xl:table-cell" },
+  { key: "status", label: "Status", cls: "" },
+];
+
+/** "⚙ Columns" — pick which grid columns are visible. */
+function ColumnChooser({
+  cols,
+  onToggle,
+  onReset,
+}: {
+  cols: Set<string>;
+  onToggle: (key: string) => void;
+  onReset: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDown(e: MouseEvent) {
+      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [open]);
+
+  const hiddenCount = COLUMN_DEFS.filter((c) => !cols.has(c.key)).length;
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        title="Choose which columns the grid shows"
+        className={`rounded-md border px-3 py-1.5 text-xs font-medium ${
+          open
+            ? "border-neutral-900 bg-neutral-900 text-white"
+            : hiddenCount > 0
+              ? "border-neutral-900 bg-white text-neutral-900"
+              : "border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50"
+        }`}
+      >
+        ⚙ Columns{hiddenCount > 0 ? ` (${COLUMN_DEFS.length - hiddenCount}/${COLUMN_DEFS.length})` : ""}
+      </button>
+      {open && (
+        <div className="absolute right-0 z-40 mt-2 w-56 rounded-lg border border-neutral-200 bg-white p-2 shadow-xl">
+          <p className="px-2 pt-1 pb-2 text-[10px] font-semibold tracking-wide text-neutral-400 uppercase">
+            Visible columns
+          </p>
+          <ul className="flex flex-col">
+            {COLUMN_DEFS.map((c) => (
+              <li key={c.key}>
+                <label
+                  className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-xs ${
+                    c.locked ? "text-neutral-400" : "cursor-pointer text-neutral-700 hover:bg-neutral-50"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={cols.has(c.key)}
+                    disabled={c.locked}
+                    onChange={() => onToggle(c.key)}
+                    className="h-3.5 w-3.5 accent-neutral-900"
+                  />
+                  {c.label === "No." ? "Fund number" : c.label}
+                  {c.locked && <span className="ml-auto text-[10px]">always shown</span>}
+                </label>
+              </li>
+            ))}
+          </ul>
+          {hiddenCount > 0 && (
+            <button
+              type="button"
+              onClick={onReset}
+              className="mt-1 w-full rounded-md border-t border-neutral-100 px-2 py-1.5 text-left text-[11px] text-neutral-500 hover:text-neutral-900"
+            >
+              Reset — show all columns
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function FundConnect2Page() {
   const [records, setRecords] = useState<FundRecord2[]>(SEED_RECORDS);
   const [notices, setNotices] = useState<Notice[]>(SEED_NOTICES);
@@ -158,6 +255,18 @@ export default function FundConnect2Page() {
   const [visible, setVisible] = useState(PAGE_SIZE);
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [cols, setCols] = useState<Set<string>>(new Set(COLUMN_DEFS.map((c) => c.key)));
+
+  const visibleDefs = COLUMN_DEFS.filter((c) => cols.has(c.key));
+
+  function toggleCol(key: string) {
+    setCols((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
 
   const user = userById(userId) ?? USERS[0];
   const record = openId ? (records.find((r) => r.id === openId) ?? null) : null;
@@ -430,35 +539,16 @@ export default function FundConnect2Page() {
   }
 
   function exportCsv() {
-    const head = [
-      "Region",
-      "Provider",
-      "Fund long name",
-      "Fund short name",
-      "Fund code",
-      "Fund number",
-      "Ticker",
-      "Trust",
-      "Status",
-    ];
+    // Export mirrors the grid: the filtered rows, the visible columns.
+    const cell = (r: FundRecord2, key: string): string => {
+      if (key === "status") return STATUS_LABEL[gridStatus(r)];
+      if (key === "fundLongName") return r.values.fundLongName || r.title;
+      return r.values[key] ?? "";
+    };
     const esc = (v: string) => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
     const lines = [
-      head.join(","),
-      ...rows.map((r) =>
-        [
-          r.values.region ?? "",
-          r.values.provider ?? "",
-          r.values.fundLongName || r.title,
-          r.values.fundShortName ?? "",
-          r.values.fundCode ?? "",
-          r.values.fundNumber ?? "",
-          r.values.ticker ?? "",
-          r.values.trust ?? "",
-          STATUS_LABEL[gridStatus(r)],
-        ]
-          .map(esc)
-          .join(","),
-      ),
+      visibleDefs.map((c) => (c.label === "No." ? "Fund number" : c.label)).join(","),
+      ...rows.map((r) => visibleDefs.map((c) => esc(cell(r, c.key))).join(",")),
     ];
     const a = document.createElement("a");
     a.href = `data:text/csv;charset=utf-8,${encodeURIComponent(lines.join("\n"))}`;
@@ -956,6 +1046,11 @@ export default function FundConnect2Page() {
             <span className="ml-auto text-[11px] text-neutral-500 tabular-nums">
               {rows.length} of {records.length}
             </span>
+            <ColumnChooser
+              cols={cols}
+              onToggle={toggleCol}
+              onReset={() => setCols(new Set(COLUMN_DEFS.map((c) => c.key)))}
+            />
             <button
               type="button"
               onClick={exportCsv}
@@ -982,19 +1077,7 @@ export default function FundConnect2Page() {
             <table className="w-full text-left text-xs">
               <thead className="bg-white text-[10px] tracking-wide text-neutral-500 uppercase">
                 <tr>
-                  {(
-                    [
-                      ["Region", "region", ""],
-                      ["Provider", "provider", ""],
-                      ["Fund long name", "fundLongName", ""],
-                      ["Short name", "fundShortName", "hidden xl:table-cell"],
-                      ["Fund code", "fundCode", "hidden lg:table-cell"],
-                      ["No.", "fundNumber", ""],
-                      ["Ticker", "ticker", ""],
-                      ["Trust", "trust", "hidden xl:table-cell"],
-                      ["Status", "status", ""],
-                    ] as [string, string, string][]
-                  ).map(([label, key, cls]) => {
+                  {visibleDefs.map(({ label, key, cls }) => {
                     const active = sortKey === key;
                     return (
                       <th key={key} className={`px-3 py-2 font-medium ${cls}`}>
@@ -1026,7 +1109,7 @@ export default function FundConnect2Page() {
               <tbody className="divide-y divide-neutral-100">
                 {rows.length === 0 && (
                   <tr>
-                    <td colSpan={10} className="px-4 py-6 text-neutral-500">
+                    <td colSpan={visibleDefs.length + 1} className="px-4 py-6 text-neutral-500">
                       Nothing matches — clear a filter, or create a new ETF.
                     </td>
                   </tr>
@@ -1044,8 +1127,12 @@ export default function FundConnect2Page() {
                       onClick={() => openRecord(r.id)}
                       className="cursor-pointer hover:bg-white"
                     >
-                      <td className="px-3 py-2 text-neutral-600">{r.values.region || "—"}</td>
-                      <td className="px-3 py-2 text-neutral-600">{r.values.provider || "—"}</td>
+                      {cols.has("region") && (
+                        <td className="px-3 py-2 text-neutral-600">{r.values.region || "—"}</td>
+                      )}
+                      {cols.has("provider") && (
+                        <td className="px-3 py-2 text-neutral-600">{r.values.provider || "—"}</td>
+                      )}
                       <td className="px-3 py-2">
                         <span className="font-medium text-neutral-900">
                           {r.values.fundLongName || r.title}
@@ -1056,24 +1143,36 @@ export default function FundConnect2Page() {
                           </span>
                         )}
                       </td>
-                      <td className="hidden px-3 py-2 text-neutral-600 xl:table-cell">
-                        {r.values.fundShortName || "—"}
-                      </td>
-                      <td className="hidden px-3 py-2 font-mono text-[11px] text-neutral-600 lg:table-cell">
-                        {r.values.fundCode || "—"}
-                      </td>
-                      <td className="px-3 py-2 font-mono text-[11px] text-neutral-600">
-                        {r.values.fundNumber || "—"}
-                      </td>
-                      <td className="px-3 py-2 font-mono text-[11px] font-semibold text-neutral-900">
-                        {r.values.ticker || "—"}
-                      </td>
-                      <td className="hidden px-3 py-2 text-neutral-600 xl:table-cell">
-                        {r.values.trust || "—"}
-                      </td>
-                      <td className="px-3 py-2">
-                        <StatusPill status={status} />
-                      </td>
+                      {cols.has("fundShortName") && (
+                        <td className="hidden px-3 py-2 text-neutral-600 xl:table-cell">
+                          {r.values.fundShortName || "—"}
+                        </td>
+                      )}
+                      {cols.has("fundCode") && (
+                        <td className="hidden px-3 py-2 font-mono text-[11px] text-neutral-600 lg:table-cell">
+                          {r.values.fundCode || "—"}
+                        </td>
+                      )}
+                      {cols.has("fundNumber") && (
+                        <td className="px-3 py-2 font-mono text-[11px] text-neutral-600">
+                          {r.values.fundNumber || "—"}
+                        </td>
+                      )}
+                      {cols.has("ticker") && (
+                        <td className="px-3 py-2 font-mono text-[11px] font-semibold text-neutral-900">
+                          {r.values.ticker || "—"}
+                        </td>
+                      )}
+                      {cols.has("trust") && (
+                        <td className="hidden px-3 py-2 text-neutral-600 xl:table-cell">
+                          {r.values.trust || "—"}
+                        </td>
+                      )}
+                      {cols.has("status") && (
+                        <td className="px-3 py-2">
+                          <StatusPill status={status} />
+                        </td>
+                      )}
                       <td className="px-3 py-2 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
