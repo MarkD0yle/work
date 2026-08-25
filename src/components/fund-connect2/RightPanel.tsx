@@ -20,10 +20,13 @@ export default function RightPanel({
   record,
   canComment,
   onComment,
+  onJumpField,
 }: {
   record: FundRecord2;
   canComment: boolean;
   onComment: (text: string) => void;
+  /** Open the form on the exact field an entry is about. */
+  onJumpField: (fieldId: string) => void;
 }) {
   const [tab, setTab] = useState<"comments" | "audit">("comments");
   const [cycleOnly, setCycleOnly] = useState(false);
@@ -59,7 +62,12 @@ export default function RightPanel({
       </div>
 
       {tab === "comments" && (
-        <CommentThread record={record} canComment={canComment} onComment={onComment} />
+        <CommentThread
+          record={record}
+          canComment={canComment}
+          onComment={onComment}
+          onJumpField={onJumpField}
+        />
       )}
 
       {tab === "audit" && (
@@ -97,11 +105,18 @@ export default function RightPanel({
             {audit.map((entry) => (
               <li key={entry.id} className="px-3 py-2.5">
                 <div className="flex items-baseline justify-between gap-2">
-                  <span className="text-xs font-medium text-neutral-800">
-                    {entry.fieldId
-                      ? (FIELD_BY_ID[entry.fieldId]?.label ?? entry.fieldId)
-                      : "Workflow"}
-                  </span>
+                  {entry.fieldId ? (
+                    <button
+                      type="button"
+                      onClick={() => onJumpField(entry.fieldId!)}
+                      title={`Open ${FIELD_BY_ID[entry.fieldId]?.label ?? entry.fieldId} in the form`}
+                      className="text-left text-xs font-medium text-neutral-800 underline decoration-neutral-300 underline-offset-2 hover:text-neutral-900 hover:decoration-neutral-900"
+                    >
+                      {FIELD_BY_ID[entry.fieldId]?.label ?? entry.fieldId} →
+                    </button>
+                  ) : (
+                    <span className="text-xs font-medium text-neutral-800">Workflow</span>
+                  )}
                   <span className="shrink-0 text-[10px] text-neutral-400 tabular-nums">
                     {formatStamp(entry.at)}
                   </span>

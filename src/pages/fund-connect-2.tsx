@@ -54,7 +54,7 @@ import {
   fieldsInSection,
   summariseSection,
 } from "../lib/fundConnect2/schema";
-import type { StripMetric } from "../components/fund-connect2/StatusStrip";
+import type { MetricField, StripMetric } from "../components/fund-connect2/StatusStrip";
 import type { Permission } from "../lib/fundConnect/types";
 import { slaTone, toneFor } from "../lib/fundConnect/tone";
 import { REVIEW_SLA, SEED_NOTICES, SEED_RECORDS } from "../lib/fundConnect2/seed";
@@ -610,13 +610,15 @@ export default function FundConnect2Page() {
 
   const sectionsToShow = showAll ? SECTIONS.map((s) => s.id) : [openSection];
 
-  /* ----- strip-chip jump: open the section(s) and land on the fields ----- */
+  /* ----- jumping: chips and panel entries land on the exact field ----- */
 
   const [highlight, setHighlight] = useState<{ ids: string[]; cls: string } | null>(null);
 
-  function jumpToMetric(metric: StripMetric) {
-    if (!record) return;
-    const matches = FIELDS.filter((f) => {
+  /** The fields behind a strip metric, in form order, with section labels —
+   *  the data for the chip's summary popover. */
+  function fieldsForMetric(metric: StripMetric): MetricField[] {
+    if (!record) return [];
+    return FIELDS.filter((f) => {
       const st = fieldState(record, f.id, "submit");
       switch (metric) {
         case "missing":
@@ -630,29 +632,31 @@ export default function FundConnect2Page() {
         case "modified":
           return st.source === "modified";
       }
-    });
-    if (matches.length === 0) return;
-    // One affected section opens alone; several open side by side so every
-    // highlighted field is actually on the page.
-    const sections = new Set(matches.map((f) => f.sectionId));
-    if (sections.size > 1) {
-      setShowAll(true);
-    } else {
-      setShowAll(false);
-      setOpenSection(matches[0].sectionId);
-    }
-    setHighlight({
-      ids: matches.map((f) => f.id),
-      cls:
-        metric === "errors"
-          ? "ring-2 ring-red-400"
-          : metric === "imported"
-            ? "ring-2 ring-blue-400"
-            : "ring-2 ring-amber-400",
-    });
+    }).map((f) => ({
+      id: f.id,
+      label: f.label,
+      section: SECTIONS.find((s) => s.id === f.sectionId)?.label ?? f.sectionId,
+    }));
+  }
+
+  const METRIC_RING: Record<StripMetric, string> = {
+    missing: "ring-2 ring-amber-400",
+    errors: "ring-2 ring-red-400",
+    flags: "ring-2 ring-amber-400",
+    imported: "ring-2 ring-blue-400",
+    modified: "ring-2 ring-amber-400",
+  };
+
+  /** Open the field's section, scroll to it, and ring it briefly. */
+  function jumpToField(fieldId: string, cls = "ring-2 ring-blue-400") {
+    const field = FIELD_BY_ID[fieldId];
+    if (!field) return;
+    setShowAll(false);
+    setOpenSection(field.sectionId);
+    setHighlight({ ids: [fieldId], cls });
     window.setTimeout(() => {
       document
-        .getElementById(`fc2-field-${matches[0].id}`)
+        .getElementById(`fc2-field-${fieldId}`)
         ?.scrollIntoView({ behavior: "smooth", block: "center" });
     }, 80);
     window.setTimeout(() => setHighlight(null), 3500);
@@ -856,7 +860,13 @@ export default function FundConnect2Page() {
           </div>
         ) : (
           <div className="flex flex-wrap items-end justify-between gap-4 px-6 pb-3 pl-36">
-            {summary && <StatusStrip summary={summary} onJump={jumpToMetric} />}
+            {summary && (
+              <StatusStrip
+                summary={summary}
+                metricFields={fieldsForMetric}
+                onJumpField={(id, metric) => jumpToField(id, METRIC_RING[metric])}
+              />
+            )}
             <div className="flex flex-wrap items-center gap-2">
               {record.state === "draft" && (
                 <>
@@ -1540,6 +1550,7 @@ export default function FundConnect2Page() {
               onComment={(text) =>
                 act(commentOnRecord(record, user, text), "Comment added to the thread.")
               }
+              onJumpField={(id) => jumpToField(id)}
             />
           </aside>
         </div>
