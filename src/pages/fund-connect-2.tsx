@@ -656,9 +656,6 @@ export default function FundConnect2Page() {
               <span className="text-[11px] font-semibold tracking-[0.2em] text-neutral-400 uppercase">
                 Fund Connect 2
               </span>
-              <span className="hidden text-[10px] text-neutral-400 sm:inline">
-                upload → validate → review → approve → activate
-              </span>
             </div>
             {record ? (
               <div className="mt-1 flex flex-wrap items-center gap-2">
@@ -1096,9 +1093,11 @@ export default function FundConnect2Page() {
                           }`}
                         >
                           {label}
-                          <span aria-hidden className={active ? "text-neutral-900" : "text-neutral-300"}>
-                            {active ? (sortDir === "asc" ? "▲" : "▼") : "↕"}
-                          </span>
+                          {active && (
+                            <span aria-hidden className="text-neutral-900">
+                              {sortDir === "asc" ? "▲" : "▼"}
+                            </span>
+                          )}
                         </button>
                       </th>
                     );
