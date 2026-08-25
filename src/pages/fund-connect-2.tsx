@@ -7,6 +7,8 @@ import NotificationBell from "../components/fund-connect2/NotificationBell";
 import RightPanel from "../components/fund-connect2/RightPanel";
 import StatusStrip from "../components/fund-connect2/StatusStrip";
 import UploadWizard, { type WizardDraft } from "../components/fund-connect2/UploadWizard";
+import CobrandTable from "../components/fund-connect2/CobrandTable";
+import { summariseCobrands } from "../lib/fundConnect2/cobrands";
 import {
   USERS,
   activateNow,
@@ -1426,7 +1428,11 @@ export default function FundConnect2Page() {
                     label={s.label}
                     blurb={s.blurb}
                     status={item.status}
-                    summary={summariseSection(s.id, record.values)}
+                    summary={
+                      s.id === "distribution"
+                        ? summariseCobrands(record.values.cobrands)
+                        : summariseSection(s.id, record.values)
+                    }
                     expanded={expanded}
                     errors={item.errors}
                     flags={item.flags}
@@ -1440,7 +1446,36 @@ export default function FundConnect2Page() {
                       setOpenSection(expanded ? "" : s.id);
                     }}
                   >
-                    {fieldsInSection(s.id).map((field) => {
+                    {s.id === "distribution" ? (
+                      <div
+                        id="fc2-field-cobrands"
+                        className={`transition-shadow duration-500 ${
+                          deltaMap.has("cobrands") && showDelta
+                            ? "border-l-2 border-blue-400 bg-blue-50/30"
+                            : ""
+                        } ${highlight && highlight.ids.includes("cobrands") ? highlight.cls : ""}`}
+                      >
+                        {deltaMap.has("cobrands") && showDelta && (
+                          <p className="flex flex-wrap items-center gap-2 px-4 pt-2 text-[10px]">
+                            <span className="rounded-full bg-blue-100 px-1.5 font-medium tracking-wide text-blue-800 uppercase">
+                              Changed this cycle
+                            </span>
+                            <span className="font-mono text-neutral-500">
+                              was{" "}
+                              <span className="line-through">
+                                {deltaMap.get("cobrands")!.from || "empty"}
+                              </span>
+                            </span>
+                          </p>
+                        )}
+                        <CobrandTable
+                          value={record.values.cobrands ?? ""}
+                          readOnly={!edit.allowed}
+                          onChange={(raw) => update(setField(record, "cobrands", raw, user))}
+                        />
+                      </div>
+                    ) : (
+                    fieldsInSection(s.id).map((field) => {
                       const state = fieldState(record, field.id, "submit");
                       const changed = deltaMap.get(field.id);
                       const flash =
@@ -1490,7 +1525,8 @@ export default function FundConnect2Page() {
                           {row}
                         </div>
                       );
-                    })}
+                    })
+                    )}
                   </SectionCard>
                 );
               })}

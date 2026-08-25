@@ -109,16 +109,43 @@ const IDENTITY_FIELDS: FieldDef[] = [
   },
 ];
 
+/* Fund distribution — cobrand channels and their dealing terms. Rendered as
+ * a compact table (components/fund-connect2/CobrandTable), stored in the
+ * single `cobrands` field in a readable serialised form so audit and delta
+ * review stay legible. Codes live in ./cobrands. */
+const DISTRIBUTION_SECTION: SectionDef = {
+  id: "distribution",
+  label: "Fund distribution",
+  blurb: "Which cobrand channels offer the fund, and on what dealing terms.",
+};
+
+const DISTRIBUTION_FIELDS: FieldDef[] = [
+  {
+    id: "cobrands",
+    label: "Cobrands",
+    sectionId: "distribution",
+    kind: "text",
+    requirement: "optional",
+    importAliases: [],
+  },
+];
+
+const BASE_WITH_DISTRIBUTION: SectionDef[] = (() => {
+  const out = [...BASE_SECTIONS];
+  out.splice(out.findIndex((s) => s.id === "attest"), 0, DISTRIBUTION_SECTION);
+  return out;
+})();
+
 export const SECTIONS: SectionDef[] = [
   {
     id: "identity",
     label: "Identity & listing",
     blurb: "What the ETF is called, who issues it, and where it sits.",
   },
-  ...BASE_SECTIONS,
+  ...BASE_WITH_DISTRIBUTION,
 ];
 
-export const FIELDS: FieldDef[] = [...IDENTITY_FIELDS, ...BASE_FIELDS];
+export const FIELDS: FieldDef[] = [...IDENTITY_FIELDS, ...BASE_FIELDS, ...DISTRIBUTION_FIELDS];
 
 export const FIELD_BY_ID: Record<string, FieldDef> = Object.fromEntries(
   FIELDS.map((f) => [f.id, f]),

@@ -62,6 +62,7 @@ const gbpEquityBase: Record<string, string> = {
   riskCategory: "Standard",
   attestation: "Confirmed",
   comments: "",
+  cobrands: "WL1 c-30 r-30 all; AIS c0 r0 none",
 };
 
 const gbpBondBase: Record<string, string> = {
@@ -78,6 +79,7 @@ const gbpBondBase: Record<string, string> = {
   price: "24.05",
   cutoff: "15:00 London",
   paymentRef: "RED-AUG-0231",
+  cobrands: "LMB c-15 r-15 none",
 };
 
 const eurBase: Record<string, string> = {
@@ -94,6 +96,7 @@ const eurBase: Record<string, string> = {
   price: "112.60",
   settleCcy: "EUR",
   paymentRef: "SUB-AUG-0384",
+  cobrands: "SGA c-45 r-60 all; APX c0 r0 none",
 };
 
 type Identity = {
@@ -239,6 +242,7 @@ const SCENARIOS: FundRecord2[] = [
       riskCategory: "",
       attestation: "Not confirmed",
       paymentRef: "",
+      cobrands: "",
     },
     imported: [
       "fundLongName",
