@@ -506,7 +506,7 @@ export default function FundConnect2Page() {
       return true;
     };
     const actionRank = (r: FundRecord2) =>
-      (isReturned(r) && (r.submittedBy === user.id || r.createdBy === user.id)) ||
+      (isReturned(r) && (worksOn(r, user) || r.submittedBy === user.id)) ||
       canStartReview(r, user).allowed ||
       canDecide(r, user).allowed ||
       canActivate(r, user).allowed
@@ -634,6 +634,9 @@ export default function FundConnect2Page() {
   /* ----- jumping: chips and panel entries land on the exact field ----- */
 
   const [highlight, setHighlight] = useState<{ ids: string[]; cls: string } | null>(null);
+  // The fade-out timer for the current highlight — cleared on every new
+  // jump so a quick second jump isn't wiped early by the first one's timer.
+  const highlightTimer = useRef<number | null>(null);
 
   /** The fields behind a strip metric, in form order, with section labels —
    *  the data for the chip's summary popover. */
@@ -680,7 +683,8 @@ export default function FundConnect2Page() {
         .getElementById(`fc2-field-${fieldId}`)
         ?.scrollIntoView({ behavior: "smooth", block: "center" });
     }, 80);
-    window.setTimeout(() => setHighlight(null), 3500);
+    if (highlightTimer.current !== null) window.clearTimeout(highlightTimer.current);
+    highlightTimer.current = window.setTimeout(() => setHighlight(null), 3500);
   }
 
   return (
@@ -1446,10 +1450,7 @@ export default function FundConnect2Page() {
                           <button
                             key={f.fieldId}
                             type="button"
-                            onClick={() => {
-                              setOpenSection(FIELD_BY_ID[f.fieldId]?.sectionId ?? "identity");
-                              setShowAll(false);
-                            }}
+                            onClick={() => jumpToField(f.fieldId, "ring-2 ring-amber-400")}
                             className="rounded-full border border-amber-400 bg-white px-2 py-[1px] font-medium hover:bg-amber-100"
                           >
                             {FIELD_BY_ID[f.fieldId]?.label ?? f.fieldId} →
@@ -1471,10 +1472,7 @@ export default function FundConnect2Page() {
                       <li key={d.fieldId} className="flex flex-wrap items-baseline gap-2 text-[11px]">
                         <button
                           type="button"
-                          onClick={() => {
-                            setOpenSection(FIELD_BY_ID[d.fieldId]?.sectionId ?? "identity");
-                            setShowAll(false);
-                          }}
+                          onClick={() => jumpToField(d.fieldId)}
                           className="rounded-full border border-blue-300 bg-white px-2 py-[1px] font-medium text-blue-800 hover:bg-blue-100"
                         >
                           {FIELD_BY_ID[d.fieldId]?.label ?? d.fieldId} →

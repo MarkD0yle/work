@@ -170,6 +170,14 @@ export function validateValue(
     if (field.id === "fundNumber" && !/^\d{3,6}$/.test(raw)) {
       return { level: "error", message: "Fund numbers are 3–6 digits." };
     }
+    // "ctry" is the serialised marker for a country scope with no market
+    // picked yet (see ./cobrands) — fine while drafting, not fit to submit.
+    if (field.id === "cobrands" && /\bctry\b/.test(raw)) {
+      return {
+        level: "error",
+        message: "A cobrand is scoped to countries but has no market picked.",
+      };
+    }
   }
   return baseValidateValue(field, values);
 }
