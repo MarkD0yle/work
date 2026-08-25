@@ -43,6 +43,7 @@ import {
 } from "../lib/fundConnect2/engine";
 import {
   FIELD_BY_ID,
+  FIELDS,
   PROVIDERS,
   REGIONS,
   SECTIONS,
@@ -50,6 +51,7 @@ import {
   fieldsInSection,
   summariseSection,
 } from "../lib/fundConnect2/schema";
+import type { StripMetric } from "../components/fund-connect2/StatusStrip";
 import type { Permission } from "../lib/fundConnect/types";
 import { slaTone, toneFor } from "../lib/fundConnect/tone";
 import { REVIEW_SLA, SEED_NOTICES, SEED_RECORDS } from "../lib/fundConnect2/seed";
@@ -174,6 +176,7 @@ export default function FundConnect2Page() {
     setOpenId(id);
     setOpenSection("identity");
     setShowAll(false);
+    setHighlight(null);
     setToast(null);
   }
 
@@ -448,6 +451,54 @@ export default function FundConnect2Page() {
 
   const sectionsToShow = showAll ? SECTIONS.map((s) => s.id) : [openSection];
 
+  /* ----- strip-chip jump: open the section(s) and land on the fields ----- */
+
+  const [highlight, setHighlight] = useState<{ ids: string[]; cls: string } | null>(null);
+
+  function jumpToMetric(metric: StripMetric) {
+    if (!record) return;
+    const matches = FIELDS.filter((f) => {
+      const st = fieldState(record, f.id, "submit");
+      switch (metric) {
+        case "missing":
+          return st.missing;
+        case "errors":
+          return st.issue?.level === "error";
+        case "flags":
+          return st.flag !== null;
+        case "imported":
+          return st.source === "imported";
+        case "modified":
+          return st.source === "modified";
+      }
+    });
+    if (matches.length === 0) return;
+    // One affected section opens alone; several open side by side so every
+    // highlighted field is actually on the page.
+    const sections = new Set(matches.map((f) => f.sectionId));
+    if (sections.size > 1) {
+      setShowAll(true);
+    } else {
+      setShowAll(false);
+      setOpenSection(matches[0].sectionId);
+    }
+    setHighlight({
+      ids: matches.map((f) => f.id),
+      cls:
+        metric === "errors"
+          ? "ring-2 ring-red-400"
+          : metric === "imported"
+            ? "ring-2 ring-blue-400"
+            : "ring-2 ring-amber-400",
+    });
+    window.setTimeout(() => {
+      document
+        .getElementById(`fc2-field-${matches[0].id}`)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 80);
+    window.setTimeout(() => setHighlight(null), 3500);
+  }
+
   return (
     <div
       className={`${dark ? "fc2-dark " : ""}flex h-full min-h-0 flex-col bg-neutral-50 text-neutral-900`}
@@ -616,7 +667,7 @@ export default function FundConnect2Page() {
           </div>
         ) : (
           <div className="flex flex-wrap items-end justify-between gap-4 px-6 pb-3 pl-36">
-            {summary && <StatusStrip summary={summary} />}
+            {summary && <StatusStrip summary={summary} onJump={jumpToMetric} />}
             <div className="flex flex-wrap items-center gap-2">
               {record.state === "draft" && (
                 <>
@@ -1125,9 +1176,10 @@ export default function FundConnect2Page() {
                     {fieldsInSection(s.id).map((field) => {
                       const state = fieldState(record, field.id, "submit");
                       const changed = deltaMap.get(field.id);
+                      const flash =
+                        highlight && highlight.ids.includes(field.id) ? highlight.cls : "";
                       const row = (
                         <FieldRow
-                          key={field.id}
                           field={field}
                           value={record.values[field.id] ?? ""}
                           source={state.source}
@@ -1149,17 +1201,25 @@ export default function FundConnect2Page() {
                           }}
                         />
                       );
-                      if (!changed || !showDelta) return row;
+                      const deltaOn = Boolean(changed && showDelta);
                       return (
-                        <div key={field.id} className="border-l-2 border-blue-400 bg-blue-50/30">
-                          <p className="flex flex-wrap items-center gap-2 px-4 pt-2 text-[10px]">
-                            <span className="rounded-full bg-blue-100 px-1.5 font-medium tracking-wide text-blue-800 uppercase">
-                              Changed this cycle
-                            </span>
-                            <span className="font-mono text-neutral-500">
-                              was <span className="line-through">{changed.from || "empty"}</span>
-                            </span>
-                          </p>
+                        <div
+                          key={field.id}
+                          id={`fc2-field-${field.id}`}
+                          className={`transition-shadow duration-500 ${
+                            deltaOn ? "border-l-2 border-blue-400 bg-blue-50/30" : ""
+                          } ${flash}`}
+                        >
+                          {deltaOn && (
+                            <p className="flex flex-wrap items-center gap-2 px-4 pt-2 text-[10px]">
+                              <span className="rounded-full bg-blue-100 px-1.5 font-medium tracking-wide text-blue-800 uppercase">
+                                Changed this cycle
+                              </span>
+                              <span className="font-mono text-neutral-500">
+                                was <span className="line-through">{changed!.from || "empty"}</span>
+                              </span>
+                            </p>
+                          )}
                           {row}
                         </div>
                       );

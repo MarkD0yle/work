@@ -8,7 +8,13 @@ import type { RecordSummary } from "../../lib/fundConnect2/engine";
  * row of indicator lights, so "all clear" is visibly different from "needs
  * attention" without reading a single number. Sections complete carries a
  * segmented meter, one segment per section.
+ *
+ * A live chip is also a jump: clicking it opens the section(s) holding the
+ * affected fields and scrolls to the first one (wired via onJump).
  */
+
+/** Metrics a chip can jump to — everything except the sections meter. */
+export type StripMetric = "missing" | "errors" | "flags" | "imported" | "modified";
 
 function Tick() {
   return (
@@ -29,6 +35,7 @@ function Chip({
   text,
   clear,
   title,
+  onClick,
 }: {
   label: string;
   count: number;
@@ -39,15 +46,13 @@ function Chip({
   /** True when this metric being zero means "all clear" rather than "none". */
   clear: boolean;
   title: string;
+  /** Present and count > 0 → the chip is a jump to the affected fields. */
+  onClick?: () => void;
 }) {
   const idle = count === 0;
-  return (
-    <div
-      title={title}
-      className={`flex min-w-[92px] flex-col gap-1 border px-3 py-2 ${
-        idle ? "border-neutral-200 bg-white" : "border-neutral-300 bg-white shadow-sm"
-      }`}
-    >
+  const clickable = Boolean(onClick) && !idle;
+  const inner = (
+    <>
       <div className="flex items-center gap-1.5">
         {idle && clear ? (
           <span className="text-neutral-300">
@@ -69,12 +74,40 @@ function Chip({
       <span className="text-[9px] leading-tight font-medium tracking-[0.12em] text-neutral-400 uppercase">
         {label}
       </span>
+    </>
+  );
+  const frame = `flex min-w-[92px] flex-col gap-1 border px-3 py-2 text-left ${
+    idle ? "border-neutral-200 bg-white" : "border-neutral-300 bg-white shadow-sm"
+  }`;
+  if (clickable) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        title={`${title} — click to jump to ${count === 1 ? "the field" : "the fields"}`}
+        className={`${frame} cursor-pointer hover:border-neutral-900`}
+      >
+        {inner}
+      </button>
+    );
+  }
+  return (
+    <div title={title} className={frame}>
+      {inner}
     </div>
   );
 }
 
-export default function StatusStrip({ summary }: { summary: RecordSummary }) {
+export default function StatusStrip({
+  summary,
+  onJump,
+}: {
+  summary: RecordSummary;
+  /** Open and scroll to the fields behind a metric. */
+  onJump?: (metric: StripMetric) => void;
+}) {
   const done = summary.sectionsComplete === summary.sectionsTotal;
+  const jump = (metric: StripMetric) => (onJump ? () => onJump(metric) : undefined);
   return (
     <div className="flex flex-wrap items-stretch gap-2">
       {/* Sections meter — one segment per section. */}
@@ -119,6 +152,7 @@ export default function StatusStrip({ summary }: { summary: RecordSummary }) {
         text="text-amber-800"
         clear
         title="Required fields still empty at the submit tier"
+        onClick={jump("missing")}
       />
       <Chip
         label="Errors"
@@ -127,6 +161,7 @@ export default function StatusStrip({ summary }: { summary: RecordSummary }) {
         text="text-red-700"
         clear
         title="Fields whose current value fails validation"
+        onClick={jump("errors")}
       />
       <Chip
         label="Flagged"
@@ -135,6 +170,7 @@ export default function StatusStrip({ summary }: { summary: RecordSummary }) {
         text="text-amber-800"
         clear
         title="Fields a reviewer rejected and has not yet seen fixed"
+        onClick={jump("flags")}
       />
       <Chip
         label="Imported"
@@ -143,6 +179,7 @@ export default function StatusStrip({ summary }: { summary: RecordSummary }) {
         text="text-blue-800"
         clear={false}
         title="Fields written by the upload — not retyped"
+        onClick={jump("imported")}
       />
       <Chip
         label="Modified"
@@ -151,6 +188,7 @@ export default function StatusStrip({ summary }: { summary: RecordSummary }) {
         text="text-amber-800"
         clear
         title="Imported, then hand-edited — verify against the source"
+        onClick={jump("modified")}
       />
     </div>
   );
