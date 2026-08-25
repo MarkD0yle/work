@@ -102,38 +102,56 @@ export default function RightPanel({
                 Nothing in this window.
               </li>
             )}
-            {audit.map((entry) => (
-              <li key={entry.id} className="px-3 py-2.5">
-                <div className="flex items-baseline justify-between gap-2">
+            {audit.map((entry) => {
+              const body = (
+                <>
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="text-xs font-medium text-neutral-800">
+                      {entry.fieldId ? (
+                        <>
+                          {FIELD_BY_ID[entry.fieldId]?.label ?? entry.fieldId}{" "}
+                          <span className="text-neutral-300" aria-hidden>→</span>
+                        </>
+                      ) : (
+                        "Workflow"
+                      )}
+                    </span>
+                    <span className="shrink-0 text-[10px] text-neutral-400 tabular-nums">
+                      {formatStamp(entry.at)}
+                    </span>
+                  </div>
+                  {(entry.from || entry.to) && (
+                    <p className="mt-0.5 font-mono text-[11px] break-words text-neutral-600">
+                      <span className="text-neutral-400 line-through">{entry.from || "empty"}</span>
+                      <span className="mx-1 text-neutral-400">→</span>
+                      <span className="text-neutral-900">{entry.to || "empty"}</span>
+                    </p>
+                  )}
+                  {entry.note && <p className="mt-0.5 text-[11px] text-neutral-600">{entry.note}</p>}
+                  <p className="mt-0.5 text-[10px] text-neutral-400">
+                    {userName(entry.actor)} · {VIA_LABEL[entry.via] ?? entry.via}
+                  </p>
+                </>
+              );
+              // A field write is a place in the form — the whole entry is
+              // the link there, not just the field name.
+              return (
+                <li key={entry.id}>
                   {entry.fieldId ? (
                     <button
                       type="button"
                       onClick={() => onJumpField(entry.fieldId!)}
-                      title={`Open ${FIELD_BY_ID[entry.fieldId]?.label ?? entry.fieldId} in the form`}
-                      className="text-left text-xs font-medium text-neutral-800 underline decoration-neutral-300 underline-offset-2 hover:text-neutral-900 hover:decoration-neutral-900"
+                      title={`Show this change on ${FIELD_BY_ID[entry.fieldId]?.label ?? entry.fieldId} in the form`}
+                      className="w-full px-3 py-2.5 text-left hover:bg-neutral-50"
                     >
-                      {FIELD_BY_ID[entry.fieldId]?.label ?? entry.fieldId} →
+                      {body}
                     </button>
                   ) : (
-                    <span className="text-xs font-medium text-neutral-800">Workflow</span>
+                    <div className="px-3 py-2.5">{body}</div>
                   )}
-                  <span className="shrink-0 text-[10px] text-neutral-400 tabular-nums">
-                    {formatStamp(entry.at)}
-                  </span>
-                </div>
-                {(entry.from || entry.to) && (
-                  <p className="mt-0.5 font-mono text-[11px] break-words text-neutral-600">
-                    <span className="text-neutral-400 line-through">{entry.from || "empty"}</span>
-                    <span className="mx-1 text-neutral-400">→</span>
-                    <span className="text-neutral-900">{entry.to || "empty"}</span>
-                  </p>
-                )}
-                {entry.note && <p className="mt-0.5 text-[11px] text-neutral-600">{entry.note}</p>}
-                <p className="mt-0.5 text-[10px] text-neutral-400">
-                  {userName(entry.actor)} · {VIA_LABEL[entry.via] ?? entry.via}
-                </p>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ol>
         </>
       )}
