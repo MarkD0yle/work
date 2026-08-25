@@ -682,7 +682,7 @@ export default function FundConnect2Page() {
                 <span className="font-mono text-sm text-neutral-500">
                   {record.values.ticker || record.id}
                 </span>
-                {edit.allowed ? (
+                {record.state === "draft" && edit.allowed ? (
                   <input
                     value={record.title}
                     onChange={(e) => update(setTitle(record, e.target.value, user))}
@@ -914,6 +914,14 @@ export default function FundConnect2Page() {
 
               {record.state === "in_review" && (
                 <>
+                  {edit.allowed && (
+                    <span
+                      className="text-[10px] text-neutral-400"
+                      title="As the assigned reviewer you can correct values directly — every edit is audited under your name, and fixing a flagged field resolves the flag."
+                    >
+                      You can edit values directly
+                    </span>
+                  )}
                   <button
                     type="button"
                     disabled={!decide.allowed}

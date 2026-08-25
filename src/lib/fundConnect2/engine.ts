@@ -305,16 +305,31 @@ export function changedSinceLastReview(rec: FundRecord2): FieldDelta[] | null {
  * ------------------------------------------------------------------ */
 
 export function canEdit(rec: FundRecord2, user: User): Permission {
-  if (rec.state !== "draft") {
-    return { allowed: false, reason: `A ${stateLabel(rec.state).toLowerCase()} record is locked for editing.` };
+  if (rec.state === "draft") {
+    if (!user.roles.includes("submitter")) {
+      return { allowed: false, reason: `${user.name} holds approver rights only.` };
+    }
+    return { allowed: true };
   }
-  if (!user.roles.includes("submitter")) {
-    return { allowed: false, reason: `${user.name} holds approver rights only.` };
+  // The assigned reviewer may correct values directly in the version they
+  // are reviewing — every write is audited under their name, and editing a
+  // flagged field resolves the flag, exactly like a submitter's fix.
+  if (rec.state === "in_review") {
+    if (rec.reviewerId === user.id && user.roles.includes("approver")) {
+      return { allowed: true };
+    }
+    return {
+      allowed: false,
+      reason: `In review — only the assigned reviewer (${userName(rec.reviewerId)}) can edit values here.`,
+    };
   }
-  return { allowed: true };
+  return { allowed: false, reason: `A ${stateLabel(rec.state).toLowerCase()} record is locked for editing.` };
 }
 
 export function canSubmit(rec: FundRecord2, user: User): Permission {
+  if (rec.state !== "draft") {
+    return { allowed: false, reason: "Only a draft can be submitted." };
+  }
   const edit = canEdit(rec, user);
   if (!edit.allowed) return edit;
   const open = rec.flags.filter((f) => !f.resolved).length;
