@@ -177,16 +177,25 @@ function ColumnChooser({
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
+        aria-label="Choose which columns the grid shows"
         title="Choose which columns the grid shows"
-        className={`rounded-md border px-3 py-1.5 text-xs font-medium ${
+        className={`relative rounded-md border p-1.5 ${
           open
             ? "border-neutral-900 bg-neutral-900 text-white"
             : hiddenCount > 0
               ? "border-neutral-900 bg-white text-neutral-900"
-              : "border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50"
+              : "border-neutral-300 bg-white text-neutral-600 hover:text-neutral-900"
         }`}
       >
-        ⚙ Columns{hiddenCount > 0 ? ` (${COLUMN_DEFS.length - hiddenCount}/${COLUMN_DEFS.length})` : ""}
+        <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden>
+          <path d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.53 1.53 0 0 1-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 0 1 .947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 0 1 2.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 0 1 2.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 0 1 .947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 0 1-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 0 1-2.287-.947ZM10 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
+        </svg>
+        {hiddenCount > 0 && !open && (
+          <span
+            aria-hidden
+            className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-neutral-900"
+          />
+        )}
       </button>
       {open && (
         <div className="absolute right-0 z-40 mt-2 w-56 rounded-lg border border-neutral-200 bg-white p-2 shadow-xl">
