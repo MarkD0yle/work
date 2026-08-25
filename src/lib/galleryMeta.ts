@@ -241,6 +241,12 @@ export const GALLERY_META: Record<string, GalleryMeta> = {
     tags: ["import", "review", "audit", "forms"],
     motif: "form",
   },
+  "fund-connect-2": {
+    description:
+      "Upload → validate → review → approve → activate: step-by-step upload wizard, reject-with-comments loop, delta review and notifications.",
+    tags: ["import", "review", "workflow", "notifications"],
+    motif: "form",
+  },
   "sign-up": {
     description: "Account sign-up flow with password rules and field validation.",
     tags: ["sign-up", "auth", "validation"],
