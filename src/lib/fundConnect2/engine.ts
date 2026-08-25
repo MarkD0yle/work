@@ -608,6 +608,50 @@ export function activateNow(rec: FundRecord2, user: User): ActionResult {
   return { record: next, notices };
 }
 
+/** Whose plate is this record on right now? Drafts follow the assignee
+ *  (falling back to the creator); later states follow the workflow. */
+export function worksOn(rec: FundRecord2, user: User): boolean {
+  return rec.assigneeId ? rec.assigneeId === user.id : rec.createdBy === user.id;
+}
+
+/** Assign a draft to someone — how a pile of drafts gets divided up.
+ *  Audited, and the new assignee is told they have work. */
+export function assignRecord(
+  rec: FundRecord2,
+  assigneeId: string | null,
+  actor: User,
+): ActionResult {
+  if (rec.assigneeId === assigneeId) return { record: rec, notices: [] };
+  const at = nowIso();
+  const next = withAudit(
+    { ...rec, assigneeId },
+    {
+      id: auditId(),
+      fieldId: null,
+      from: rec.assigneeId ? userName(rec.assigneeId) : "Unassigned",
+      to: assigneeId ? userName(assigneeId) : "Unassigned",
+      actor: actor.id,
+      at,
+      via: "system",
+      note: assigneeId ? `Assigned to ${userName(assigneeId)}` : "Assignment cleared",
+    },
+  );
+  const notices: Notice[] = [];
+  if (assigneeId && assigneeId !== actor.id) {
+    notices.push(
+      notice(
+        assigneeId,
+        next,
+        "assigned",
+        `${actor.name} assigned "${next.title}" to you.`,
+        true,
+        at,
+      ),
+    );
+  }
+  return { record: next, notices };
+}
+
 /** A plain thread comment. The other side of the conversation is told. */
 export function commentOnRecord(rec: FundRecord2, user: User, text: string): ActionResult {
   const at = nowIso();
@@ -700,6 +744,7 @@ export function blankRecord(id: string, title: string, createdBy: string): FundR
     cycle: 0,
     createdBy,
     createdAt: at,
+    assigneeId: createdBy,
     submittedBy: null,
     submittedAt: null,
     reviewerId: null,

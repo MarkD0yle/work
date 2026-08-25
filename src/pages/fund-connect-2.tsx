@@ -16,6 +16,7 @@ import {
   ageMinutes,
   applyImport,
   approveRecord,
+  assignRecord,
   blankRecord,
   canActivate,
   canDecide,
@@ -42,6 +43,7 @@ import {
   summarise,
   userById,
   userName,
+  worksOn,
   type ActionResult,
 } from "../lib/fundConnect2/engine";
 import {
@@ -147,7 +149,24 @@ const COLUMN_DEFS: { key: string; label: string; cls: string; locked?: boolean }
   { key: "ticker", label: "Ticker", cls: "" },
   { key: "trust", label: "Trust", cls: "hidden xl:table-cell" },
   { key: "status", label: "Status", cls: "" },
+  { key: "with", label: "With", cls: "" },
 ];
+
+/** Whose plate the record is on — the "With" column and its sort key. */
+function withLabel(r: FundRecord2): string {
+  switch (r.state) {
+    case "draft":
+      return r.assigneeId ? userName(r.assigneeId) : "Unassigned";
+    case "submitted":
+      return "Awaiting reviewer";
+    case "in_review":
+      return userName(r.reviewerId);
+    case "approved":
+      return `${userName(r.approvedBy)} · to activate`;
+    case "active":
+      return "—";
+  }
+}
 
 /** "⚙ Columns" — pick which grid columns are visible. */
 function ColumnChooser({
@@ -375,7 +394,7 @@ export default function FundConnect2Page() {
   const cards: WorkCard[] = useMemo(() => {
     const out: WorkCard[] = [];
     if (user.roles.includes("submitter")) {
-      const mine = records.filter((r) => r.state === "draft" && r.createdBy === user.id);
+      const mine = records.filter((r) => r.state === "draft" && worksOn(r, user));
       const ready = mine.filter((r) => canSubmit(r, user).allowed).length;
       out.push({
         id: "my-drafts",
@@ -383,10 +402,10 @@ export default function FundConnect2Page() {
         count: mine.length,
         detail: ready > 0 ? `${ready} ready to submit` : "none ready to submit yet",
         urgent: false,
-        match: (r) => r.state === "draft" && r.createdBy === user.id,
+        match: (r) => r.state === "draft" && worksOn(r, user),
       });
       const returned = records.filter(
-        (r) => isReturned(r) && (r.submittedBy === user.id || r.createdBy === user.id),
+        (r) => isReturned(r) && (worksOn(r, user) || r.submittedBy === user.id),
       );
       out.push({
         id: "returned",
@@ -396,7 +415,7 @@ export default function FundConnect2Page() {
           ? `${returned[0].values.ticker || returned[0].id}: fix & resubmit`
           : "nothing waiting on you",
         urgent: returned.length > 0,
-        match: (r) => isReturned(r) && (r.submittedBy === user.id || r.createdBy === user.id),
+        match: (r) => isReturned(r) && (worksOn(r, user) || r.submittedBy === user.id),
       });
     }
     if (user.roles.includes("approver")) {
@@ -515,6 +534,7 @@ export default function FundConnect2Page() {
     };
     const value = (r: FundRecord2): string | number => {
       if (sortKey === "status") return statusRank[gridStatus(r)];
+      if (sortKey === "with") return withLabel(r).toLowerCase();
       if (sortKey === "fundNumber") return Number(r.values.fundNumber) || 0;
       if (sortKey === "fundLongName") return (r.values.fundLongName || r.title).toLowerCase();
       return (r.values[sortKey] ?? "").toLowerCase();
@@ -557,6 +577,7 @@ export default function FundConnect2Page() {
     // Export mirrors the grid: the filtered rows, the visible columns.
     const cell = (r: FundRecord2, key: string): string => {
       if (key === "status") return STATUS_LABEL[gridStatus(r)];
+      if (key === "with") return withLabel(r);
       if (key === "fundLongName") return r.values.fundLongName || r.title;
       return r.values[key] ?? "";
     };
@@ -1205,6 +1226,44 @@ export default function FundConnect2Page() {
                           <StatusPill status={status} />
                         </td>
                       )}
+                      {cols.has("with") && (
+                        <td className="px-3 py-2">
+                          {r.state === "draft" && user.roles.includes("submitter") ? (
+                            // Dividing drafts happens right here in the grid.
+                            <select
+                              value={r.assigneeId ?? ""}
+                              onClick={(e) => e.stopPropagation()}
+                              onChange={(e) =>
+                                act(
+                                  assignRecord(r, e.target.value || null, user),
+                                  e.target.value
+                                    ? `"${r.title}" assigned to ${userName(e.target.value)}${e.target.value === user.id ? "" : " — they have been notified"}.`
+                                    : `Assignment cleared on "${r.title}".`,
+                                )
+                              }
+                              aria-label={`Assign ${r.values.ticker || r.id}`}
+                              className={`rounded-md border px-1.5 py-1 text-[11px] ${
+                                r.assigneeId
+                                  ? "border-neutral-300 bg-white text-neutral-700"
+                                  : "border-amber-400 bg-amber-50 text-amber-900"
+                              }`}
+                            >
+                              <option value="">Unassigned</option>
+                              {USERS.filter((u) => u.roles.includes("submitter")).map((u) => (
+                                <option key={u.id} value={u.id}>
+                                  {u.name}
+                                </option>
+                              ))}
+                            </select>
+                          ) : r.state === "in_review" ? (
+                            <span className="text-xs font-medium text-blue-800">
+                              {userName(r.reviewerId)}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-neutral-500">{withLabel(r)}</span>
+                          )}
+                        </td>
+                      )}
                       <td className="px-3 py-2 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
@@ -1314,6 +1373,41 @@ export default function FundConnect2Page() {
               <div className="flex justify-between gap-2 py-0.5">
                 <dt className="text-neutral-400">Owner</dt>
                 <dd className="text-neutral-700">{userName(record.createdBy)}</dd>
+              </div>
+              <div className="flex items-center justify-between gap-2 py-0.5">
+                <dt className="text-neutral-400">Assigned to</dt>
+                <dd className="text-neutral-700">
+                  {record.state === "draft" && user.roles.includes("submitter") ? (
+                    <select
+                      value={record.assigneeId ?? ""}
+                      onChange={(e) =>
+                        act(
+                          assignRecord(record, e.target.value || null, user),
+                          e.target.value
+                            ? `Assigned to ${userName(e.target.value)}${e.target.value === user.id ? "" : " — they have been notified"}.`
+                            : "Assignment cleared.",
+                        )
+                      }
+                      aria-label="Assign this draft"
+                      className={`rounded-md border px-1.5 py-0.5 text-[11px] ${
+                        record.assigneeId
+                          ? "border-neutral-300 bg-white text-neutral-700"
+                          : "border-amber-400 bg-amber-50 text-amber-900"
+                      }`}
+                    >
+                      <option value="">Unassigned</option>
+                      {USERS.filter((u) => u.roles.includes("submitter")).map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.name}
+                        </option>
+                      ))}
+                    </select>
+                  ) : record.state === "draft" ? (
+                    record.assigneeId ? userName(record.assigneeId) : "Unassigned"
+                  ) : (
+                    withLabel(record)
+                  )}
+                </dd>
               </div>
               <div className="flex justify-between gap-2 py-0.5">
                 <dt className="text-neutral-400">Submitted by</dt>

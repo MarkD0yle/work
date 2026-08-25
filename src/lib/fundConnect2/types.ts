@@ -56,7 +56,8 @@ export type NoticeKind =
   | "returned"
   | "approved"
   | "activated"
-  | "comment";
+  | "comment"
+  | "assigned";
 
 /** An inbox item for one user. Lives outside the record — notices are
  *  per-person and cross-record, so the page holds them in their own store. */
@@ -87,6 +88,9 @@ export type FundRecord2 = {
   cycle: number;
   createdBy: string;
   createdAt: string;
+  /** Who is working the draft — how a pile of drafts is divided up.
+   *  Null means nobody has picked it up beyond its creator. */
+  assigneeId: string | null;
   submittedBy: string | null;
   submittedAt: string | null;
   /** Sticks through a return, so a resubmission notifies the same reviewer. */

@@ -133,6 +133,7 @@ type Seed = {
   events?: { from: string; to: string; actor: string; minsAgo: number; note: string }[];
   createdBy: string;
   createdMinsAgo: number;
+  assigneeId?: string;
   submittedBy?: string;
   submittedMinsAgo?: number;
   reviewerId?: string;
@@ -186,6 +187,7 @@ function build(seed: Seed): FundRecord2 {
     cycle: seed.cycle ?? 0,
     createdBy: seed.createdBy,
     createdAt: at(seed.createdMinsAgo),
+    assigneeId: seed.assigneeId ?? (seed.state === "draft" ? seed.createdBy : null),
     submittedBy: seed.submittedBy ?? null,
     submittedAt: seed.submittedMinsAgo === undefined ? null : at(seed.submittedMinsAgo),
     reviewerId: seed.reviewerId ?? null,
