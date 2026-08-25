@@ -366,6 +366,22 @@ export function canDecide(rec: FundRecord2, user: User): Permission {
   return { allowed: true };
 }
 
+/** Discard = delete a draft outright. Once a record has been submitted it
+ *  carries review history, so it can only move forward — never vanish. */
+export function canDiscard(rec: FundRecord2, user: User): Permission {
+  if (rec.state !== "draft") {
+    return { allowed: false, reason: "Only a draft can be discarded — everything later carries review history." };
+  }
+  if (!user.roles.includes("submitter")) {
+    return { allowed: false, reason: `${user.name} holds approver rights only.` };
+  }
+  const admin = user.roles.includes("approver");
+  if (rec.createdBy !== user.id && !admin) {
+    return { allowed: false, reason: `Only ${userName(rec.createdBy)} (the owner) or an admin can discard this draft.` };
+  }
+  return { allowed: true };
+}
+
 export function canActivate(rec: FundRecord2, user: User): Permission {
   if (rec.state !== "approved") {
     return { allowed: false, reason: "Only an approved record can be activated." };

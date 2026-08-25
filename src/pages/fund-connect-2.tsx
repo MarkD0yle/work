@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import Modal from "../components/patterns/Modal";
+import Modal, { ConfirmDialog } from "../components/patterns/Modal";
 import FieldRow from "../components/fund-connect/FieldRow";
 import SectionCard from "../components/fund-connect/SectionCard";
 import StatusRail, { type RailItem } from "../components/fund-connect/StatusRail";
@@ -17,6 +17,7 @@ import {
   blankRecord,
   canActivate,
   canDecide,
+  canDiscard,
   canEdit,
   canStartReview,
   canSubmit,
@@ -145,6 +146,7 @@ export default function FundConnect2Page() {
   const [approveOpen, setApproveOpen] = useState(false);
   const [effectiveDate, setEffectiveDate] = useState(DEMO_TODAY);
   const [approveText, setApproveText] = useState("");
+  const [discardId, setDiscardId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
   /* Grid controls */
@@ -213,6 +215,15 @@ export default function FundConnect2Page() {
         withErrors ? ` — ${withErrors} still ${withErrors === 1 ? "has" : "have"} fields to fix before submitting` : ""
       }. Nothing was retyped.`,
     );
+  }
+
+  function discardRecord(id: string) {
+    const target = records.find((r) => r.id === id);
+    setRecords((prev) => prev.filter((r) => r.id !== id));
+    setNotices((prev) => prev.filter((n) => n.recordId !== id));
+    setDiscardId(null);
+    if (openId === id) setOpenId(null);
+    setToast(`Draft ${target ? `"${target.title}"` : id} discarded.`);
   }
 
   function createBlank() {
@@ -673,6 +684,15 @@ export default function FundConnect2Page() {
                 <>
                   <button
                     type="button"
+                    disabled={!canDiscard(record, user).allowed}
+                    title={canDiscard(record, user).reason ?? "Delete this draft permanently"}
+                    onClick={() => setDiscardId(record.id)}
+                    className="rounded-md border border-neutral-300 px-3 py-1.5 text-xs font-medium text-red-700 hover:border-red-400 hover:bg-red-50/40 disabled:border-neutral-200 disabled:text-neutral-400"
+                  >
+                    Discard
+                  </button>
+                  <button
+                    type="button"
                     disabled={!edit.allowed}
                     title={edit.reason}
                     onClick={() =>
@@ -949,20 +969,42 @@ export default function FundConnect2Page() {
                         <StatusPill status={status} />
                       </td>
                       <td className="px-3 py-2 text-right">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openRecord(r.id);
-                          }}
-                          className={`rounded-md border px-2.5 py-1 text-[11px] font-medium ${
-                            action.urgent
-                              ? "border-neutral-900 bg-neutral-900 text-white"
-                              : "border-neutral-300 bg-white text-neutral-700 hover:border-neutral-900 hover:text-neutral-900"
-                          }`}
-                        >
-                          {action.label}
-                        </button>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openRecord(r.id);
+                            }}
+                            className={`rounded-md border px-2.5 py-1 text-[11px] font-medium ${
+                              action.urgent
+                                ? "border-neutral-900 bg-neutral-900 text-white"
+                                : "border-neutral-300 bg-white text-neutral-700 hover:border-neutral-900 hover:text-neutral-900"
+                            }`}
+                          >
+                            {action.label}
+                          </button>
+                          {canDiscard(r, user).allowed && (
+                            <button
+                              type="button"
+                              aria-label={`Discard draft ${r.values.ticker || r.id}`}
+                              title="Discard this draft"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDiscardId(r.id);
+                              }}
+                              className="rounded-md border border-neutral-300 bg-white p-1 text-neutral-400 hover:border-red-400 hover:text-red-700"
+                            >
+                              <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5" aria-hidden>
+                                <path
+                                  fillRule="evenodd"
+                                  d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482 41.03 41.03 0 0 0-2.365-.298V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -1247,6 +1289,17 @@ export default function FundConnect2Page() {
         onClose={() => setWizardOpen(false)}
         onCommit={commitUpload}
         onBlank={createBlank}
+      />
+
+      {/* Discard a draft — destructive, so it always confirms. */}
+      <ConfirmDialog
+        open={discardId !== null}
+        onClose={() => setDiscardId(null)}
+        onConfirm={() => discardId && discardRecord(discardId)}
+        title="Discard this draft?"
+        description={`${records.find((r) => r.id === discardId)?.title ?? discardId ?? ""} — the draft and its history are deleted permanently. Submitted or approved records can never be discarded.`}
+        confirmLabel="Discard draft"
+        destructive
       />
 
       {/* Reject with comments */}
