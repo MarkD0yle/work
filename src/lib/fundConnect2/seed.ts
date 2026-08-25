@@ -96,7 +96,7 @@ const eurBase: Record<string, string> = {
   price: "112.60",
   settleCcy: "EUR",
   paymentRef: "SUB-AUG-0384",
-  cobrands: "SGA c-45 r-60 all; APX c0 r0 none",
+  cobrands: "SGA c-45 r-60 GB,IE,LU; APX c0 r0 none",
 };
 
 type Identity = {

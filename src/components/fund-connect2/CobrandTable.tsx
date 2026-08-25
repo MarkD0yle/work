@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react";
 import {
   COBRAND_CODES,
+  COUNTRY_CODES,
   parseCobrands,
   serialiseCobrands,
   type CobrandEntry,
@@ -9,11 +9,16 @@ import {
 
 /* Fund distribution editor — the repeating group drawn as a table.
  *
- * The legacy layout stacked a full form block per cobrand (two offset
- * fields and a radio group each), so a handful of channels filled a page.
- * Here each cobrand is one compact row with sensible defaults (offsets 0,
- * no country restriction), "Add cobrand" only offers channels not already
- * added, and the whole section stays a few lines tall at any count. */
+ * The legacy layout stacked a full form block per cobrand, so a handful of
+ * channels filled a page. Here:
+ *   - the channel set is small and fixed, so there is no dropdown at all:
+ *     every cobrand is a visible toggle chip — added channels are filled,
+ *     available ones outlined, one click either way
+ *   - each added cobrand is one compact row with sensible defaults
+ *     (offsets 0, no country restriction), so only deviations need touching
+ *   - country distribution is a three-way control; picking "Countries"
+ *     reveals toggle chips for the markets, again with nothing hidden
+ */
 
 function OffsetInput({
   value,
@@ -52,18 +57,6 @@ export default function CobrandTable({
   onChange: (raw: string) => void;
 }) {
   const entries = parseCobrands(value);
-  const remaining = COBRAND_CODES.filter((c) => !entries.some((e) => e.code === c));
-  const [addOpen, setAddOpen] = useState(false);
-  const addRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!addOpen) return;
-    function onDown(e: MouseEvent) {
-      if (!addRef.current?.contains(e.target as Node)) setAddOpen(false);
-    }
-    document.addEventListener("mousedown", onDown);
-    return () => document.removeEventListener("mousedown", onDown);
-  }, [addOpen]);
 
   function commit(next: CobrandEntry[]) {
     onChange(serialiseCobrands(next));
@@ -73,52 +66,59 @@ export default function CobrandTable({
     commit(entries.map((e) => (e.code === code ? { ...e, ...change } : e)));
   }
 
+  function toggleChannel(code: string) {
+    const added = entries.some((e) => e.code === code);
+    if (added) {
+      commit(entries.filter((e) => e.code !== code));
+    } else {
+      commit([...entries, { code, creation: "0", redemption: "0", scope: "none", countries: [] }]);
+    }
+  }
+
   return (
     <div className="px-4 py-3">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <p className="max-w-md text-[11px] leading-snug text-neutral-400">
-          Channels the fund is offered through. Offsets are minutes relative to the
-          fund's dealing cut-off — negative closes that channel earlier. New rows
-          start at 0 / 0 / no restriction, so only deviations need touching.
-        </p>
-        {!readOnly && (
-          <div ref={addRef} className="relative">
+      <p className="max-w-xl text-[11px] leading-snug text-neutral-400">
+        Channels the fund is offered through — click a channel to add or remove it.
+        Offsets are minutes relative to the fund's dealing cut-off; negative closes
+        that channel earlier. New channels start at 0 / 0 / no restriction, so only
+        deviations need touching.
+      </p>
+
+      {/* Every cobrand, always visible: filled = offered, outlined = available. */}
+      <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+        {COBRAND_CODES.map((code) => {
+          const added = entries.some((e) => e.code === code);
+          return (
             <button
+              key={code}
               type="button"
-              onClick={() => setAddOpen((o) => !o)}
-              disabled={remaining.length === 0}
-              aria-expanded={addOpen}
-              title={remaining.length === 0 ? "Every cobrand is already added." : undefined}
-              className="rounded-md border border-neutral-900 px-2.5 py-1 text-[11px] font-semibold text-neutral-900 hover:bg-neutral-900 hover:text-white disabled:border-neutral-200 disabled:text-neutral-400 disabled:hover:bg-white"
+              disabled={readOnly}
+              onClick={() => toggleChannel(code)}
+              aria-pressed={added}
+              title={
+                readOnly
+                  ? undefined
+                  : added
+                    ? `Remove ${code} and its terms`
+                    : `Offer the fund through ${code}`
+              }
+              className={`rounded-full border px-2.5 py-1 font-mono text-[11px] font-medium disabled:opacity-60 ${
+                added
+                  ? "border-neutral-900 bg-neutral-900 text-white"
+                  : "border-neutral-300 bg-white text-neutral-500 hover:border-neutral-900 hover:text-neutral-900"
+              }`}
             >
-              + Add cobrand
+              {added ? "✓ " : "+ "}
+              {code}
             </button>
-            {addOpen && (
-              <ul className="absolute right-0 z-30 mt-1 w-36 rounded-lg border border-neutral-200 bg-white py-1 shadow-xl">
-                {remaining.map((code) => (
-                  <li key={code}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        commit([...entries, { code, creation: "0", redemption: "0", scope: "none" }]);
-                        setAddOpen(false);
-                      }}
-                      className="w-full px-3 py-1.5 text-left font-mono text-xs text-neutral-800 hover:bg-neutral-50"
-                    >
-                      {code}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        )}
+          );
+        })}
       </div>
 
       {entries.length === 0 ? (
         <p className="mt-3 border border-dashed border-neutral-300 px-3 py-3 text-xs text-neutral-500">
           Not offered through any cobrand yet
-          {readOnly ? "." : " — add one to set its dealing terms."}
+          {readOnly ? "." : " — click a channel above to set its dealing terms."}
         </p>
       ) : (
         <table className="mt-3 w-full text-left text-xs">
@@ -128,12 +128,11 @@ export default function CobrandTable({
               <th className="px-3 py-1.5 font-medium">Creation cut-off offset</th>
               <th className="px-3 py-1.5 font-medium">Redemption cut-off offset</th>
               <th className="px-3 py-1.5 font-medium">Country distribution</th>
-              {!readOnly && <th className="py-1.5 pl-3" />}
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-100">
             {entries.map((e) => (
-              <tr key={e.code}>
+              <tr key={e.code} className="align-top">
                 <td className="py-2 pr-3 font-mono text-xs font-semibold text-neutral-900">
                   {e.code}
                 </td>
@@ -159,6 +158,7 @@ export default function CobrandTable({
                       [
                         ["none", "None"],
                         ["all", "All institutions"],
+                        ["countries", "Countries"],
                       ] as [CobrandScope, string][]
                     ).map(([scope, label]) => (
                       <button
@@ -173,24 +173,48 @@ export default function CobrandTable({
                             : "bg-white text-neutral-500 hover:text-neutral-900"
                         }`}
                       >
-                        {label}
+                        {scope === "countries" && e.scope === "countries" && e.countries.length > 0
+                          ? `Countries (${e.countries.length})`
+                          : label}
                       </button>
                     ))}
                   </div>
+                  {e.scope === "countries" && (
+                    <div className="mt-1.5 flex max-w-sm flex-wrap gap-1">
+                      {COUNTRY_CODES.map((cc) => {
+                        const on = e.countries.includes(cc);
+                        return (
+                          <button
+                            key={cc}
+                            type="button"
+                            disabled={readOnly}
+                            onClick={() =>
+                              patch(e.code, {
+                                countries: on
+                                  ? e.countries.filter((x) => x !== cc)
+                                  : [...e.countries, cc],
+                              })
+                            }
+                            aria-pressed={on}
+                            title={on ? `Remove ${cc}` : `Distribute in ${cc}`}
+                            className={`rounded border px-1.5 py-0.5 font-mono text-[10px] disabled:opacity-60 ${
+                              on
+                                ? "border-neutral-900 bg-neutral-900 text-white"
+                                : "border-neutral-300 bg-white text-neutral-500 hover:border-neutral-900 hover:text-neutral-900"
+                            }`}
+                          >
+                            {cc}
+                          </button>
+                        );
+                      })}
+                      {e.countries.length === 0 && (
+                        <span className="ml-1 self-center text-[10px] text-amber-800">
+                          pick at least one market — none picked behaves like “None”
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </td>
-                {!readOnly && (
-                  <td className="py-2 pl-3 text-right">
-                    <button
-                      type="button"
-                      onClick={() => commit(entries.filter((x) => x.code !== e.code))}
-                      aria-label={`Remove cobrand ${e.code}`}
-                      title={`Remove ${e.code}`}
-                      className="rounded-md border border-neutral-300 px-1.5 py-0.5 text-[11px] text-neutral-400 hover:border-red-400 hover:text-red-700"
-                    >
-                      ✕
-                    </button>
-                  </td>
-                )}
               </tr>
             ))}
           </tbody>
