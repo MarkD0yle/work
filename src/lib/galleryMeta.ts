@@ -243,9 +243,9 @@ export const GALLERY_META: Record<string, GalleryMeta> = {
   },
   "fund-connect-2": {
     description:
-      "Upload → validate → review → approve → activate: step-by-step upload wizard, reject-with-comments loop, delta review and notifications.",
-    tags: ["import", "review", "workflow", "notifications"],
-    motif: "form",
+      "Primary-market ETF register with the creation flow behind it: upload wizard, reject-with-comments loop, delta review, effective-date activation.",
+    tags: ["grid", "import", "review", "workflow"],
+    motif: "grid",
   },
   "sign-up": {
     description: "Account sign-up flow with password rules and field validation.",

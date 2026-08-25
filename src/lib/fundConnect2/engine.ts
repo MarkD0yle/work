@@ -35,7 +35,7 @@ import {
   isMissing,
   validateValue,
   type ValidationStage,
-} from "../fundConnect/schema";
+} from "./schema";
 
 export const USERS: User[] = [
   {

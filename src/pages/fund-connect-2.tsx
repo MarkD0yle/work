@@ -43,19 +43,16 @@ import {
 } from "../lib/fundConnect2/engine";
 import {
   FIELD_BY_ID,
+  PROVIDERS,
+  REGIONS,
   SECTIONS,
   derivedFor,
   fieldsInSection,
   summariseSection,
-} from "../lib/fundConnect/schema";
+} from "../lib/fundConnect2/schema";
 import type { Permission } from "../lib/fundConnect/types";
 import { slaTone, toneFor } from "../lib/fundConnect/tone";
-import {
-  ABANDONED_AFTER_MINUTES,
-  REVIEW_SLA,
-  SEED_NOTICES,
-  SEED_RECORDS,
-} from "../lib/fundConnect2/seed";
+import { REVIEW_SLA, SEED_NOTICES, SEED_RECORDS } from "../lib/fundConnect2/seed";
 import { STATE_DOT, STATE_PILL } from "../lib/fundConnect2/tone";
 import type { FundRecord2, Notice, RecordState2 } from "../lib/fundConnect2/types";
 
@@ -63,31 +60,40 @@ export const title = "Fund Connect 2";
 export const section = "forms";
 export const fullWidth = true;
 
-/* Fund Connect 2 — upload → validate → review → approve → activate.
+/* Fund Connect 2 — the primary-market ETF register, with the creation flow
+ * (upload → validate → review → approve → activate) hanging off it.
  *
- * Same schema, validation and layout language as Fund Connect; what changes
- * is the flow around the form:
- *
- *   - the upload wizard is the entry point (structured import first)
- *   - Draft / Queue / Complete tabs manage the whole book of work
- *   - reject-with-comments loop: who, when, why, and what to fix — then the
- *     original reviewer is notified on resubmit and sees only the delta
- *   - approve asks for an effective date; activate is its own final state
- *   - a per-user notification inbox, and a scoped dark mode (.fc2-dark)
+ * The top level is one grid: every ETF the desk runs, live and in-flight,
+ * one row each. Lifecycle state is a column, not a page — the work strip
+ * above the grid says what needs *your* attention and doubles as a filter.
+ * "Create new" enters the upload wizard; a row opens the record editor with
+ * the reject-with-comments loop, delta review and the audit trail.
  */
 
 const STATE_FLOW: RecordState2[] = ["draft", "submitted", "in_review", "approved", "active"];
 
-type Tab = "draft" | "queue" | "complete";
+/** Grid status — pipeline state, with returned drafts called out. */
+type GridStatus = RecordState2 | "returned";
 
-const TAB_STATES: Record<Tab, RecordState2[]> = {
-  draft: ["draft"],
-  queue: ["submitted", "in_review"],
-  complete: ["approved", "active"],
+const STATUS_LABEL: Record<GridStatus, string> = {
+  draft: "Draft",
+  returned: "Returned",
+  submitted: "Submitted",
+  in_review: "In review",
+  approved: "Scheduled",
+  active: "Active",
 };
 
-function tabFor(state: RecordState2): Tab {
-  return state === "draft" ? "draft" : state === "submitted" || state === "in_review" ? "queue" : "complete";
+function isReturned(r: FundRecord2): boolean {
+  return (
+    r.state === "draft" &&
+    (r.flags.some((f) => !f.resolved) ||
+      r.comments.some((c) => c.kind === "reject" && c.cycle === r.cycle))
+  );
+}
+
+function gridStatus(r: FundRecord2): GridStatus {
+  return isReturned(r) ? "returned" : r.state;
 }
 
 function Pill({ state }: { state: RecordState2 }) {
@@ -101,14 +107,35 @@ function Pill({ state }: { state: RecordState2 }) {
   );
 }
 
+function StatusPill({ status }: { status: GridStatus }) {
+  if (status === "returned") {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400 bg-amber-50 px-2 py-[1px] text-[10px] font-medium tracking-wide text-amber-900 uppercase">
+        <span className="h-1 w-1 rounded-full bg-amber-500" aria-hidden />
+        Returned
+      </span>
+    );
+  }
+  if (status === "approved") {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full border border-neutral-900 bg-neutral-900 px-2 py-[1px] text-[10px] font-medium tracking-wide text-white uppercase">
+        <span className="h-1 w-1 rounded-full bg-white" aria-hidden />
+        Scheduled
+      </span>
+    );
+  }
+  return <Pill state={status} />;
+}
+
+const PAGE_SIZE = 50;
+
 export default function FundConnect2Page() {
   const [records, setRecords] = useState<FundRecord2[]>(SEED_RECORDS);
   const [notices, setNotices] = useState<Notice[]>(SEED_NOTICES);
   const [userId, setUserId] = useState("p.raman");
-  const [tab, setTab] = useState<Tab>("draft");
   const [openId, setOpenId] = useState<string | null>(null);
   const [dark, setDark] = useState(false);
-  const [openSection, setOpenSection] = useState("fund");
+  const [openSection, setOpenSection] = useState("identity");
   const [showAll, setShowAll] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
@@ -117,6 +144,14 @@ export default function FundConnect2Page() {
   const [effectiveDate, setEffectiveDate] = useState(DEMO_TODAY);
   const [approveText, setApproveText] = useState("");
   const [toast, setToast] = useState<string | null>(null);
+
+  /* Grid controls */
+  const [q, setQ] = useState("");
+  const [regionF, setRegionF] = useState("");
+  const [providerF, setProviderF] = useState("");
+  const [statusF, setStatusF] = useState<GridStatus | "">("");
+  const [workFilter, setWorkFilter] = useState<string | null>(null);
+  const [visible, setVisible] = useState(PAGE_SIZE);
 
   const user = userById(userId) ?? USERS[0];
   const record = openId ? (records.find((r) => r.id === openId) ?? null) : null;
@@ -128,7 +163,6 @@ export default function FundConnect2Page() {
     setRecords((prev) => prev.map((r) => (r.id === next.id ? next : r)));
   }
 
-  /** Apply a transition that also produced notices, with a toast. */
   function act(result: ActionResult, message: string) {
     update(result.record);
     if (result.notices.length) setNotices((prev) => [...prev, ...result.notices]);
@@ -136,31 +170,40 @@ export default function FundConnect2Page() {
   }
 
   function openRecord(id: string) {
-    const rec = records.find((r) => r.id === id);
-    if (!rec) return;
+    if (!records.some((r) => r.id === id)) return;
     setOpenId(id);
-    setTab(tabFor(rec.state));
-    setOpenSection("fund");
+    setOpenSection("identity");
     setShowAll(false);
     setToast(null);
   }
 
-  function commitUpload(drafts: WizardDraft[]) {
+  function nextFundNumber(): string {
     const highest = records.reduce(
-      (max, r) => Math.max(max, Number(r.id.slice(-4)) || 0),
-      0,
+      (max, r) => Math.max(max, Number(r.values.fundNumber) || 0),
+      4000,
     );
-    const created = drafts.map((d, i) =>
-      applyImport(
-        blankRecord(`FC2-${String(highest + i + 1).padStart(4, "0")}`, d.title, user.id),
-        d.entries,
-        user,
-      ),
-    );
+    return String(highest + 1);
+  }
+
+  function nextId(offset = 1): string {
+    const highest = records.reduce((max, r) => Math.max(max, Number(r.id.slice(-4)) || 0), 0);
+    return `FC2-${String(highest + offset).padStart(4, "0")}`;
+  }
+
+  function commitUpload(drafts: WizardDraft[]) {
+    const startNumber = Number(nextFundNumber());
+    const created = drafts.map((d, i) => {
+      let rec = applyImport(blankRecord(nextId(i + 1), d.title, user.id), d.entries, user);
+      // House fund number is assigned, not uploaded.
+      if (!rec.values.fundNumber) {
+        rec = setField(rec, "fundNumber", String(startNumber + i), user, "system");
+      }
+      return rec;
+    });
     setRecords((prev) => [...prev, ...created]);
     setWizardOpen(false);
-    setTab("draft");
     setOpenId(created.length === 1 ? created[0].id : null);
+    if (created.length > 1) setStatusF("draft");
     const withErrors = drafts.filter((d) => d.errors > 0).length;
     setToast(
       `${created.length} draft${created.length === 1 ? "" : "s"} created from the upload${
@@ -169,12 +212,207 @@ export default function FundConnect2Page() {
     );
   }
 
+  function createBlank() {
+    let rec = blankRecord(nextId(), "New ETF setup", user.id);
+    rec = setField(rec, "fundNumber", nextFundNumber(), user, "system");
+    setRecords((prev) => [...prev, rec]);
+    setWizardOpen(false);
+    setOpenId(rec.id);
+    setToast("Blank draft raised — the fund number is already assigned.");
+  }
+
+  /* ----- work strip cards ----- */
+
+  type WorkCard = {
+    id: string;
+    label: string;
+    count: number;
+    detail: string;
+    urgent: boolean;
+    match: (r: FundRecord2) => boolean;
+  };
+
+  const cards: WorkCard[] = useMemo(() => {
+    const out: WorkCard[] = [];
+    if (user.roles.includes("submitter")) {
+      const mine = records.filter((r) => r.state === "draft" && r.createdBy === user.id);
+      const ready = mine.filter((r) => canSubmit(r, user).allowed).length;
+      out.push({
+        id: "my-drafts",
+        label: "My drafts",
+        count: mine.length,
+        detail: ready > 0 ? `${ready} ready to submit` : "none ready to submit yet",
+        urgent: false,
+        match: (r) => r.state === "draft" && r.createdBy === user.id,
+      });
+      const returned = records.filter(
+        (r) => isReturned(r) && (r.submittedBy === user.id || r.createdBy === user.id),
+      );
+      out.push({
+        id: "returned",
+        label: "Returned to me",
+        count: returned.length,
+        detail: returned[0]
+          ? `${returned[0].values.ticker || returned[0].id}: fix & resubmit`
+          : "nothing waiting on you",
+        urgent: returned.length > 0,
+        match: (r) => isReturned(r) && (r.submittedBy === user.id || r.createdBy === user.id),
+      });
+    }
+    if (user.roles.includes("approver")) {
+      const waiting = records.filter((r) => canStartReview(r, user).allowed);
+      const oldest = waiting.reduce<FundRecord2 | null>(
+        (acc, r) =>
+          !acc || Date.parse(r.submittedAt ?? r.updatedAt) < Date.parse(acc.submittedAt ?? acc.updatedAt)
+            ? r
+            : acc,
+        null,
+      );
+      out.push({
+        id: "awaiting",
+        label: "Awaiting my review",
+        count: waiting.length,
+        detail: oldest
+          ? `oldest waiting ${ageLabel(oldest.submittedAt ?? oldest.updatedAt)}`
+          : "queue is clear",
+        urgent: waiting.length > 0,
+        match: (r) => canStartReview(r, user).allowed,
+      });
+      const reviewing = records.filter(
+        (r) => r.state === "in_review" && r.reviewerId === user.id,
+      );
+      out.push({
+        id: "reviewing",
+        label: "In my review",
+        count: reviewing.length,
+        detail: reviewing[0]
+          ? `${reviewing[0].values.ticker || reviewing[0].id} · cycle ${reviewing[0].cycle}`
+          : "nothing picked up",
+        urgent: false,
+        match: (r) => r.state === "in_review" && r.reviewerId === user.id,
+      });
+      const toActivate = records.filter((r) => r.state === "approved");
+      out.push({
+        id: "to-activate",
+        label: "Scheduled",
+        count: toActivate.length,
+        detail: toActivate[0]?.effectiveDate
+          ? `next: ${toActivate[0].values.ticker || toActivate[0].id} eff. ${formatDay(toActivate[0].effectiveDate)}`
+          : "nothing scheduled",
+        urgent: false,
+        match: (r) => r.state === "approved",
+      });
+    }
+    if (!user.roles.includes("approver")) {
+      const scheduled = records.filter((r) => r.state === "approved" && r.submittedBy === user.id);
+      out.push({
+        id: "scheduled",
+        label: "Scheduled",
+        count: scheduled.length,
+        detail: scheduled[0]?.effectiveDate
+          ? `next eff. ${formatDay(scheduled[0].effectiveDate)}`
+          : "nothing scheduled",
+        urgent: false,
+        match: (r) => r.state === "approved" && r.submittedBy === user.id,
+      });
+    }
+    return out;
+  }, [records, user]);
+
+  const activeCard = cards.find((c) => c.id === workFilter) ?? null;
+
+  /* ----- grid rows ----- */
+
+  const rows = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    const matches = (r: FundRecord2) => {
+      if (activeCard && !activeCard.match(r)) return false;
+      if (regionF && (r.values.region ?? "") !== regionF) return false;
+      if (providerF && (r.values.provider ?? "") !== providerF) return false;
+      if (statusF && gridStatus(r) !== statusF) return false;
+      if (needle) {
+        const hay = [
+          r.values.fundLongName,
+          r.values.fundShortName,
+          r.values.ticker,
+          r.values.fundCode,
+          r.values.fundNumber,
+          r.title,
+          r.id,
+        ]
+          .join(" ")
+          .toLowerCase();
+        if (!hay.includes(needle)) return false;
+      }
+      return true;
+    };
+    const actionRank = (r: FundRecord2) =>
+      (isReturned(r) && (r.submittedBy === user.id || r.createdBy === user.id)) ||
+      canStartReview(r, user).allowed ||
+      canDecide(r, user).allowed ||
+      canActivate(r, user).allowed
+        ? 0
+        : r.state === "active"
+          ? 2
+          : 1;
+    return records
+      .filter(matches)
+      .sort(
+        (a, b) =>
+          actionRank(a) - actionRank(b) || Date.parse(b.updatedAt) - Date.parse(a.updatedAt),
+      );
+  }, [records, q, regionF, providerF, statusF, activeCard, user]);
+
+  function rowAction(r: FundRecord2): { label: string; urgent: boolean } {
+    if (isReturned(r) && canEdit(r, user).allowed) return { label: "Fix & resubmit", urgent: true };
+    if (r.state === "draft" && canEdit(r, user).allowed) return { label: "Edit", urgent: false };
+    if (canStartReview(r, user).allowed) return { label: "Review", urgent: true };
+    if (r.state === "in_review" && canDecide(r, user).allowed) return { label: "Review", urgent: true };
+    if (canActivate(r, user).allowed) return { label: "Activate", urgent: false };
+    return { label: "View", urgent: false };
+  }
+
+  function exportCsv() {
+    const head = [
+      "Region",
+      "Provider",
+      "Fund long name",
+      "Fund short name",
+      "Fund code",
+      "Fund number",
+      "Ticker",
+      "Trust",
+      "Status",
+    ];
+    const esc = (v: string) => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
+    const lines = [
+      head.join(","),
+      ...rows.map((r) =>
+        [
+          r.values.region ?? "",
+          r.values.provider ?? "",
+          r.values.fundLongName || r.title,
+          r.values.fundShortName ?? "",
+          r.values.fundCode ?? "",
+          r.values.fundNumber ?? "",
+          r.values.ticker ?? "",
+          r.values.trust ?? "",
+          STATUS_LABEL[gridStatus(r)],
+        ]
+          .map(esc)
+          .join(","),
+      ),
+    ];
+    const a = document.createElement("a");
+    a.href = `data:text/csv;charset=utf-8,${encodeURIComponent(lines.join("\n"))}`;
+    a.download = "primary-market-etfs.csv";
+    a.click();
+    setToast(`Exported ${rows.length} row${rows.length === 1 ? "" : "s"} — exactly what the grid is showing.`);
+  }
+
   /* ----- derived state for the open record ----- */
 
-  const summary = useMemo(
-    () => (record ? summarise(record, "submit") : null),
-    [record],
-  );
+  const summary = useMemo(() => (record ? summarise(record, "submit") : null), [record]);
   const rail: RailItem[] = useMemo(() => {
     if (!record) return [];
     return SECTIONS.map((s) => {
@@ -208,18 +446,6 @@ export default function FundConnect2Page() {
     ? [...record.comments].reverse().find((c) => c.kind === "reject" && c.cycle === record.cycle)
     : null;
 
-  /* ----- per-tab lists and badges ----- */
-
-  const byTab = (t: Tab) => records.filter((r) => TAB_STATES[t].includes(r.state));
-  const draftActionCount = user.roles.includes("submitter")
-    ? byTab("draft").filter((r) => r.flags.some((f) => !f.resolved)).length
-    : 0;
-  const queueActionCount = user.roles.includes("approver")
-    ? byTab("queue").filter(
-        (r) => canStartReview(r, user).allowed || canDecide(r, user).allowed,
-      ).length
-    : 0;
-
   const sectionsToShow = showAll ? SECTIONS.map((s) => s.id) : [openSection];
 
   return (
@@ -246,9 +472,11 @@ export default function FundConnect2Page() {
                   onClick={() => setOpenId(null)}
                   className="rounded-md border border-neutral-300 px-2 py-1 text-[11px] font-medium text-neutral-600 hover:bg-neutral-50"
                 >
-                  ← Back to {tab === "draft" ? "Draft" : tab === "queue" ? "Queue" : "Complete"}
+                  ← All ETFs
                 </button>
-                <span className="font-mono text-sm text-neutral-500">{record.id}</span>
+                <span className="font-mono text-sm text-neutral-500">
+                  {record.values.ticker || record.id}
+                </span>
                 {edit.allowed ? (
                   <input
                     value={record.title}
@@ -267,7 +495,7 @@ export default function FundConnect2Page() {
                 )}
               </div>
             ) : (
-              <h1 className="mt-1 text-lg font-semibold tracking-tight">Book of work</h1>
+              <h1 className="mt-1 text-lg font-semibold tracking-tight">Primary market ETFs</h1>
             )}
           </div>
 
@@ -278,6 +506,7 @@ export default function FundConnect2Page() {
                 value={userId}
                 onChange={(e) => {
                   setUserId(e.target.value);
+                  setWorkFilter(null);
                   setToast(null);
                 }}
                 className="rounded-md border border-neutral-300 bg-white px-2 py-1.5 text-xs text-neutral-800"
@@ -326,50 +555,64 @@ export default function FundConnect2Page() {
           </div>
         </div>
 
-        {/* Second row — tabs on the lists, status + actions on a record. */}
+        {/* Second row — work strip on the grid, status + actions on a record. */}
         {!record ? (
-          <div className="flex flex-wrap items-center gap-2 px-6 pb-3 pl-36">
-            <div className="flex border border-neutral-300">
-              {(
-                [
-                  ["draft", "Draft", byTab("draft").length, draftActionCount],
-                  ["queue", "Queue", byTab("queue").length, queueActionCount],
-                  ["complete", "Complete", byTab("complete").length, 0],
-                ] as [Tab, string, number, number][]
-              ).map(([id, label, count, action]) => (
+          <div className="flex flex-wrap items-stretch gap-2 px-6 pb-3 pl-36">
+            {cards.map((c) => {
+              const selected = workFilter === c.id;
+              const idle = c.count === 0;
+              return (
                 <button
-                  key={id}
+                  key={c.id}
                   type="button"
-                  onClick={() => setTab(id)}
-                  className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium ${
-                    tab === id ? "bg-neutral-900 text-white" : "bg-white text-neutral-600"
+                  onClick={() => {
+                    setWorkFilter(selected ? null : c.id);
+                    setVisible(PAGE_SIZE);
+                  }}
+                  aria-pressed={selected}
+                  title="Click to filter the grid to these records"
+                  className={`flex min-w-40 flex-col gap-0.5 border px-3 py-2 text-left ${
+                    selected
+                      ? "border-neutral-900 bg-neutral-900 text-white"
+                      : idle
+                        ? "border-neutral-200 bg-white"
+                        : "border-neutral-300 bg-white shadow-sm hover:border-neutral-400"
                   }`}
                 >
-                  {label}
-                  <span className={`tabular-nums ${tab === id ? "text-neutral-400" : "text-neutral-400"}`}>
-                    {count}
-                  </span>
-                  {action > 0 && (
-                    <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-semibold text-white tabular-nums">
-                      {action}
+                  <span className="flex items-center gap-1.5">
+                    <span
+                      className={`h-1.5 w-1.5 rounded-full ${
+                        selected
+                          ? "bg-white"
+                          : idle
+                            ? "bg-neutral-200"
+                            : c.urgent
+                              ? "animate-pulse bg-red-500"
+                              : "bg-blue-400"
+                      }`}
+                      aria-hidden
+                    />
+                    <span
+                      className={`text-base leading-none font-semibold tabular-nums ${
+                        selected ? "text-white" : idle ? "text-neutral-300" : "text-neutral-900"
+                      }`}
+                    >
+                      {c.count}
                     </span>
-                  )}
+                    <span
+                      className={`text-[10px] font-medium tracking-[0.12em] uppercase ${
+                        selected ? "text-neutral-300" : "text-neutral-400"
+                      }`}
+                    >
+                      {c.label}
+                    </span>
+                  </span>
+                  <span className={`text-[10px] ${selected ? "text-neutral-300" : idle ? "text-neutral-300" : "text-neutral-500"}`}>
+                    {c.detail}
+                  </span>
                 </button>
-              ))}
-            </div>
-            <button
-              type="button"
-              disabled={!user.roles.includes("submitter")}
-              title={
-                user.roles.includes("submitter")
-                  ? undefined
-                  : `${user.name} holds approver rights only.`
-              }
-              onClick={() => setWizardOpen(true)}
-              className="ml-auto rounded-md bg-neutral-900 px-3 py-1.5 text-xs font-semibold text-white disabled:bg-neutral-300"
-            >
-              ↑ Upload instructions
-            </button>
+              );
+            })}
           </div>
         ) : (
           <div className="flex flex-wrap items-end justify-between gap-4 px-6 pb-3 pl-36">
@@ -382,7 +625,7 @@ export default function FundConnect2Page() {
                     disabled={!edit.allowed}
                     title={edit.reason}
                     onClick={() =>
-                      setToast(`Draft saved at ${formatStamp(record.updatedAt)} — pick it up any time from the Draft tab.`)
+                      setToast(`Draft saved at ${formatStamp(record.updatedAt)} — pick it up any time from the grid.`)
                     }
                     className="rounded-md border border-neutral-300 px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 disabled:text-neutral-400"
                   >
@@ -461,7 +704,7 @@ export default function FundConnect2Page() {
                   type="button"
                   disabled={!activate.allowed}
                   title={activate.reason}
-                  onClick={() => act(activateNow(record, user), "Activated — the instruction is now in force.")}
+                  onClick={() => act(activateNow(record, user), "Activated — the ETF is now in force.")}
                   className="rounded-md border border-neutral-900 px-3 py-1.5 text-xs font-semibold text-neutral-900 hover:bg-neutral-900 hover:text-white disabled:border-neutral-200 disabled:text-neutral-400"
                 >
                   Activate now
@@ -487,170 +730,206 @@ export default function FundConnect2Page() {
         )}
       </header>
 
-      {/* ================= Lists ================= */}
+      {/* ================= The register grid ================= */}
       {!record && (
         <main className="min-h-0 flex-1 overflow-y-auto p-6">
-          {tab === "draft" && (
-            <ListShell
-              empty={byTab("draft").length === 0}
-              emptyText="No drafts. Upload a dealing sheet to raise some."
-              head={["Draft", "Owner", "Progress", "Last updated", ""]}
+          {/* Toolbar */}
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <input
+              value={q}
+              onChange={(e) => {
+                setQ(e.target.value);
+                setVisible(PAGE_SIZE);
+              }}
+              placeholder="Search name, ticker, code, number…"
+              aria-label="Search ETFs"
+              className="w-64 rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-xs text-neutral-800"
+            />
+            {(
+              [
+                ["Region", regionF, setRegionF, REGIONS],
+                ["Provider", providerF, setProviderF, PROVIDERS],
+              ] as [string, string, (v: string) => void, string[]][]
+            ).map(([label, value, set, options]) => (
+              <select
+                key={label}
+                value={value}
+                onChange={(e) => {
+                  set(e.target.value);
+                  setVisible(PAGE_SIZE);
+                }}
+                aria-label={`Filter by ${label}`}
+                className={`rounded-md border bg-white px-2 py-1.5 text-xs ${
+                  value ? "border-neutral-900 text-neutral-900" : "border-neutral-300 text-neutral-600"
+                }`}
+              >
+                <option value="">{label} — all</option>
+                {options.map((o) => (
+                  <option key={o} value={o}>
+                    {o}
+                  </option>
+                ))}
+              </select>
+            ))}
+            <select
+              value={statusF}
+              onChange={(e) => {
+                setStatusF(e.target.value as GridStatus | "");
+                setVisible(PAGE_SIZE);
+              }}
+              aria-label="Filter by status"
+              className={`rounded-md border bg-white px-2 py-1.5 text-xs ${
+                statusF ? "border-neutral-900 text-neutral-900" : "border-neutral-300 text-neutral-600"
+              }`}
             >
-              {byTab("draft")
-                .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt))
-                .map((r) => {
-                  const s = summarise(r, "submit");
-                  const returned = r.flags.some((f) => !f.resolved) || r.comments.some((c) => c.kind === "reject" && c.cycle === r.cycle);
-                  const abandoned = ageMinutes(r.updatedAt) >= ABANDONED_AFTER_MINUTES;
-                  const lastActor = r.audit[0]?.actor ?? r.createdBy;
-                  return (
-                    <tr key={r.id} className="hover:bg-white">
-                      <td className="px-4 py-2.5">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-mono text-[11px] text-neutral-400">{r.id}</span>
-                          <span className="text-xs font-medium text-neutral-900">{r.title}</span>
-                          {returned && (
-                            <span className="rounded-full bg-amber-100 px-1.5 text-[10px] font-medium text-amber-800">
-                              Returned — needs changes
-                            </span>
-                          )}
-                          {abandoned && (
-                            <span className="rounded-full bg-red-100 px-1.5 text-[10px] font-medium text-red-700">
-                              Untouched {ageLabel(r.updatedAt)}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-2.5 text-xs text-neutral-600">{userName(r.createdBy)}</td>
-                      <td className="px-4 py-2.5">
-                        <div className="flex items-center gap-2">
-                          <div className="flex gap-[2px]">
-                            {Array.from({ length: s.sectionsTotal }, (_, i) => (
-                              <span
-                                key={i}
-                                className={`h-1.5 w-3 ${i < s.sectionsComplete ? "bg-neutral-900" : "bg-neutral-200"}`}
-                              />
-                            ))}
-                          </div>
-                          <span className="text-[11px] text-neutral-500 tabular-nums">
-                            {s.sectionsComplete}/{s.sectionsTotal}
-                          </span>
-                          {s.errors > 0 && (
-                            <span className="rounded-full bg-red-100 px-1.5 text-[10px] font-medium text-red-700">
-                              {s.errors}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-2.5 text-xs text-neutral-500">
-                        {ageLabel(r.updatedAt)} ago · {userName(lastActor)}
-                      </td>
-                      <td className="px-4 py-2.5 text-right">
-                        <OpenBtn onClick={() => openRecord(r.id)} label={returned ? "Fix & resubmit" : "Open"} />
-                      </td>
-                    </tr>
-                  );
-                })}
-            </ListShell>
-          )}
+              <option value="">Status — all</option>
+              {(Object.keys(STATUS_LABEL) as GridStatus[]).map((s) => (
+                <option key={s} value={s}>
+                  {STATUS_LABEL[s]}
+                </option>
+              ))}
+            </select>
+            {(q || regionF || providerF || statusF || workFilter) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setQ("");
+                  setRegionF("");
+                  setProviderF("");
+                  setStatusF("");
+                  setWorkFilter(null);
+                  setVisible(PAGE_SIZE);
+                }}
+                className="text-[11px] text-neutral-400 underline underline-offset-2 hover:text-neutral-700"
+              >
+                Clear all
+              </button>
+            )}
+            <span className="ml-auto text-[11px] text-neutral-500 tabular-nums">
+              {rows.length} of {records.length}
+            </span>
+            <button
+              type="button"
+              onClick={exportCsv}
+              disabled={rows.length === 0}
+              className="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-40"
+            >
+              ⬇ Export CSV
+            </button>
+            <button
+              type="button"
+              disabled={!user.roles.includes("submitter")}
+              title={
+                user.roles.includes("submitter") ? undefined : `${user.name} holds approver rights only.`
+              }
+              onClick={() => setWizardOpen(true)}
+              className="rounded-md bg-neutral-900 px-3 py-1.5 text-xs font-semibold text-white disabled:bg-neutral-300"
+            >
+              + Create new
+            </button>
+          </div>
 
-          {tab === "queue" && (
-            <ListShell
-              empty={byTab("queue").length === 0}
-              emptyText="Nothing is waiting on a reviewer."
-              head={["Record", "Submitted by", "Waiting", "Cycle", "Reviewer", "State", ""]}
-              caption={`Review target ${REVIEW_SLA.target / 60}h · breach ${REVIEW_SLA.breach / 60}h`}
-            >
-              {byTab("queue")
-                .sort((a, b) => Date.parse(a.submittedAt ?? a.updatedAt) - Date.parse(b.submittedAt ?? b.updatedAt))
-                .map((r) => {
-                  const mins = ageMinutes(r.submittedAt ?? r.updatedAt);
-                  const tone = toneFor(slaTone(mins, REVIEW_SLA), "muted");
-                  const mine = canStartReview(r, user).allowed || canDecide(r, user).allowed;
-                  return (
-                    <tr key={r.id} className="hover:bg-white">
-                      <td className="px-4 py-2.5">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-mono text-[11px] text-neutral-400">{r.id}</span>
-                          <span className="text-xs font-medium text-neutral-900">{r.title}</span>
-                          {mine && (
-                            <span className="rounded-full bg-red-100 px-1.5 text-[10px] font-medium text-red-700">
-                              Your action
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-2.5 text-xs text-neutral-600">{userName(r.submittedBy)}</td>
-                      <td className={`px-4 py-2.5 text-xs tabular-nums ${tone.text}`}>
-                        {ageLabel(r.submittedAt ?? r.updatedAt)}
-                      </td>
-                      <td className="px-4 py-2.5 text-xs text-neutral-600 tabular-nums">{r.cycle}</td>
-                      <td className="px-4 py-2.5 text-xs text-neutral-600">
-                        {r.reviewerId ? userName(r.reviewerId) : "—"}
-                      </td>
-                      <td className="px-4 py-2.5">
-                        <Pill state={r.state} />
-                      </td>
-                      <td className="px-4 py-2.5 text-right">
-                        <OpenBtn
-                          onClick={() => openRecord(r.id)}
-                          label={
-                            canStartReview(r, user).allowed
-                              ? "Pick up"
-                              : canDecide(r, user).allowed
-                                ? "Review"
-                                : "Open"
-                          }
-                        />
-                      </td>
-                    </tr>
-                  );
-                })}
-            </ListShell>
-          )}
-
-          {tab === "complete" && (
-            <ListShell
-              empty={byTab("complete").length === 0}
-              emptyText="Nothing has been approved yet."
-              head={["Record", "Approved by", "Effective", "Status", ""]}
-            >
-              {byTab("complete")
-                .sort((a, b) => Date.parse(b.approvedAt ?? b.updatedAt) - Date.parse(a.approvedAt ?? a.updatedAt))
-                .map((r) => (
-                  <tr key={r.id} className="hover:bg-white">
-                    <td className="px-4 py-2.5">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-mono text-[11px] text-neutral-400">{r.id}</span>
-                        <span className="text-xs font-medium text-neutral-900">{r.title}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-2.5 text-xs text-neutral-600">
-                      {userName(r.approvedBy)} · {r.approvedAt ? formatStamp(r.approvedAt) : "—"}
-                    </td>
-                    <td className="px-4 py-2.5 text-xs text-neutral-600">
-                      {r.effectiveDate ? formatDay(r.effectiveDate) : "—"}
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <div className="flex items-center gap-2">
-                        <Pill state={r.state} />
-                        {r.state === "approved" && (
-                          <span className="text-[11px] text-neutral-500">scheduled</span>
-                        )}
-                        {r.state === "active" && r.activatedAt && (
-                          <span className="text-[11px] text-neutral-500">
-                            since {formatStamp(r.activatedAt)}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-4 py-2.5 text-right">
-                      <OpenBtn onClick={() => openRecord(r.id)} label="Open" />
+          {/* Grid */}
+          <section className="border border-neutral-200 bg-neutral-50">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-white text-[10px] tracking-wide text-neutral-500 uppercase">
+                <tr>
+                  <th className="px-3 py-2 font-medium">Region</th>
+                  <th className="px-3 py-2 font-medium">Provider</th>
+                  <th className="px-3 py-2 font-medium">Fund long name</th>
+                  <th className="hidden px-3 py-2 font-medium xl:table-cell">Short name</th>
+                  <th className="hidden px-3 py-2 font-medium lg:table-cell">Fund code</th>
+                  <th className="px-3 py-2 font-medium">No.</th>
+                  <th className="px-3 py-2 font-medium">Ticker</th>
+                  <th className="hidden px-3 py-2 font-medium xl:table-cell">Trust</th>
+                  <th className="px-3 py-2 font-medium">Status</th>
+                  <th className="px-3 py-2" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-100">
+                {rows.length === 0 && (
+                  <tr>
+                    <td colSpan={10} className="px-4 py-6 text-neutral-500">
+                      Nothing matches — clear a filter, or create a new ETF.
                     </td>
                   </tr>
-                ))}
-            </ListShell>
-          )}
+                )}
+                {rows.slice(0, visible).map((r) => {
+                  const action = rowAction(r);
+                  const status = gridStatus(r);
+                  const waiting =
+                    (r.state === "submitted" || r.state === "in_review") && r.submittedAt
+                      ? toneFor(slaTone(ageMinutes(r.submittedAt), REVIEW_SLA), "muted")
+                      : null;
+                  return (
+                    <tr
+                      key={r.id}
+                      onClick={() => openRecord(r.id)}
+                      className="cursor-pointer hover:bg-white"
+                    >
+                      <td className="px-3 py-2 text-neutral-600">{r.values.region || "—"}</td>
+                      <td className="px-3 py-2 text-neutral-600">{r.values.provider || "—"}</td>
+                      <td className="px-3 py-2">
+                        <span className="font-medium text-neutral-900">
+                          {r.values.fundLongName || r.title}
+                        </span>
+                        {waiting && (
+                          <span className={`ml-2 text-[10px] tabular-nums ${waiting.text}`}>
+                            waiting {ageLabel(r.submittedAt!)}
+                          </span>
+                        )}
+                      </td>
+                      <td className="hidden px-3 py-2 text-neutral-600 xl:table-cell">
+                        {r.values.fundShortName || "—"}
+                      </td>
+                      <td className="hidden px-3 py-2 font-mono text-[11px] text-neutral-600 lg:table-cell">
+                        {r.values.fundCode || "—"}
+                      </td>
+                      <td className="px-3 py-2 font-mono text-[11px] text-neutral-600">
+                        {r.values.fundNumber || "—"}
+                      </td>
+                      <td className="px-3 py-2 font-mono text-[11px] font-semibold text-neutral-900">
+                        {r.values.ticker || "—"}
+                      </td>
+                      <td className="hidden px-3 py-2 text-neutral-600 xl:table-cell">
+                        {r.values.trust || "—"}
+                      </td>
+                      <td className="px-3 py-2">
+                        <StatusPill status={status} />
+                      </td>
+                      <td className="px-3 py-2 text-right">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openRecord(r.id);
+                          }}
+                          className={`rounded-md border px-2.5 py-1 text-[11px] font-medium ${
+                            action.urgent
+                              ? "border-neutral-900 bg-neutral-900 text-white"
+                              : "border-neutral-300 bg-white text-neutral-700 hover:border-neutral-900 hover:text-neutral-900"
+                          }`}
+                        >
+                          {action.label}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            {rows.length > visible && (
+              <div className="border-t border-neutral-200 bg-white px-4 py-2.5 text-center">
+                <button
+                  type="button"
+                  onClick={() => setVisible((v) => v + PAGE_SIZE)}
+                  className="text-xs font-medium text-neutral-600 underline underline-offset-2 hover:text-neutral-900"
+                >
+                  Show {Math.min(PAGE_SIZE, rows.length - visible)} more of {rows.length - visible}
+                </button>
+              </div>
+            )}
+          </section>
         </main>
       )}
 
@@ -744,7 +1023,7 @@ export default function FundConnect2Page() {
                             key={f.fieldId}
                             type="button"
                             onClick={() => {
-                              setOpenSection(FIELD_BY_ID[f.fieldId]?.sectionId ?? "fund");
+                              setOpenSection(FIELD_BY_ID[f.fieldId]?.sectionId ?? "identity");
                               setShowAll(false);
                             }}
                             className="rounded-full border border-amber-400 bg-white px-2 py-[1px] font-medium hover:bg-amber-100"
@@ -769,7 +1048,7 @@ export default function FundConnect2Page() {
                         <button
                           type="button"
                           onClick={() => {
-                            setOpenSection(FIELD_BY_ID[d.fieldId]?.sectionId ?? "fund");
+                            setOpenSection(FIELD_BY_ID[d.fieldId]?.sectionId ?? "identity");
                             setShowAll(false);
                           }}
                           className="rounded-full border border-blue-300 bg-white px-2 py-[1px] font-medium text-blue-800 hover:bg-blue-100"
@@ -903,7 +1182,12 @@ export default function FundConnect2Page() {
         </div>
       )}
 
-      <UploadWizard open={wizardOpen} onClose={() => setWizardOpen(false)} onCommit={commitUpload} />
+      <UploadWizard
+        open={wizardOpen}
+        onClose={() => setWizardOpen(false)}
+        onCommit={commitUpload}
+        onBlank={createBlank}
+      />
 
       {/* Reject with comments */}
       {record && (
@@ -934,7 +1218,6 @@ export default function FundConnect2Page() {
                   );
                   setRejectOpen(false);
                   setOpenId(null);
-                  setTab("queue");
                 }}
                 className="rounded-md bg-neutral-900 px-3 py-1.5 text-xs font-semibold text-white disabled:bg-neutral-300"
               >
@@ -988,7 +1271,7 @@ export default function FundConnect2Page() {
                   act(
                     approveRecord(record, user, effectiveDate, approveText),
                     immediate
-                      ? "Approved and activated — the instruction is in force."
+                      ? "Approved and activated — the ETF is in force."
                       : `Approved — scheduled to take effect ${formatDay(effectiveDate)}.`,
                   );
                   setApproveOpen(false);
@@ -1015,7 +1298,7 @@ export default function FundConnect2Page() {
               {effectiveDate && effectiveDate <= DEMO_TODAY
                 ? "Effective today — the record goes straight to Active."
                 : effectiveDate
-                  ? `The record shows as Approved · scheduled until ${formatDay(effectiveDate)}, and can be activated early from the Complete tab.`
+                  ? `The record shows as Scheduled until ${formatDay(effectiveDate)}, and can be activated early from the grid.`
                   : "Pick a date."}
             </p>
             <label className="flex flex-col gap-1.5 text-xs text-neutral-600">
@@ -1032,65 +1315,5 @@ export default function FundConnect2Page() {
         </Modal>
       )}
     </div>
-  );
-}
-
-/* ----- small list helpers ----- */
-
-function ListShell({
-  head,
-  empty,
-  emptyText,
-  caption,
-  children,
-}: {
-  head: string[];
-  empty: boolean;
-  emptyText: string;
-  caption?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="border border-neutral-200 bg-neutral-50">
-      {caption && (
-        <p className="border-b border-neutral-200 bg-white px-4 py-2 text-[11px] text-neutral-500">
-          {caption}
-        </p>
-      )}
-      <table className="w-full text-left text-xs">
-        <thead className="bg-white text-[10px] tracking-wide text-neutral-500 uppercase">
-          <tr>
-            {head.map((h, i) => (
-              <th key={i} className="px-4 py-2 font-medium">
-                {h}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-neutral-100">
-          {empty ? (
-            <tr>
-              <td colSpan={head.length} className="px-4 py-5 text-neutral-500">
-                {emptyText}
-              </td>
-            </tr>
-          ) : (
-            children
-          )}
-        </tbody>
-      </table>
-    </section>
-  );
-}
-
-function OpenBtn({ onClick, label }: { onClick: () => void; label: string }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="rounded-md border border-neutral-300 bg-white px-2.5 py-1 text-[11px] font-medium text-neutral-700 hover:border-neutral-900 hover:text-neutral-900"
-    >
-      {label}
-    </button>
   );
 }

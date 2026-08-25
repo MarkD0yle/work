@@ -1,16 +1,19 @@
-/* Fund Connect 2 — seeded book of work.
+/* Fund Connect 2 — seeded primary-market book.
  *
- * One record per state, plus the two scenarios the demo is really about:
- *   - FC2-0402  rejected with comments, back in Draft with an open flag
- *   - FC2-0404  resubmitted and in review, so the delta view has two
- *               submissions to diff (three fields changed on cycle 2)
+ * Two layers:
+ *   - six scenario records, one per pipeline state, including the two the
+ *     demo leans on: FC2-0402 (rejected with comments, back in draft) and
+ *     FC2-0404 (resubmitted, in review on cycle 2 with a two-field delta)
+ *   - an eighteen-ETF active register, so the grid reads like the real
+ *     primary-market view: regions, providers, trusts and tickers spread
+ *     across the catalogue
  *
- * Seed notices mirror what the transitions would have emitted, so each
- * demo user opens the page with a believable inbox.
+ * Seed notices mirror what the transitions would have emitted, so each demo
+ * user opens the page with a believable inbox. All issuer names fictional.
  */
 
 import { DEMO_NOW } from "./engine";
-import { FIELDS, isEmpty } from "../fundConnect/schema";
+import { FIELDS, isEmpty } from "./schema";
 import type {
   AuditEntry,
   FieldSource,
@@ -32,7 +35,7 @@ const sid = () => `S${String((seq += 1)).padStart(4, "0")}`;
 
 /* Base value sets — valid against the shared schema and masters. */
 
-const equitySubscription: Record<string, string> = {
+const gbpEquityBase: Record<string, string> = {
   fundCode: "GB00FCAP01",
   shareClass: "Acc GBP",
   baseCcy: "GBP",
@@ -61,8 +64,8 @@ const equitySubscription: Record<string, string> = {
   comments: "",
 };
 
-const bondRedemption: Record<string, string> = {
-  ...equitySubscription,
+const gbpBondBase: Record<string, string> = {
+  ...gbpEquityBase,
   fundCode: "GB00FCAP02",
   shareClass: "Inc GBP",
   cptyId: "CPT-3389",
@@ -77,8 +80,8 @@ const bondRedemption: Record<string, string> = {
   paymentRef: "RED-AUG-0231",
 };
 
-const sicavSubscription: Record<string, string> = {
-  ...equitySubscription,
+const eurBase: Record<string, string> = {
+  ...gbpEquityBase,
   fundCode: "LU00FCAP07",
   shareClass: "Hedged Acc EUR",
   baseCcy: "EUR",
@@ -92,6 +95,26 @@ const sicavSubscription: Record<string, string> = {
   settleCcy: "EUR",
   paymentRef: "SUB-AUG-0384",
 };
+
+type Identity = {
+  fundLongName: string;
+  fundShortName: string;
+  ticker: string;
+  region: string;
+  provider: string;
+  trust: string;
+  fundNumber: string;
+};
+
+const identity = (
+  fundLongName: string,
+  fundShortName: string,
+  ticker: string,
+  region: string,
+  provider: string,
+  trust: string,
+  fundNumber: string,
+): Identity => ({ fundLongName, fundShortName, ticker, region, provider, trust, fundNumber });
 
 type Seed = {
   id: string;
@@ -174,14 +197,40 @@ function build(seed: Seed): FundRecord2 {
 let cseq = 0;
 const cid = () => `SC${String((cseq += 1)).padStart(3, "0")}`;
 
-export const SEED_RECORDS: FundRecord2[] = [
-  // A working draft, half imported, one section untouched.
+/* ------------------------------------------------------------------ *
+ * Scenario records — one per state, plus the two demo loops.
+ * ------------------------------------------------------------------ */
+
+const id0401 = identity("Meridian Global Equity UCITS ETF", "Global Equity", "MGEQ", "EMEA", "Meridian AM", "UCITS ICAV", "4021");
+const id0402 = identity("Meridian Sterling Corporate Bond UCITS ETF", "Sterling Corp Bond", "MSCB", "EMEA", "Meridian AM", "UCITS ICAV", "4022");
+const id0403 = identity("Meridian European Multi-Asset UCITS ETF", "European Multi-Asset", "MEMA", "EMEA", "Meridian AM", "UCITS ICAV", "4023");
+const id0404 = identity("Helix Global Dividend ETF", "Global Dividend", "HGDV", "US", "Helix Investments", "ETF Trust II", "4024");
+const id0405 = identity("Aurora Sterling Credit UCITS ETF", "Sterling Credit", "ASCR", "EMEA", "Aurora Capital", "UCITS ICAV", "4025");
+const id0406 = identity("Northwind European Multi-Asset UCITS ETF", "European Multi-Asset", "NEMA", "EMEA", "Northwind AM", "ETF Trust I", "4026");
+
+const cycle1of0404 = {
+  ...gbpEquityBase,
+  ...id0404,
+  dealingAccount: "4812009",
+  quantity: "3100",
+  price: "98.20",
+  paymentRef: "SUB-AUG-0197",
+};
+const cycle2of0404 = {
+  ...cycle1of0404,
+  dealingAccount: "48120099",
+  price: "101.85",
+};
+
+const SCENARIOS: FundRecord2[] = [
+  // A working draft, half imported, identity done, one section untouched.
   build({
     id: "FC2-0401",
-    title: "Global Equity — August subscription",
+    title: id0401.fundLongName,
     state: "draft",
     values: {
-      ...equitySubscription,
+      ...gbpEquityBase,
+      ...id0401,
       mgmtFeeBps: "",
       settleCcy: "",
       settlementMethod: "",
@@ -192,6 +241,12 @@ export const SEED_RECORDS: FundRecord2[] = [
       paymentRef: "",
     },
     imported: [
+      "fundLongName",
+      "fundShortName",
+      "ticker",
+      "region",
+      "provider",
+      "trust",
       "fundCode",
       "shareClass",
       "baseCcy",
@@ -210,21 +265,21 @@ export const SEED_RECORDS: FundRecord2[] = [
     createdMinsAgo: 200,
     updatedMinsAgo: 55,
     events: [
-      { from: "", to: "", actor: "p.raman", minsAgo: 200, note: "Draft raised from upload — 13 fields written by the import" },
+      { from: "", to: "", actor: "p.raman", minsAgo: 200, note: "Draft raised from upload — 19 fields written by the import" },
     ],
   }),
 
   // Rejected with comments — the round trip, mid-loop, waiting on Priya.
   build({
     id: "FC2-0402",
-    title: "Sterling Corporate Bond — redemption",
+    title: id0402.fundLongName,
     state: "draft",
-    values: { ...bondRedemption, quantity: "120000" },
-    imported: ["fundCode", "shareClass", "cptyId", "instrumentId", "side", "tradeDate", "settlementDate"],
+    values: { ...gbpBondBase, ...id0402, quantity: "120000" },
+    imported: ["fundLongName", "ticker", "fundCode", "shareClass", "cptyId", "instrumentId", "side", "tradeDate", "settlementDate"],
     modified: ["quantity"],
     cycle: 1,
     submissions: [
-      { cycle: 1, by: "p.raman", at: at(26 * 60), values: { ...bondRedemption, quantity: "120000" } },
+      { cycle: 1, by: "p.raman", at: at(26 * 60), values: { ...gbpBondBase, ...id0402, quantity: "120000" } },
     ],
     comments: [
       {
@@ -260,12 +315,12 @@ export const SEED_RECORDS: FundRecord2[] = [
   // Waiting on any approver — first cycle, clean.
   build({
     id: "FC2-0403",
-    title: "European Multi-Asset — subscription",
+    title: id0403.fundLongName,
     state: "submitted",
-    values: sicavSubscription,
-    imported: ["fundCode", "shareClass", "baseCcy", "cptyId", "instrumentId", "side", "quantity", "price"],
+    values: { ...eurBase, ...id0403 },
+    imported: ["fundLongName", "fundShortName", "ticker", "region", "provider", "fundCode", "shareClass", "baseCcy", "cptyId", "instrumentId", "side", "quantity", "price"],
     cycle: 1,
-    submissions: [{ cycle: 1, by: "p.raman", at: at(5 * 60), values: { ...sicavSubscription } }],
+    submissions: [{ cycle: 1, by: "p.raman", at: at(5 * 60), values: { ...eurBase, ...id0403 } }],
     createdBy: "p.raman",
     createdMinsAgo: 8 * 60,
     submittedBy: "p.raman",
@@ -279,25 +334,14 @@ export const SEED_RECORDS: FundRecord2[] = [
   // Resubmitted after a rejection — in review on cycle 2, delta available.
   build({
     id: "FC2-0404",
-    title: "Global Equity — top-up dealing account",
+    title: id0404.fundLongName,
     state: "in_review",
-    values: { ...equitySubscription, dealingAccount: "48120099", quantity: "3100", price: "101.85", paymentRef: "SUB-AUG-0197" },
-    imported: ["fundCode", "shareClass", "cptyId", "instrumentId", "side", "tradeDate", "settlementDate"],
+    values: { ...cycle2of0404 },
+    imported: ["fundLongName", "ticker", "fundCode", "shareClass", "cptyId", "instrumentId", "side", "tradeDate", "settlementDate"],
     cycle: 2,
     submissions: [
-      {
-        cycle: 1,
-        by: "s.mercer",
-        at: at(50 * 60),
-        // Cycle 1 went out with a 7-digit account and a stale price.
-        values: { ...equitySubscription, dealingAccount: "4812009", quantity: "3100", price: "98.20", paymentRef: "SUB-AUG-0197" },
-      },
-      {
-        cycle: 2,
-        by: "s.mercer",
-        at: at(90),
-        values: { ...equitySubscription, dealingAccount: "48120099", quantity: "3100", price: "101.85", paymentRef: "SUB-AUG-0197" },
-      },
+      { cycle: 1, by: "s.mercer", at: at(50 * 60), values: { ...cycle1of0404 } },
+      { cycle: 2, by: "s.mercer", at: at(90), values: { ...cycle2of0404 } },
     ],
     comments: [
       {
@@ -331,12 +375,12 @@ export const SEED_RECORDS: FundRecord2[] = [
   // Approved with a future effective date — scheduled, not yet in force.
   build({
     id: "FC2-0405",
-    title: "Sterling Corporate Bond — September switch",
+    title: id0405.fundLongName,
     state: "approved",
-    values: { ...bondRedemption, side: "Switch out", quantity: "5400", paymentRef: "SWO-SEP-0012", tradeDate: "2026-09-01", settlementDate: "2026-09-03" },
+    values: { ...gbpBondBase, ...id0405, side: "Switch out", quantity: "5400", paymentRef: "SWO-SEP-0012", tradeDate: "2026-09-01", settlementDate: "2026-09-03" },
     cycle: 1,
     submissions: [
-      { cycle: 1, by: "p.raman", at: at(3 * 24 * 60), values: { ...bondRedemption, side: "Switch out", quantity: "5400", paymentRef: "SWO-SEP-0012", tradeDate: "2026-09-01", settlementDate: "2026-09-03" } },
+      { cycle: 1, by: "p.raman", at: at(3 * 24 * 60), values: { ...gbpBondBase, ...id0405, side: "Switch out", quantity: "5400", paymentRef: "SWO-SEP-0012", tradeDate: "2026-09-01", settlementDate: "2026-09-03" } },
     ],
     comments: [
       { id: cid(), kind: "approve", text: "Checked against the switch instruction — hold until the September dealing window.", by: "d.osei", at: at(2 * 24 * 60), cycle: 1 },
@@ -357,15 +401,15 @@ export const SEED_RECORDS: FundRecord2[] = [
     ],
   }),
 
-  // Fully through the pipeline — approved and in force.
+  // Recently through the whole pipeline — approved and in force.
   build({
     id: "FC2-0406",
-    title: "European Multi-Asset — standing subscription",
+    title: id0406.fundLongName,
     state: "active",
-    values: { ...sicavSubscription, quantity: "2600", paymentRef: "SUB-STD-0044", tradeDate: "2026-08-18", settlementDate: "2026-08-20" },
+    values: { ...eurBase, ...id0406, quantity: "2600", paymentRef: "SUB-STD-0044", tradeDate: "2026-08-18", settlementDate: "2026-08-20" },
     cycle: 1,
     submissions: [
-      { cycle: 1, by: "s.mercer", at: at(6 * 24 * 60), values: { ...sicavSubscription, quantity: "2600", paymentRef: "SUB-STD-0044", tradeDate: "2026-08-18", settlementDate: "2026-08-20" } },
+      { cycle: 1, by: "s.mercer", at: at(6 * 24 * 60), values: { ...eurBase, ...id0406, quantity: "2600", paymentRef: "SUB-STD-0044", tradeDate: "2026-08-18", settlementDate: "2026-08-20" } },
     ],
     createdBy: "s.mercer",
     createdMinsAgo: 7 * 24 * 60,
@@ -386,6 +430,76 @@ export const SEED_RECORDS: FundRecord2[] = [
   }),
 ];
 
+/* ------------------------------------------------------------------ *
+ * Active register — the standing book the grid opens on.
+ * ------------------------------------------------------------------ */
+
+const CATALOGUE: Identity[] = [
+  identity("Meridian US Large Cap Blend ETF", "US Large Cap Blend", "MULB", "US", "Meridian AM", "ETF Trust I", "4001"),
+  identity("Meridian US Treasury 1-3Y ETF", "US Treasury 1-3Y", "MUST", "US", "Meridian AM", "ETF Trust I", "4002"),
+  identity("Meridian Global Value Factor UCITS ETF", "Global Value Factor", "MGVF", "EMEA", "Meridian AM", "UCITS ICAV", "4003"),
+  identity("Meridian Emerging Markets Core UCITS ETF", "EM Core", "MEMC", "EMEA", "Meridian AM", "UCITS ICAV", "4004"),
+  identity("Northwind US Quality Growth ETF", "US Quality Growth", "NWQG", "US", "Northwind AM", "ETF Trust I", "4005"),
+  identity("Northwind US Small Cap Value ETF", "US Small Cap Value", "NWSV", "US", "Northwind AM", "ETF Trust I", "4006"),
+  identity("Northwind Sterling Gilt Ladder UCITS ETF", "Sterling Gilt Ladder", "NWGL", "EMEA", "Northwind AM", "UCITS ICAV", "4007"),
+  identity("Northwind Japan Equity Hedged ETF", "Japan Equity Hedged", "NWJH", "APAC", "Northwind AM", "ETF Trust II", "4008"),
+  identity("Aurora Global Infrastructure UCITS ETF", "Global Infrastructure", "AGIN", "EMEA", "Aurora Capital", "UCITS ICAV", "4009"),
+  identity("Aurora Clean Energy Leaders ETF", "Clean Energy Leaders", "ACEL", "US", "Aurora Capital", "ETF Trust II", "4010"),
+  identity("Aurora Asia Pacific Income UCITS ETF", "Asia Pacific Income", "AAPI", "APAC", "Aurora Capital", "UCITS ICAV", "4011"),
+  identity("Aurora Short Duration Credit ETF", "Short Duration Credit", "ASDC", "US", "Aurora Capital", "ETF Trust I", "4012"),
+  identity("Helix Global Momentum ETF", "Global Momentum", "HGMO", "US", "Helix Investments", "ETF Trust II", "4013"),
+  identity("Helix European Banks UCITS ETF", "European Banks", "HEBK", "EMEA", "Helix Investments", "UCITS ICAV", "4014"),
+  identity("Helix Asia Technology UCITS ETF", "Asia Technology", "HATQ", "APAC", "Helix Investments", "UCITS ICAV", "4015"),
+  identity("Helix Global Real Assets ETF", "Global Real Assets", "HGRA", "US", "Helix Investments", "ETF Trust I", "4016"),
+  identity("Meridian Pacific Dividend UCITS ETF", "Pacific Dividend", "MPDV", "APAC", "Meridian AM", "UCITS ICAV", "4017"),
+  identity("Northwind Global Aggregate Bond ETF", "Global Aggregate Bond", "NWAB", "US", "Northwind AM", "ETF Trust II", "4018"),
+];
+
+const BASES = [gbpEquityBase, gbpBondBase, eurBase];
+
+const ACTIVE_REGISTER: FundRecord2[] = CATALOGUE.map((ident, i) => {
+  const base = BASES[i % BASES.length];
+  const submitter = i % 2 === 0 ? "p.raman" : "s.mercer";
+  const approvedDaysAgo = 10 + i * 2;
+  const day = String(3 + i).padStart(2, "0");
+  const values = {
+    ...base,
+    ...ident,
+    quantity: String(1200 + i * 375),
+    paymentRef: `STD-${ident.ticker}-${ident.fundNumber}`,
+    tradeDate: "2026-07-01",
+    settlementDate: "2026-07-03",
+  };
+  return build({
+    id: `FC2-${String(407 + i).padStart(4, "0")}`,
+    title: ident.fundLongName,
+    state: "active",
+    values,
+    cycle: 1,
+    submissions: [
+      { cycle: 1, by: submitter, at: at((approvedDaysAgo + 2) * 24 * 60), values: { ...values } },
+    ],
+    createdBy: submitter,
+    createdMinsAgo: (approvedDaysAgo + 4) * 24 * 60,
+    submittedBy: submitter,
+    submittedMinsAgo: (approvedDaysAgo + 2) * 24 * 60,
+    reviewerId: "d.osei",
+    approvedBy: "d.osei",
+    approvedMinsAgo: approvedDaysAgo * 24 * 60,
+    effectiveDate: `2026-07-${day}`,
+    activatedMinsAgo: approvedDaysAgo * 24 * 60,
+    updatedMinsAgo: approvedDaysAgo * 24 * 60,
+    events: [
+      { from: "Draft", to: "Submitted", actor: submitter, minsAgo: (approvedDaysAgo + 2) * 24 * 60, note: "Submitted for review" },
+      { from: "Submitted", to: "In review", actor: "d.osei", minsAgo: approvedDaysAgo * 24 * 60 + 90, note: "Picked up for review" },
+      { from: "In review", to: "Approved", actor: "d.osei", minsAgo: approvedDaysAgo * 24 * 60, note: "Approved" },
+      { from: "Approved", to: "Active", actor: "d.osei", minsAgo: approvedDaysAgo * 24 * 60, note: "Activated" },
+    ],
+  });
+});
+
+export const SEED_RECORDS: FundRecord2[] = [...SCENARIOS, ...ACTIVE_REGISTER];
+
 let nseq = 0;
 const nid = () => `SN${String((nseq += 1)).padStart(3, "0")}`;
 
@@ -396,7 +510,7 @@ export const SEED_NOTICES: Notice[] = [
     userId: "p.raman",
     recordId: "FC2-0402",
     kind: "returned",
-    text: "Daniel Osei rejected “Sterling Corporate Bond — redemption” — 1 field flagged: “Quantity looks an order of magnitude high…”",
+    text: "Daniel Osei rejected “Meridian Sterling Corporate Bond UCITS ETF” — 1 field flagged: “Quantity looks an order of magnitude high…”",
     at: at(22 * 60),
     read: false,
     actionNeeded: true,
@@ -406,7 +520,7 @@ export const SEED_NOTICES: Notice[] = [
     userId: "d.osei",
     recordId: "FC2-0403",
     kind: "submitted",
-    text: "Priya Raman submitted “European Multi-Asset — subscription” for review.",
+    text: "Priya Raman submitted “Meridian European Multi-Asset UCITS ETF” for review.",
     at: at(5 * 60),
     read: false,
     actionNeeded: true,
@@ -416,7 +530,7 @@ export const SEED_NOTICES: Notice[] = [
     userId: "s.mercer",
     recordId: "FC2-0403",
     kind: "submitted",
-    text: "Priya Raman submitted “European Multi-Asset — subscription” for review.",
+    text: "Priya Raman submitted “Meridian European Multi-Asset UCITS ETF” for review.",
     at: at(5 * 60),
     read: false,
     actionNeeded: true,
@@ -426,7 +540,7 @@ export const SEED_NOTICES: Notice[] = [
     userId: "d.osei",
     recordId: "FC2-0404",
     kind: "resubmitted",
-    text: "Sofia Mercer resubmitted “Global Equity — top-up dealing account” — 2 fields changed since your last review.",
+    text: "Sofia Mercer resubmitted “Helix Global Dividend ETF” — 2 fields changed since your last review.",
     at: at(90),
     read: false,
     actionNeeded: true,
@@ -436,7 +550,7 @@ export const SEED_NOTICES: Notice[] = [
     userId: "p.raman",
     recordId: "FC2-0405",
     kind: "approved",
-    text: "Daniel Osei approved “Sterling Corporate Bond — September switch” — scheduled to take effect 01 Sept 2026.",
+    text: "Daniel Osei approved “Aurora Sterling Credit UCITS ETF” — scheduled to take effect 01 Sept 2026.",
     at: at(2 * 24 * 60),
     read: true,
     actionNeeded: false,
@@ -446,7 +560,7 @@ export const SEED_NOTICES: Notice[] = [
     userId: "s.mercer",
     recordId: "FC2-0406",
     kind: "activated",
-    text: "Daniel Osei approved “European Multi-Asset — standing subscription” — active as of 20 Aug 2026.",
+    text: "Daniel Osei approved “Northwind European Multi-Asset UCITS ETF” — active as of 20 Aug 2026.",
     at: at(5 * 24 * 60),
     read: true,
     actionNeeded: false,

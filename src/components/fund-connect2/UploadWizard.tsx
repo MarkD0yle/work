@@ -7,8 +7,8 @@ import {
   SAMPLE_PASTE,
   type ColumnMapping,
   type Grid,
-} from "../../lib/fundConnect/importer";
-import { FIELDS, isRequiredAt } from "../../lib/fundConnect/schema";
+} from "../../lib/fundConnect2/importer";
+import { FIELDS, isRequiredAt } from "../../lib/fundConnect2/schema";
 import { blankValues } from "../../lib/fundConnect2/engine";
 
 /* Upload wizard — the FC2 entry point. Upload → validate, one step at a time.
@@ -83,10 +83,13 @@ export default function UploadWizard({
   open,
   onClose,
   onCommit,
+  onBlank,
 }: {
   open: boolean;
   onClose: () => void;
   onCommit: (drafts: WizardDraft[]) => void;
+  /** "Start a blank draft instead" — skips the upload entirely. */
+  onBlank: () => void;
 }) {
   const [step, setStep] = useState(0);
   const [rawText, setRawText] = useState("");
@@ -172,9 +175,11 @@ export default function UploadWizard({
 
   function draftTitle(row: (typeof preview)[number]): string {
     const value = (id: string) => row.cells.find((c) => c.fieldId === id)?.value ?? "";
+    const long = value("fundLongName");
+    if (long) return long;
     const fund = value("fundCode");
     const side = value("side");
-    if (!fund && !side) return "Uploaded instruction";
+    if (!fund && !side) return "Uploaded ETF setup";
     return [fund, side].filter(Boolean).join(" · ");
   }
 
@@ -287,6 +292,16 @@ export default function UploadWizard({
                     Reading <span className="font-medium text-neutral-800">{sourceName}</span>
                   </span>
                 )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    reset();
+                    onBlank();
+                  }}
+                  className="ml-auto text-[11px] text-neutral-400 underline underline-offset-2 hover:text-neutral-700"
+                >
+                  or start a blank draft instead
+                </button>
               </div>
               <textarea
                 value={rawText}
