@@ -106,16 +106,14 @@ export default function RightPanel({
               const body = (
                 <>
                   <div className="flex items-baseline justify-between gap-2">
-                    <span className="text-xs font-medium text-neutral-800">
-                      {entry.fieldId ? (
-                        <>
-                          {FIELD_BY_ID[entry.fieldId]?.label ?? entry.fieldId}{" "}
-                          <span className="text-neutral-300" aria-hidden>→</span>
-                        </>
-                      ) : (
-                        "Workflow"
-                      )}
-                    </span>
+                    {entry.fieldId ? (
+                      <span className="text-xs font-medium text-blue-800">
+                        {FIELD_BY_ID[entry.fieldId]?.label ?? entry.fieldId}{" "}
+                        <span className="text-blue-300" aria-hidden>→</span>
+                      </span>
+                    ) : (
+                      <span className="text-xs font-medium text-neutral-800">Workflow</span>
+                    )}
                     <span className="shrink-0 text-[10px] text-neutral-400 tabular-nums">
                       {formatStamp(entry.at)}
                     </span>

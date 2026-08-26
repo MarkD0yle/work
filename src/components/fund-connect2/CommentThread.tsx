@@ -91,7 +91,7 @@ export default function CommentThread({
                       type="button"
                       onClick={() => onJumpField(f.fieldId)}
                       title={`Open ${field?.label ?? f.fieldId} in the form`}
-                      className="rounded-full border border-neutral-300 bg-white px-2 py-[1px] text-[10px] font-medium text-neutral-700 hover:border-neutral-900 hover:text-neutral-900"
+                      className="rounded-full border border-blue-300 bg-blue-50 px-2 py-[1px] text-[10px] font-medium text-blue-800 hover:bg-blue-100"
                     >
                       {field?.label ?? f.fieldId} →
                     </button>
