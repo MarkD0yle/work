@@ -42,6 +42,9 @@ export type RecordComment = {
   cycle: number;
   /** Set when the author later edits the text — the thread shows "edited". */
   editedAt?: string;
+  /** When set, the comment is about this form field — the thread renders a
+   *  pill that jumps straight to it. Absent = about the record as a whole. */
+  fieldId?: string;
 };
 
 /** Values as they stood at one submission — the basis for delta review. */

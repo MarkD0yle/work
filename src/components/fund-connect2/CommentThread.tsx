@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { canAlterComment, formatStamp, userName } from "../../lib/fundConnect2/engine";
-import { FIELD_BY_ID } from "../../lib/fundConnect2/schema";
+import { FIELD_BY_ID, SECTIONS, fieldsInSection } from "../../lib/fundConnect2/schema";
 import type { FundRecord2, RecordComment, User } from "../../lib/fundConnect2/types";
 
 /* The record's conversation, as one timeline.
@@ -34,13 +34,15 @@ export default function CommentThread({
   record: FundRecord2;
   user: User;
   canComment: boolean;
-  onComment: (text: string) => void;
+  onComment: (text: string, fieldId?: string) => void;
   onEditComment: (commentId: string, text: string) => void;
   onDeleteComment: (commentId: string) => void;
   /** Open the form on the exact field an entry is about. */
   onJumpField: (fieldId: string) => void;
 }) {
   const [draft, setDraft] = useState("");
+  /** Field the draft comment is about — "" means the record as a whole. */
+  const [draftFieldId, setDraftFieldId] = useState("");
   /** Comment currently being rewritten inline, and its working text. */
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
@@ -133,12 +135,24 @@ export default function CommentThread({
                     )}
                   </span>
                 </div>
-                <span
-                  className={`mt-1 inline-flex rounded-full border px-1.5 py-[1px] text-[9px] font-medium tracking-wide uppercase ${pill.cls}`}
-                >
-                  {pill.label}
-                  {c.kind !== "note" && ` · cycle ${c.cycle}`}
-                </span>
+                <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                  <span
+                    className={`inline-flex rounded-full border px-1.5 py-[1px] text-[9px] font-medium tracking-wide uppercase ${pill.cls}`}
+                  >
+                    {pill.label}
+                    {c.kind !== "note" && ` · cycle ${c.cycle}`}
+                  </span>
+                  {c.fieldId && (
+                    <button
+                      type="button"
+                      onClick={() => onJumpField(c.fieldId!)}
+                      title={`Open ${FIELD_BY_ID[c.fieldId]?.label ?? c.fieldId} in the form`}
+                      className="rounded-full border border-blue-300 bg-blue-50 px-2 py-[1px] text-[10px] font-medium text-blue-800 hover:bg-blue-100"
+                    >
+                      {FIELD_BY_ID[c.fieldId]?.label ?? c.fieldId} →
+                    </button>
+                  )}
+                </div>
 
                 {editing ? (
                   <div className="mt-1.5">
@@ -244,12 +258,33 @@ export default function CommentThread({
             placeholder="Add a comment — the other side of the review is notified."
             className="w-full rounded-md border border-neutral-300 bg-white px-2 py-1.5 text-xs text-neutral-800"
           />
+          {/* Pin the comment to one field, so the thread can link to it. */}
+          <label className="mt-1.5 flex items-center gap-1.5 text-[10px] text-neutral-500">
+            <span className="shrink-0 font-medium tracking-wide uppercase">About</span>
+            <select
+              value={draftFieldId}
+              onChange={(e) => setDraftFieldId(e.target.value)}
+              className="min-w-0 flex-1 rounded-md border border-neutral-300 bg-white px-1.5 py-1 text-[11px] text-neutral-800"
+            >
+              <option value="">The record as a whole</option>
+              {SECTIONS.map((section) => (
+                <optgroup key={section.id} label={section.label}>
+                  {fieldsInSection(section.id).map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.label}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </label>
           <button
             type="button"
             disabled={draft.trim() === ""}
             onClick={() => {
-              onComment(draft.trim());
+              onComment(draft.trim(), draftFieldId || undefined);
               setDraft("");
+              setDraftFieldId("");
             }}
             className="mt-1.5 rounded-md bg-neutral-900 px-2.5 py-1 text-[11px] font-medium text-white disabled:bg-neutral-300"
           >

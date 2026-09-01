@@ -28,7 +28,7 @@ export default function RightPanel({
   record: FundRecord2;
   user: User;
   canComment: boolean;
-  onComment: (text: string) => void;
+  onComment: (text: string, fieldId?: string) => void;
   onEditComment: (commentId: string, text: string) => void;
   onDeleteComment: (commentId: string) => void;
   /** Open the form on the exact field an entry is about. */

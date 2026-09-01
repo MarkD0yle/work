@@ -469,8 +469,10 @@ function addComment(
   by: string,
   at: string,
   cycle: number,
+  fieldId?: string,
 ): FundRecord2 {
   const comment: RecordComment = { id: commentId(), kind, text, by, at, cycle };
+  if (fieldId) comment.fieldId = fieldId;
   return { ...rec, comments: [...rec.comments, comment] };
 }
 
@@ -652,8 +654,14 @@ export function assignRecord(
   return { record: next, notices };
 }
 
-/** A plain thread comment. The other side of the conversation is told. */
-export function commentOnRecord(rec: FundRecord2, user: User, text: string): ActionResult {
+/** A plain thread comment, optionally pinned to one form field so the thread
+ *  can link straight to what it is about. The other side is told. */
+export function commentOnRecord(
+  rec: FundRecord2,
+  user: User,
+  text: string,
+  fieldId?: string,
+): ActionResult {
   const at = nowIso();
   const next = addComment(
     { ...rec, updatedAt: at },
@@ -662,13 +670,22 @@ export function commentOnRecord(rec: FundRecord2, user: User, text: string): Act
     user.id,
     at,
     Math.max(rec.cycle, 1),
+    fieldId,
   );
   const other =
     user.id === rec.submittedBy ? rec.reviewerId : (rec.submittedBy ?? rec.createdBy);
   const notices: Notice[] = [];
   if (other && other !== user.id) {
+    const about = fieldId ? ` (on ${FIELD_BY_ID[fieldId]?.label ?? fieldId})` : "";
     notices.push(
-      notice(other, next, "comment", `${user.name} commented on "${next.title}": “${text}”`, false, at),
+      notice(
+        other,
+        next,
+        "comment",
+        `${user.name} commented on "${next.title}"${about}: “${text}”`,
+        false,
+        at,
+      ),
     );
   }
   return { record: next, notices };

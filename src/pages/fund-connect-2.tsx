@@ -1642,8 +1642,13 @@ export default function FundConnect2Page() {
               record={record}
               user={user}
               canComment={record.state !== "active"}
-              onComment={(text) =>
-                act(commentOnRecord(record, user, text), "Comment added to the thread.")
+              onComment={(text, fieldId) =>
+                act(
+                  commentOnRecord(record, user, text, fieldId),
+                  fieldId
+                    ? `Comment added on ${FIELD_BY_ID[fieldId]?.label ?? fieldId}.`
+                    : "Comment added to the thread.",
+                )
               }
               onEditComment={(commentId, text) => {
                 update(editComment(record, user, commentId, text));
