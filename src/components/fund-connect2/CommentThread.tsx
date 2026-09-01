@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { formatStamp, userName } from "../../lib/fundConnect2/engine";
+import { canAlterComment, formatStamp, userName } from "../../lib/fundConnect2/engine";
 import { FIELD_BY_ID } from "../../lib/fundConnect2/schema";
-import type { FundRecord2, RecordComment } from "../../lib/fundConnect2/types";
+import type { FundRecord2, RecordComment, User } from "../../lib/fundConnect2/types";
 
 /* The record's conversation, as one timeline.
  *
@@ -24,17 +24,28 @@ type Item =
 
 export default function CommentThread({
   record,
+  user,
   canComment,
   onComment,
+  onEditComment,
+  onDeleteComment,
   onJumpField,
 }: {
   record: FundRecord2;
+  user: User;
   canComment: boolean;
   onComment: (text: string) => void;
+  onEditComment: (commentId: string, text: string) => void;
+  onDeleteComment: (commentId: string) => void;
   /** Open the form on the exact field an entry is about. */
   onJumpField: (fieldId: string) => void;
 }) {
   const [draft, setDraft] = useState("");
+  /** Comment currently being rewritten inline, and its working text. */
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
+  /** Comment awaiting the inline delete confirmation. */
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const items: Item[] = [
     ...record.comments.map((comment): Item => ({ at: comment.at, kind: "comment", comment })),
@@ -108,12 +119,18 @@ export default function CommentThread({
 
             const c = item.comment;
             const pill = KIND_PILL[c.kind];
+            const alter = canAlterComment(record, c, user);
+            const editing = editingId === c.id;
+            const confirming = confirmDeleteId === c.id;
             return (
-              <li key={c.id} className="border-b border-neutral-100 px-3 py-2.5">
+              <li key={c.id} className="group border-b border-neutral-100 px-3 py-2.5">
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="text-xs font-medium text-neutral-800">{userName(c.by)}</span>
                   <span className="shrink-0 text-[10px] text-neutral-400 tabular-nums">
                     {formatStamp(c.at)}
+                    {c.editedAt && (
+                      <span title={`Edited ${formatStamp(c.editedAt)}`}> · edited</span>
+                    )}
                   </span>
                 </div>
                 <span
@@ -122,7 +139,96 @@ export default function CommentThread({
                   {pill.label}
                   {c.kind !== "note" && ` · cycle ${c.cycle}`}
                 </span>
-                <p className="mt-1 text-[11px] leading-snug text-neutral-600">{c.text}</p>
+
+                {editing ? (
+                  <div className="mt-1.5">
+                    <textarea
+                      value={editText}
+                      onChange={(e) => setEditText(e.target.value)}
+                      rows={2}
+                      autoFocus
+                      className="w-full rounded-md border border-neutral-300 bg-white px-2 py-1.5 text-[11px] text-neutral-800"
+                    />
+                    <div className="mt-1 flex gap-1.5">
+                      <button
+                        type="button"
+                        disabled={editText.trim() === ""}
+                        onClick={() => {
+                          onEditComment(c.id, editText.trim());
+                          setEditingId(null);
+                        }}
+                        className="rounded-md bg-neutral-900 px-2 py-0.5 text-[10px] font-medium text-white disabled:bg-neutral-300"
+                      >
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditingId(null)}
+                        className="rounded-md border border-neutral-300 px-2 py-0.5 text-[10px] font-medium text-neutral-600 hover:bg-neutral-50"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="mt-1 text-[11px] leading-snug text-neutral-600">{c.text}</p>
+                )}
+
+                {/* Author controls — visible on hover, disabled with the
+                 *  refusal reason for everyone else (nothing is hidden). */}
+                {!editing && (
+                  <div className="mt-1 flex items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+                    {confirming ? (
+                      <>
+                        <span className="text-[10px] font-medium text-red-700">
+                          Delete this comment?
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onDeleteComment(c.id);
+                            setConfirmDeleteId(null);
+                          }}
+                          className="rounded-md bg-red-600 px-2 py-0.5 text-[10px] font-medium text-white hover:bg-red-700"
+                        >
+                          Delete
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmDeleteId(null)}
+                          className="rounded-md border border-neutral-300 px-2 py-0.5 text-[10px] font-medium text-neutral-600 hover:bg-neutral-50"
+                        >
+                          Keep
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          disabled={!alter.allowed}
+                          title={alter.reason}
+                          onClick={() => {
+                            setEditingId(c.id);
+                            setEditText(c.text);
+                            setConfirmDeleteId(null);
+                          }}
+                          className="text-[10px] font-medium text-neutral-500 hover:text-neutral-900 disabled:cursor-not-allowed disabled:text-neutral-300"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          disabled={!alter.allowed}
+                          title={alter.reason}
+                          onClick={() => setConfirmDeleteId(c.id)}
+                          className="text-[10px] font-medium text-neutral-500 hover:text-red-700 disabled:cursor-not-allowed disabled:text-neutral-300"
+                        >
+                          Delete
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
               </li>
             );
           })}

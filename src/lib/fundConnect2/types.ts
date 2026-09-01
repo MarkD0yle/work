@@ -40,6 +40,8 @@ export type RecordComment = {
   at: string;
   /** Review cycle the comment belongs to (1 = first submission). */
   cycle: number;
+  /** Set when the author later edits the text — the thread shows "edited". */
+  editedAt?: string;
 };
 
 /** Values as they stood at one submission — the basis for delta review. */

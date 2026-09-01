@@ -2,7 +2,7 @@ import { useState } from "react";
 import CommentThread from "./CommentThread";
 import { formatStamp, userName } from "../../lib/fundConnect2/engine";
 import { FIELD_BY_ID } from "../../lib/fundConnect2/schema";
-import type { FundRecord2 } from "../../lib/fundConnect2/types";
+import type { FundRecord2, User } from "../../lib/fundConnect2/types";
 
 /* Comments + audit, side by side as tabs.
  *
@@ -18,13 +18,19 @@ const VIA_LABEL: Record<string, string> = {
 
 export default function RightPanel({
   record,
+  user,
   canComment,
   onComment,
+  onEditComment,
+  onDeleteComment,
   onJumpField,
 }: {
   record: FundRecord2;
+  user: User;
   canComment: boolean;
   onComment: (text: string) => void;
+  onEditComment: (commentId: string, text: string) => void;
+  onDeleteComment: (commentId: string) => void;
   /** Open the form on the exact field an entry is about. */
   onJumpField: (fieldId: string) => void;
 }) {
@@ -64,8 +70,11 @@ export default function RightPanel({
       {tab === "comments" && (
         <CommentThread
           record={record}
+          user={user}
           canComment={canComment}
           onComment={onComment}
+          onEditComment={onEditComment}
+          onDeleteComment={onDeleteComment}
           onJumpField={onJumpField}
         />
       )}

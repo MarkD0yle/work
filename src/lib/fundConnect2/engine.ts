@@ -674,6 +674,78 @@ export function commentOnRecord(rec: FundRecord2, user: User, text: string): Act
   return { record: next, notices };
 }
 
+/** Who may change a thread comment after the fact: its author, and only for
+ *  plain notes — rejections and approvals are workflow records, not chat. */
+export function canAlterComment(
+  rec: FundRecord2,
+  comment: RecordComment,
+  user: User,
+): Permission {
+  if (comment.kind !== "note")
+    return {
+      allowed: false,
+      reason: "Rejection and approval comments are part of the workflow record and cannot be changed.",
+    };
+  if (comment.by !== user.id)
+    return {
+      allowed: false,
+      reason: `Only the author (${userName(comment.by)}) can edit or delete this comment.`,
+    };
+  if (rec.state === "active")
+    return { allowed: false, reason: "The record is active — its thread is closed." };
+  return { allowed: true };
+}
+
+/** Rewrite one of your own notes. The change is audited old → new. */
+export function editComment(
+  rec: FundRecord2,
+  user: User,
+  targetId: string,
+  text: string,
+): FundRecord2 {
+  const existing = rec.comments.find((c) => c.id === targetId);
+  if (!existing || existing.text === text || !canAlterComment(rec, existing, user).allowed)
+    return rec;
+  const at = nowIso();
+  const next: FundRecord2 = {
+    ...rec,
+    comments: rec.comments.map((c) =>
+      c.id === targetId ? { ...c, text, editedAt: at } : c,
+    ),
+  };
+  return withAudit(next, {
+    id: auditId(),
+    fieldId: null,
+    from: existing.text,
+    to: text,
+    actor: user.id,
+    at,
+    via: "system",
+    note: "Comment edited",
+  });
+}
+
+/** Remove one of your own notes. The deletion is audited with the old text. */
+export function deleteComment(rec: FundRecord2, user: User, targetId: string): FundRecord2 {
+  const existing = rec.comments.find((c) => c.id === targetId);
+  if (!existing || !canAlterComment(rec, existing, user).allowed) return rec;
+  const at = nowIso();
+  const next: FundRecord2 = {
+    ...rec,
+    comments: rec.comments.filter((c) => c.id !== targetId),
+  };
+  return withAudit(next, {
+    id: auditId(),
+    fieldId: null,
+    from: existing.text,
+    to: "",
+    actor: user.id,
+    at,
+    via: "system",
+    note: "Comment deleted",
+  });
+}
+
 export function flagField(
   rec: FundRecord2,
   fieldId: string,

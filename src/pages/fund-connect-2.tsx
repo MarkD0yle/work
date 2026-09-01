@@ -27,6 +27,8 @@ import {
   changedSinceLastReview,
   clearFlag,
   commentOnRecord,
+  deleteComment,
+  editComment,
   DEMO_TODAY,
   fieldState,
   flagField,
@@ -1638,10 +1640,19 @@ export default function FundConnect2Page() {
           <aside className="hidden w-80 shrink-0 xl:block">
             <RightPanel
               record={record}
+              user={user}
               canComment={record.state !== "active"}
               onComment={(text) =>
                 act(commentOnRecord(record, user, text), "Comment added to the thread.")
               }
+              onEditComment={(commentId, text) => {
+                update(editComment(record, user, commentId, text));
+                setToast("Comment updated — the change is on the audit trail.");
+              }}
+              onDeleteComment={(commentId) => {
+                update(deleteComment(record, user, commentId));
+                setToast("Comment deleted — the audit trail keeps what it said.");
+              }}
               onJumpField={(id) => jumpToField(id)}
             />
           </aside>
