@@ -146,14 +146,6 @@ export default function FundConnectPage() {
     [record],
   );
 
-  const versions = useMemo(
-    () =>
-      records
-        .filter((r) => r.id === record.id)
-        .sort((a, b) => b.version - a.version),
-    [records, record.id],
-  );
-
   const edit = canEdit(record, user);
   const submit = canSubmit(record, user);
   const pickUp = canStartReview(record, user);
@@ -580,14 +572,7 @@ export default function FundConnectPage() {
 
         {!inQueue && (
         <aside className="hidden w-80 shrink-0 xl:block">
-          <ActivityPanel
-            record={record}
-            versions={versions}
-            onOpenVersion={(versionId) => {
-              setActiveId(versionId);
-              setView("record");
-            }}
-          />
+          <ActivityPanel record={record} />
         </aside>
         )}
       </div>
