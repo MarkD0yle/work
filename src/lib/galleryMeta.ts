@@ -33,6 +33,7 @@ export const SECTION_ACCENT: Record<string, Accent> = {
   risk: { from: "#f43f5e", to: "#f59e0b" }, // rose → amber
   trading: { from: "#10b981", to: "#14b8a6" }, // emerald → teal
   forms: { from: "#8b5cf6", to: "#d946ef" }, // violet → fuchsia
+  "global-markets": { from: "#2563eb", to: "#7c3aed" }, // blue → violet
   wealth: { from: "#f59e0b", to: "#059669" }, // amber → emerald
   patterns: { from: "#06b6d4", to: "#6366f1" }, // cyan → indigo
   processing: { from: "#0ea5e9", to: "#22d3ee" }, // sky → cyan
@@ -50,6 +51,7 @@ const DEFAULT_MOTIF: Record<string, Motif> = {
   risk: "chart",
   trading: "grid",
   forms: "form",
+  "global-markets": "flow",
   wealth: "panel",
   patterns: "panel",
   processing: "flow",
@@ -242,6 +244,68 @@ export const GALLERY_META: Record<string, GalleryMeta> = {
     description: "Application settings and preferences grouped into clear sections.",
     tags: ["settings", "preferences", "config"],
     motif: "form",
+  },
+
+  // Global Markets — trade lifecycle
+  "gm-rfq-inbox": {
+    description:
+      "Sales & origination — an RFQ inbox with client tiering and a live quote composer for the incoming enquiry.",
+    tags: ["rfq", "sales", "pre-trade", "lifecycle"],
+    motif: "panel",
+  },
+  "gm-pretrade-checks": {
+    description:
+      "Pre-trade controls — a gate rail of credit, limit and compliance checks that must clear before an order releases.",
+    tags: ["compliance", "limits", "pre-trade", "lifecycle"],
+    motif: "form",
+  },
+  "gm-execution-desk": {
+    description:
+      "Execution — a dark desk terminal with order ticket, market depth and a live prints tape.",
+    tags: ["execution", "depth", "orders", "lifecycle"],
+    motif: "grid",
+  },
+  "gm-trade-capture": {
+    description:
+      "Capture & booking — trades flowing across an enrichment pipeline board, with exceptions pulled out for repair.",
+    tags: ["booking", "enrichment", "exceptions", "lifecycle"],
+    motif: "flow",
+  },
+  "gm-confirmation-matching": {
+    description:
+      "Confirmation — a field-by-field match of our record against the counterparty's, mismatches called out for action.",
+    tags: ["confirmation", "matching", "affirmation", "lifecycle"],
+    motif: "grid",
+  },
+  "gm-clearing-margin": {
+    description:
+      "Clearing — CCP submission lanes with novation status and the margin calls each clearing house is asking for.",
+    tags: ["clearing", "ccp", "margin", "lifecycle"],
+    motif: "flow",
+  },
+  "gm-settlement-fails": {
+    description:
+      "Settlement — a fails workbench with ageing buckets, CSDR penalty accrual and a resolution rail per fail.",
+    tags: ["settlement", "fails", "csdr", "lifecycle"],
+    motif: "grid",
+  },
+  "gm-asset-servicing": {
+    description:
+      "Asset servicing — a fortnight schedule of coupons, dividends and rate resets across the book, with event detail.",
+    tags: ["coupons", "dividends", "resets", "lifecycle"],
+    motif: "calendar",
+  },
+  "gm-lifecycle-events": {
+    description:
+      "In-life events — a trade's amendments, novations and compression runs on one audit timeline with before/after deltas.",
+    tags: ["novation", "compression", "audit", "lifecycle"],
+    motif: "flow",
+  },
+  "gm-maturity-roll": {
+    description:
+      "Maturity — an expiry horizon board of positions rolling off, each with a roll, exercise or expire decision.",
+    tags: ["maturity", "expiry", "roll", "lifecycle"],
+    motif: "chart",
   },
 
   // Wealth & Clients
