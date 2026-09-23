@@ -179,6 +179,12 @@ export const GALLERY_META: Record<string, GalleryMeta> = {
     tags: ["tca", "execution", "benchmarks"],
     motif: "chart",
   },
+  "bestx-exceptions": {
+    description:
+      "Visual uplift of the BestX exception reports — a scannable report list plus a KPI-led results view with one sign convention.",
+    tags: ["tca", "exceptions", "best-execution", "redesign"],
+    motif: "chart",
+  },
   "liquidity-ladder": {
     description:
       "Liquidity ladder bucketed by maturity and currency, with cumulative gap.",

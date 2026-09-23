@@ -120,6 +120,7 @@ const SLUG_SECTION: Record<string, string> = {
   blotter: "trading",
   "devextreme-blotter": "trading",
   "tca-execution": "trading",
+  "bestx-exceptions": "trading",
   "liquidity-ladder": "trading",
   "repo-financing": "trading",
   "collateral-optimizer": "trading",
