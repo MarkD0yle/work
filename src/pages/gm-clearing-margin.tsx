@@ -1,5 +1,5 @@
 export const title = "Clearing & Margin";
-export const section = "global-markets";
+export const section = "dashboards";
 
 /* Global Markets lifecycle · Stage 6 — Clearing.
  *

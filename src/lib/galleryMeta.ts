@@ -33,11 +33,11 @@ export const SECTION_ACCENT: Record<string, Accent> = {
   risk: { from: "#f43f5e", to: "#f59e0b" }, // rose → amber
   trading: { from: "#10b981", to: "#14b8a6" }, // emerald → teal
   forms: { from: "#8b5cf6", to: "#d946ef" }, // violet → fuchsia
-  "global-markets": { from: "#2563eb", to: "#7c3aed" }, // blue → violet
   wealth: { from: "#f59e0b", to: "#059669" }, // amber → emerald
   patterns: { from: "#06b6d4", to: "#6366f1" }, // cyan → indigo
   processing: { from: "#0ea5e9", to: "#22d3ee" }, // sky → cyan
   pitch: { from: "#0ea5e9", to: "#22c55e" }, // sky → green
+  dashboards: { from: "#0f766e", to: "#4f46e5" }, // teal → indigo
   other: { from: "#64748b", to: "#475569" }, // slate
 };
 
@@ -51,11 +51,11 @@ const DEFAULT_MOTIF: Record<string, Motif> = {
   risk: "chart",
   trading: "grid",
   forms: "form",
-  "global-markets": "flow",
   wealth: "panel",
   patterns: "panel",
   processing: "flow",
   pitch: "flow",
+  dashboards: "chart",
   other: "panel",
 };
 
@@ -177,6 +177,12 @@ export const GALLERY_META: Record<string, GalleryMeta> = {
     description:
       "Transaction cost analysis benchmarking execution quality against arrival and VWAP.",
     tags: ["tca", "execution", "benchmarks"],
+    motif: "chart",
+  },
+  "bestx-exceptions": {
+    description:
+      "Visual uplift of the BestX exception reports — a scannable report list plus a KPI-led results view with one sign convention.",
+    tags: ["tca", "exceptions", "best-execution", "redesign"],
     motif: "chart",
   },
   "liquidity-ladder": {
@@ -382,6 +388,104 @@ export const GALLERY_META: Record<string, GalleryMeta> = {
       "Range date picker with presets and a dual-month view for quick spans.",
     tags: ["date", "range", "component"],
     motif: "calendar",
+  },
+  "kpi-trend-patterns": {
+    description:
+      "Three ways to show a KPI's trend: sparklines with a usual range, target tracks, and a breakdown of what drove the change.",
+    tags: ["stats", "kpi", "trend", "component"],
+    motif: "chart",
+  },
+
+  // Dashboards
+  "loan-book-health": {
+    description:
+      "Retail lending book health: vintage delinquency curves, a roll-rate matrix and DPD buckets, filtered from a facet rail.",
+    tags: ["dashboard", "lending", "credit risk", "delinquency"],
+    motif: "chart",
+  },
+  "aml-alert-operations": {
+    description:
+      "Transaction-monitoring operations, from alert funnel to SAR, with backlog ageing, scenario productivity and a bulk-action investigator queue.",
+    tags: ["dashboard", "aml", "compliance", "queue"],
+    motif: "flow",
+  },
+  "fraud-control-room": {
+    description:
+      "Dark, live card-fraud wall: ticking counters, fraud bps against baseline, an hour-by-merchant heatmap and a streaming decision feed.",
+    tags: ["dashboard", "fraud", "payments", "live"],
+    motif: "heatmap",
+  },
+  "capital-adequacy": {
+    description:
+      "Regulatory capital report: ratios against the requirement stack, a CET1 bridge, RWA by business and leverage and liquidity trends.",
+    tags: ["dashboard", "capital", "regulatory", "basel"],
+    motif: "chart",
+  },
+  "claims-reserving": {
+    description:
+      "Insurance claims and reserving by line of business, around a chain-ladder loss triangle, combined ratio and a large-loss register.",
+    tags: ["dashboard", "insurance", "reserving", "claims"],
+    motif: "grid",
+  },
+  "fund-flows": {
+    description:
+      "Asset-manager distribution bento: net-flow hero, channel-to-asset-class sankey, flows by fund and the biggest client moves.",
+    tags: ["dashboard", "asset management", "flows", "distribution"],
+    motif: "flow",
+  },
+  "private-markets": {
+    description:
+      "LP commitments monitor: fund list to detail, J-curve cash flows, TVPI split into DPI and RVPI, and vintage quartile ranking.",
+    tags: ["dashboard", "private equity", "commitments", "irr"],
+    motif: "panel",
+  },
+  "fixed-income-portfolio": {
+    description:
+      "Bond portfolio against benchmark: yield curve with holdings, key-rate duration tilts and a cross-filtered holdings grid.",
+    tags: ["dashboard", "fixed income", "duration", "ag-grid"],
+    motif: "grid",
+  },
+  "climate-portfolio": {
+    description:
+      "Net-zero scorecard: implied temperature rise, decarbonisation pathway against target, financed-emissions treemap and an engagement tracker.",
+    tags: ["dashboard", "esg", "climate", "emissions"],
+    motif: "treemap",
+  },
+  "var-backtesting": {
+    description:
+      "VaR backtest over 250 days: P&L against VaR with exceptions, the Basel traffic light, desk small multiples and an exception log.",
+    tags: ["dashboard", "market risk", "var", "backtesting"],
+    motif: "chart",
+  },
+  "banking-book-rate-risk": {
+    description:
+      "IRRBB workbench: six Basel shocks against the 15% outlier test, gap ladder, NII vs base by month, ΔEVE waterfall, live behavioural sliders, hedges and limits.",
+    tags: ["dashboard", "irrbb", "alm", "treasury"],
+    motif: "chart",
+  },
+  "mortgage-pipeline": {
+    description:
+      "Mortgage origination stage board: six chevron stages against SLA, cohort funnel and heatmap, completions pacing, introducer league and an ageing case list.",
+    tags: ["dashboard", "mortgages", "origination", "pipeline"],
+    motif: "flow",
+  },
+  "settlement-fails": {
+    description:
+      "Intraday settlement fails console: fails by root cause, CSDR penalties by market, a counterparty × age heatmap that scopes an AG Grid blotter with bulk actions.",
+    tags: ["dashboard", "custody", "settlement", "ag-grid"],
+    motif: "grid",
+  },
+  "pension-funding": {
+    description:
+      "DB pension scheme funding: assets vs liabilities on three bases, the journey plan with a projection fan, LDI hedge gauges and a collateral stress table.",
+    tags: ["dashboard", "pensions", "ldi", "funding"],
+    motif: "chart",
+  },
+  "clo-surveillance": {
+    description:
+      "Six European CLOs: deal rail, capital stack, OC/IC bullets, quality tests, industry treemap, CCC trend and the next payment-date waterfall.",
+    tags: ["dashboard", "clo", "structured credit", "surveillance"],
+    motif: "panel",
   },
 
   // Sales & Pitch

@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 export const title = "Settlement Fails";
-export const section = "global-markets";
+export const section = "dashboards";
 
 /* Global Markets lifecycle · Stage 7 — Settlement.
  *

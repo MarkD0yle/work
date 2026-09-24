@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 export const title = "Asset Servicing";
-export const section = "global-markets";
+export const section = "dashboards";
 
 /* Global Markets lifecycle · Stage 8 — Asset servicing.
  *
