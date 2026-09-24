@@ -4,7 +4,7 @@ import { HighchartsView } from "../components/highcharts/HighchartsView";
 import { TONE } from "../lib/highcharts";
 
 export const title = "BestX · Exception Reports";
-export const section = "trading";
+export const section = "dashboards";
 export const fullWidth = true;
 
 /* ------------------------------------------------------------------ *
@@ -66,7 +66,17 @@ const REPORTS: Report[] = [
     description: "Trades priced outside the expected spread band.",
     conditions: [
       { field: "Asset type", op: "=", value: "FX" },
-      { field: "Total spread", op: ">", value: "10 bps or < −0.5 bps" },
+      { field: "Desk", op: "=", value: "bos.testcomp1" },
+      { field: "Entity", op: "=", value: "SSGA UK" },
+      { field: "Portfolio", op: "=", value: "GLB-EQ-01" },
+      { field: "Direction", op: "=", value: "Sell" },
+      { field: "Trade type", op: "=", value: "Spot" },
+      { field: "Channel", op: "=", value: "FXall" },
+      { field: "Currency pair", op: "in", value: "EURUSD, GBPUSD" },
+      { field: "Size", op: ">", value: "50M USD" },
+      { field: "Total spread", op: ">", value: "10 bps" },
+      { field: "Perf vs Q Best", op: "<", value: "−0.01 bps" },
+      { field: "Perf vs Arrival", op: "<", value: "−2 bps" },
     ],
     recipients: ["sgaughan@statestreet.com"],
     frequency: "Daily",
@@ -82,8 +92,19 @@ const REPORTS: Report[] = [
     name: "Q Best underperformance",
     description: "Fills worse than the best quote on the panel.",
     conditions: [
+      { field: "Asset type", op: "=", value: "FX" },
       { field: "Desk", op: "=", value: "bos.testcomp1" },
+      { field: "Counterparty", op: "in", value: "Barclays, Citi" },
+      { field: "Entity", op: "=", value: "SSGA US" },
+      { field: "Direction", op: "=", value: "Buy" },
+      { field: "Trade type", op: "=", value: "Forward" },
+      { field: "Channel", op: "=", value: "Bloomberg FXGO" },
+      { field: "Currency pair", op: "=", value: "USDJPY" },
+      { field: "Size", op: ">", value: "10M USD" },
       { field: "Perf vs Q Best", op: "<", value: "−0.01 bps" },
+      { field: "Perf vs Arrival", op: "<", value: "−0.5 bps" },
+      { field: "Directed", op: "=", value: "Not directed" },
+      { field: "Trade age", op: ">", value: "30 seconds" },
     ],
     recipients: ["state_street_support@bestx.co.uk"],
     frequency: "Daily",
@@ -99,8 +120,19 @@ const REPORTS: Report[] = [
     name: "Large ticket slippage",
     description: "Tickets over 50M where arrival slippage is material.",
     conditions: [
+      { field: "Asset type", op: "=", value: "FX" },
+      { field: "Desk", op: "=", value: "lon.fx.exec" },
+      { field: "Direction", op: "=", value: "Buy" },
+      { field: "Directed", op: "=", value: "Directed" },
+      { field: "Trade type", op: "=", value: "Swap" },
+      { field: "Channel", op: "=", value: "Bloomberg FXGO" },
+      { field: "Currency pair", op: "in", value: "EURUSD, AUDUSD" },
       { field: "Size", op: ">", value: "50M USD" },
       { field: "Perf vs Arrival", op: "<", value: "−2 bps" },
+      { field: "Arrival slippage", op: ">", value: "1.5 bps" },
+      { field: "Price impact", op: ">", value: "0.2%" },
+      { field: "VWAP delta", op: "<", value: "−0.5 bps" },
+      { field: "Client tier", op: "=", value: "Institutional" },
     ],
     recipients: ["fx-desk@statestreet.com", "tca-oversight@statestreet.com"],
     frequency: "Weekly",
@@ -116,8 +148,20 @@ const REPORTS: Report[] = [
     name: "WMR fix deviation",
     description: "Fix orders filled away from the WMR 4pm rate.",
     conditions: [
+      { field: "Asset type", op: "=", value: "FX" },
+      { field: "Desk", op: "=", value: "nyc.fx.exec" },
+      { field: "Entity", op: "=", value: "SSGA IE" },
+      { field: "Portfolio", op: "=", value: "EM-DEBT-02" },
       { field: "Trade type", op: "=", value: "Fix" },
+      { field: "Direction", op: "=", value: "Sell" },
+      { field: "Channel", op: "=", value: "Voice" },
+      { field: "Currency pair", op: "in", value: "USDCHF, EURGBP" },
+      { field: "Size", op: ">", value: "5M USD" },
       { field: "Perf vs WMR 4pm", op: "<", value: "−1 bps" },
+      { field: "Fix offset", op: ">", value: "0.6 bps" },
+      { field: "Market dislocation", op: ">", value: "2.0 standard deviations" },
+      { field: "Client book", op: "=", value: "Macro hedging" },
+      { field: "Liquidity score", op: "<", value: "0.7" },
     ],
     recipients: ["fx-desk@statestreet.com"],
     frequency: "Monthly",

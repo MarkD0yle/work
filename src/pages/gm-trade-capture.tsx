@@ -1,5 +1,5 @@
 export const title = "Trade Capture";
-export const section = "global-markets";
+export const section = "dashboards";
 
 /* Global Markets lifecycle · Stage 4 — Capture & booking.
  *

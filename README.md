@@ -6,7 +6,7 @@ Live: https://absurdalpha.web.app
 
 ## What this is
 
-Think of it as a design/UX sandbox rather than a wired-up product. There's no backend or shared app state — every page under `src/pages/` renders independently with realistic mock data, so you can prototype, review, and iterate on individual screens without standing up services. There are currently **~70 pages** spanning operations dashboards, risk & exposure views, trading blotters, onboarding forms, wealth summaries, and reusable UI patterns.
+Think of it as a design/UX sandbox rather than a wired-up product. There's no backend or shared app state — every page under `src/pages/` renders independently with realistic mock data, so you can prototype, review, and iterate on individual screens without standing up services. There are currently **~90 pages** spanning operations dashboards, risk & exposure views, trading blotters, onboarding forms, wealth summaries, and reusable UI patterns.
 
 ## Tech stack
 
@@ -72,8 +72,9 @@ export default function MyScreen() {
 - **Risk & Exposure** — credit exposure, counterparty 360, limit monitor, stress scenarios, XVA desk, …
 - **Trading & Liquidity** — blotter, TCA, liquidity ladder, repo financing, collateral optimizer, heatmaps, …
 - **Forms & Flows** — client/counterparty onboarding, audit trail client onboarding, sign-up, settings
+- **Dashboards** — fifteen deliberately different dashboards across financial services: loan book health, AML alert operations, fraud control room, capital adequacy, claims & reserving, fund flows, private markets, fixed income portfolio, climate & transition, VaR backtesting, banking book rate risk (IRRBB), mortgage pipeline, settlement fails & CSDR penalties, pension scheme funding, CLO deal monitor
 - **Wealth & Clients** — client overview, portfolio performance, wealth summary, asset allocation, goals
-- **Patterns & Tools** — pattern gallery, date pickers, GitHub cheat sheet, Awesome Quant resource directory
+- **Patterns & Tools** — pattern gallery, date pickers, KPI trend patterns, GitHub cheat sheet, Awesome Quant resource directory
 - **Other** — catch-all for any page not yet mapped (so new files always show up)
 
 A page's section is resolved by `sectionForSlug(slug, explicitSection)`: an explicit `export const section` wins, otherwise the slug→section map is used, otherwise it falls into **Other**.

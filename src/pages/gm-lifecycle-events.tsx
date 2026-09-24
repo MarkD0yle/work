@@ -1,5 +1,5 @@
 export const title = "Lifecycle Events";
-export const section = "global-markets";
+export const section = "dashboards";
 
 /* Global Markets lifecycle · Stage 9 — In-life events.
  *

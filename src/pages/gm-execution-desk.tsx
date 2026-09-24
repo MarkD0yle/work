@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 export const title = "Execution Desk";
-export const section = "global-markets";
+export const section = "dashboards";
 export const fullWidth = true;
 
 /* Global Markets lifecycle · Stage 3 — Execution.

@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 export const title = "Maturity & Roll";
-export const section = "global-markets";
+export const section = "dashboards";
 
 /* Global Markets lifecycle · Stage 10 — Termination & maturity.
  *

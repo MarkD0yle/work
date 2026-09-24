@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 export const title = "Pre-Trade Checks";
-export const section = "global-markets";
+export const section = "dashboards";
 
 /* Global Markets lifecycle · Stage 2 — Pre-trade risk & compliance.
  *

@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 export const title = "Confirmation Matching";
-export const section = "global-markets";
+export const section = "dashboards";
 
 /* Global Markets lifecycle · Stage 5 — Confirmation & affirmation.
  *
