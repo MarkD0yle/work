@@ -372,6 +372,12 @@ export const GALLERY_META: Record<string, GalleryMeta> = {
     tags: ["patterns", "panel", "trading", "ui"],
     motif: "panel",
   },
+  "order-config-patterns": {
+    description:
+      "One accordion, table and add-dropdown with a three-part form, shown four ways — modal on modal, side panel, inline row and drill-in.",
+    tags: ["patterns", "forms", "panel", "ui"],
+    motif: "form",
+  },
   "github-cheatsheet": {
     description:
       "Handy reference of the Git and GitHub commands you reach for most often.",
