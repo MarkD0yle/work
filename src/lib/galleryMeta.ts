@@ -241,6 +241,12 @@ export const GALLERY_META: Record<string, GalleryMeta> = {
     tags: ["import", "review", "audit", "forms"],
     motif: "form",
   },
+  "accordion-modal-forms": {
+    description:
+      "Accordion form whose section opens a 50+ radio modal and saves it back as an inline entry — three treatments: grouped list, paged questionnaire, matrix. Plus four ways to avoid a modal on a modal: inline row editor, docked side panel, drill-in view, and a spreadsheet-import review with an attention queue and field × class matrix.",
+    tags: ["accordion", "modal", "radio", "forms", "side panel", "drill-in", "import"],
+    motif: "form",
+  },
   "sign-up": {
     description: "Account sign-up flow with password rules and field validation.",
     tags: ["sign-up", "auth", "validation"],

@@ -101,6 +101,7 @@ const SLUG_SECTION: Record<string, string> = {
   "counterparty-onboarding": "forms",
   "fund-connect": "forms",
   "sign-up": "forms",
+  "accordion-modal-forms": "forms",
   settings: "forms",
 
   // Risk & Exposure

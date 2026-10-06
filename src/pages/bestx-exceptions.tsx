@@ -1,6 +1,15 @@
-import { useMemo, useState } from "react";
-import type { Options } from "highcharts";
-import { HighchartsView } from "../components/highcharts/HighchartsView";
+import { useCallback, useMemo, useState } from "react";
+import type { Options, TooltipOptions, YAxisOptions } from "highcharts";
+import { ChartFrame } from "../components/highcharts/ChartFrame";
+import {
+  formatValue,
+  formatWithUnit,
+  type ChartData,
+  type ChartQuery,
+  type Currency,
+  type Unit,
+  type UnitKind,
+} from "../components/highcharts/chart-query";
 import { TONE } from "../lib/highcharts";
 
 export const title = "BestX · Exception Reports";
@@ -30,8 +39,13 @@ export const fullWidth = true;
  *     costs in green.
  *   - Pies with one slice became ranked bars. The flat shortfall area
  *     became a waterfall that shows where the cost was added.
- *   - 14 dimension tabs collapse to two views plus a "Break down by"
- *     menu, so nothing is hidden behind a horizontal scroll.
+ *   - 14 dimension tabs collapse to two views, and breaking down by a
+ *     dimension became a control on a chart rather than a mode for the
+ *     whole screen — so two charts can be broken down differently at once.
+ *   - Every chart carries its own metric, break-down, denomination, order,
+ *     chart-or-table and expand controls (see ChartFrame). The report header
+ *     keeps only what changes which trades are in scope: the timeframe and
+ *     the filters.
  * ------------------------------------------------------------------ */
 
 /* ======================================================================
@@ -227,15 +241,47 @@ type TradeException = {
   side: "Buy" | "Sell";
   notionalM: number;
   counterparty: string;
+  channel: string;
+  client: string;
+  desk: string;
+  directed: string;
+  entity: string;
+  portfolio: string;
+  product: string;
+  tradeType: string;
   actual: number; // total spread paid, bps
   expected: number; // model expected spread, bps
+  spotShare: number; // share of total spread booked on the spot leg
+  spotImpact: number; // bps, actual
+  spotImpactExp: number; // bps, model expected
+  firstOrderFill: number; // bps, actual
+  firstOrderFillExp: number; // bps, model expected
+  vsArrival: number; // bps vs arrival price
+  vsQBest: number; // bps vs the best quote on the panel
   commented: boolean;
+};
+
+type ResultFilters = {
+  pairs: string[];
+  counterparties: string[];
+  sides: TradeException["side"][];
+  review: "all" | "commented" | "awaiting";
+  minExcess: string;
+};
+
+const EMPTY_RESULT_FILTERS: ResultFilters = {
+  pairs: [],
+  counterparties: [],
+  sides: [],
+  review: "all",
+  minExcess: "",
 };
 
 const TRADES: TradeException[] = (() => {
   const r = seeded(11499);
-  const pairs = DIMENSION_VALUES["Currency pair"];
-  const cps = DIMENSION_VALUES.Counterparty;
+  function pick<T>(xs: readonly T[]): T {
+    return xs[Math.floor(r() * xs.length)];
+  }
   return Array.from({ length: 42 }, (_, i) => {
     const expected = +(1 + r() * 4).toFixed(1);
     // Most exceptions are costs; a handful are negative-spread outliers.
@@ -243,15 +289,34 @@ const TRADES: TradeException[] = (() => {
     const day = 1 + Math.floor(r() * 30);
     const hh = 7 + Math.floor(r() * 10);
     const mm = Math.floor(r() * 60);
+    const spotImpactExp = +(0.8 + r() * 0.8).toFixed(1);
+    const firstOrderFillExp = +(1 + r() * 1.5).toFixed(1);
     return {
       id: `FX-2608${String(day).padStart(2, "0")}-${String(400 + i * 17).padStart(4, "0")}`,
       time: `Aug ${String(day).padStart(2, "0")} ${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`,
-      pair: pairs[Math.floor(r() * pairs.length)],
+      pair: pick(DIMENSION_VALUES["Currency pair"]),
       side: r() > 0.5 ? "Buy" : "Sell",
       notionalM: +(0.5 + Math.pow(r(), 1.6) * 120).toFixed(1),
-      counterparty: cps[Math.floor(r() * cps.length)],
+      counterparty: pick(DIMENSION_VALUES.Counterparty),
+      channel: pick(DIMENSION_VALUES.Channel),
+      client: pick(DIMENSION_VALUES["Client name"]),
+      desk: pick(DIMENSION_VALUES.Desk),
+      directed: pick(DIMENSION_VALUES.Directed),
+      entity: pick(DIMENSION_VALUES.Entity),
+      portfolio: pick(DIMENSION_VALUES.Portfolio),
+      product: pick(DIMENSION_VALUES.Product),
+      tradeType: pick(DIMENSION_VALUES["Trade type"]),
       actual: +(expected + excess).toFixed(1),
       expected,
+      // Actual and expected split across the spot and forward legs the same
+      // way, so the two series stay comparable component by component.
+      spotShare: +(0.55 + r() * 0.25).toFixed(2),
+      spotImpact: +(spotImpactExp + excess * (0.1 + r() * 0.25)).toFixed(1),
+      spotImpactExp,
+      firstOrderFill: +(firstOrderFillExp + excess * (0.2 + r() * 0.3)).toFixed(1),
+      firstOrderFillExp,
+      vsArrival: +(excess * (0.55 + r() * 0.5)).toFixed(1),
+      vsQBest: +((r() - 0.3) * 1.2).toFixed(2),
       commented: r() < 0.22,
     };
   });
@@ -260,6 +325,152 @@ const TRADES: TradeException[] = (() => {
 const diff = (t: TradeException) => +(t.actual - t.expected).toFixed(1);
 
 const TOTAL_TRADES_IN_PERIOD = 1_284;
+
+/* ======================================================================
+ * Metrics, denominations and break-downs
+ *
+ * The charts on the report screen are all the same shape underneath: pick a
+ * measure, group it by something, denominate it, order it. Declaring the
+ * measures once here is what lets every chart offer the same vocabulary
+ * without each one re-deciding how a basis point turns into dollars, or
+ * whether a number is a cost, a saving or just a size.
+ * ==================================================================== */
+
+type MetricId =
+  | "totalSpread"
+  | "spotSpread"
+  | "fwdSpread"
+  | "spotImpact"
+  | "firstOrderFill"
+  | "vsArrival"
+  | "vsQBest"
+  | "notional";
+
+type Metric = {
+  label: string;
+  /** "cash" measures are already amounts; notional has no basis-point form. */
+  kind: "bps" | "cash";
+  of: (t: TradeException) => number;
+  /** False where a number is never a cost or a saving, so it is never tinted. */
+  signed: boolean;
+  decimals: number;
+};
+
+/* Every measure is stated as an excess — actual minus what the model expected
+ * — because that is what the whole screen is about, and it is what makes the
+ * one sign convention (above zero = cost) hold on every chart. */
+const METRICS: Record<MetricId, Metric> = {
+  totalSpread: { label: "Total spread", kind: "bps", of: (t) => t.actual - t.expected, signed: true, decimals: 1 },
+  spotSpread: { label: "Spot spread", kind: "bps", of: (t) => (t.actual - t.expected) * t.spotShare, signed: true, decimals: 1 },
+  fwdSpread: { label: "Forward spread", kind: "bps", of: (t) => (t.actual - t.expected) * (1 - t.spotShare), signed: true, decimals: 1 },
+  spotImpact: { label: "Spot impact", kind: "bps", of: (t) => t.spotImpact - t.spotImpactExp, signed: true, decimals: 1 },
+  firstOrderFill: { label: "First order fill", kind: "bps", of: (t) => t.firstOrderFill - t.firstOrderFillExp, signed: true, decimals: 1 },
+  vsArrival: { label: "Perf vs arrival", kind: "bps", of: (t) => t.vsArrival, signed: true, decimals: 1 },
+  vsQBest: { label: "Perf vs Q Best", kind: "bps", of: (t) => t.vsQBest, signed: true, decimals: 2 },
+  notional: { label: "Notional", kind: "cash", of: (t) => t.notionalM * 1e6, signed: false, decimals: 1 },
+};
+
+const metricOptions = (...ids: MetricId[]) => ids.map((id) => ({ id, label: METRICS[id].label }));
+
+const ALL_METRICS = metricOptions(
+  "totalSpread", "spotSpread", "fwdSpread", "spotImpact",
+  "firstOrderFill", "vsArrival", "vsQBest", "notional",
+);
+
+/* Benchmarks and order stages decompose a cost, so they take the cost
+ * measures only — "notional vs arrival price" is not a question. */
+const COST_METRICS = metricOptions(
+  "totalSpread", "spotSpread", "fwdSpread", "spotImpact", "firstOrderFill",
+);
+
+/* Notional is already cash, so the bps cell disappears when it is picked
+ * rather than sitting there doing nothing. */
+const unitsForMetric = (metric: MetricId): UnitKind[] =>
+  METRICS[metric].kind === "cash" ? ["cash"] : ["bps", "cash"];
+
+/* Indicative, so switching reporting currency visibly moves the numbers. */
+const FX: Record<Currency, number> = { USD: 1, EUR: 0.92, GBP: 0.79 };
+
+const fxOf = (unit: Unit) => (unit.kind === "cash" ? FX[unit.ccy] : 1);
+
+/** One trade's value for a measure, in the denomination being displayed. */
+function metricValue(trade: TradeException, metric: MetricId, unit: Unit) {
+  const m = METRICS[metric];
+  if (m.kind === "cash") return m.of(trade) * fxOf(unit);
+  if (unit.kind === "bps") return m.of(trade);
+  return (m.of(trade) / 1e4) * trade.notionalM * 1e6 * FX[unit.ccy];
+}
+
+/* Basis points are a rate, so they average across a group; cash is an amount,
+ * so it sums. Summing basis points would be meaningless — which is why the
+ * denomination has to be known while the rows are built, not afterwards while
+ * they are formatted. */
+function aggregateBps(
+  trades: TradeException[],
+  bpsOf: (t: TradeException) => number,
+  unit: Unit,
+) {
+  if (trades.length === 0) return 0;
+  if (unit.kind === "bps") return trades.reduce((s, t) => s + bpsOf(t), 0) / trades.length;
+  return trades.reduce((s, t) => s + (bpsOf(t) / 1e4) * t.notionalM * 1e6 * FX[unit.ccy], 0);
+}
+
+function aggregateMetric(trades: TradeException[], metric: MetricId, unit: Unit) {
+  const m = METRICS[metric];
+  if (m.kind === "cash") return trades.reduce((s, t) => s + m.of(t) * fxOf(unit), 0);
+  return aggregateBps(trades, m.of, unit);
+}
+
+/* The axis nouns a chart can be broken down by. Four of them are fixed —
+ * a waterfall is always by stage — and only the twelve trade dimensions are
+ * offered as a menu. */
+type ChartDimension = Dimension | "Component" | "Benchmark" | "Stage" | "Trade";
+
+const DIMENSION_OPTIONS = DIMENSIONS.map((d) => ({ id: d as ChartDimension, label: d }));
+
+const sizeBucket = (m: number) =>
+  m < 1 ? "< 1M" : m < 10 ? "1\u201310M" : m < 50 ? "10\u201350M" : "> 50M";
+
+const DIMENSION_OF: Record<Dimension, (t: TradeException) => string> = {
+  "Currency pair": (t) => t.pair,
+  Channel: (t) => t.channel,
+  "Client name": (t) => t.client,
+  Counterparty: (t) => t.counterparty,
+  Desk: (t) => t.desk,
+  Directed: (t) => t.directed,
+  Direction: (t) => t.side,
+  Entity: (t) => t.entity,
+  Portfolio: (t) => t.portfolio,
+  Product: (t) => t.product,
+  Size: (t) => sizeBucket(t.notionalM),
+  "Trade type": (t) => t.tradeType,
+};
+
+/* Fixed axes. Components carry an expected value as well as an actual, which
+ * is the one chart on the screen that plots two series. */
+const COMPONENTS = [
+  { key: "spotImpact", name: "Spot impact", actual: (t: TradeException) => t.spotImpact, expected: (t: TradeException) => t.spotImpactExp },
+  { key: "spotSpread", name: "Spot spread", actual: (t: TradeException) => t.actual * t.spotShare, expected: (t: TradeException) => t.expected * t.spotShare },
+  { key: "fwdSpread", name: "Forward spread", actual: (t: TradeException) => t.actual * (1 - t.spotShare), expected: (t: TradeException) => t.expected * (1 - t.spotShare) },
+  { key: "totalSpread", name: "Total spread", actual: (t: TradeException) => t.actual, expected: (t: TradeException) => t.expected },
+];
+
+const BENCHMARKS = [
+  { key: "arrival", name: "Arrival price", factor: 1 },
+  { key: "riskTransfer", name: "Risk transfer", factor: 1.01 },
+  { key: "twap", name: "1 hr TWAP", factor: 0.97 },
+  { key: "qBest", name: "Q Best", factor: 0.014 },
+  { key: "qAvg", name: "Q Avg", factor: 0.007 },
+  { key: "qWorst", name: "Q Worst", factor: -0.028 },
+  { key: "wmr", name: "WMR LN 4pm fix", factor: 0.99 },
+];
+
+const STAGES = [
+  { key: "arrival", name: "Desk arrival", share: 0, lag: "\u2014" },
+  { key: "sent", name: "\u2192 Market sent", share: 0.21, lag: "+420 ms" },
+  { key: "quote", name: "\u2192 Quote time", share: 0.64, lag: "+180 ms" },
+  { key: "done", name: "\u2192 Completed", share: 0.15, lag: "+95 ms" },
+];
 
 /* ======================================================================
  * Small building blocks
@@ -789,198 +1000,378 @@ function Card({
   );
 }
 
-function Segmented<T extends string>({
-  value,
-  options,
+const signColour = (v: number) => (v > 0 ? TONE.neg : TONE.pos);
+
+/* Axis, tooltip and data labels all read the denomination off the query, so
+ * a chart never hard-codes "bps" into something the user can switch away
+ * from. Typed as Highcharts option slices so the formatters get their `this`
+ * contextually rather than by hand. */
+const valueAxis = (unit: Unit, decimals: number): YAxisOptions => ({
+  title: { text: undefined },
+  labels: {
+    formatter() {
+      return formatValue(Number(this.value), unit, { signed: false, decimals });
+    },
+  },
+  plotLines: [{ value: 0, color: "#a3a3a3", width: 1, zIndex: 3 }],
+});
+
+const valueTooltip = (unit: Unit, decimals: number): TooltipOptions => ({
+  pointFormatter() {
+    return `<span style="color:#a3a3a3">${this.series.name}</span> <b>${formatWithUnit(this.y ?? 0, unit, { decimals })}</b>`;
+  },
+});
+
+const labelFor = (data: ChartData, unit: Unit) => ({
+  enabled: true,
+  formatter(this: { y?: number }) {
+    return formatValue(this.y ?? 0, unit, {
+      signed: data.signed ?? true,
+      decimals: data.decimals ?? 1,
+    });
+  },
+  style: { color: "#525252" },
+});
+
+function FilterDrawer({
+  filters,
+  trades,
   onChange,
-  label,
+  onClear,
+  onClose,
 }: {
-  value: T;
-  options: { id: T; label: string }[];
-  onChange: (v: T) => void;
-  label: string;
+  filters: ResultFilters;
+  trades: TradeException[];
+  onChange: (next: ResultFilters) => void;
+  onClear: () => void;
+  onClose: () => void;
 }) {
+  const pairs = [...new Set(trades.map((t) => t.pair))].sort();
+  const counterparties = [...new Set(trades.map((t) => t.counterparty))].sort();
+  const toggle = <K extends "pairs" | "counterparties" | "sides">(key: K, value: ResultFilters[K][number]) => {
+    const current = filters[key] as string[];
+    const next = current.includes(value as string)
+      ? current.filter((item) => item !== value)
+      : [...current, value as string];
+    onChange({ ...filters, [key]: next });
+  };
+
   return (
-    <div role="radiogroup" aria-label={label} className="inline-flex border border-neutral-200">
-      {options.map((o) => (
-        <button
-          key={o.id}
-          type="button"
-          role="radio"
-          aria-checked={o.id === value}
-          onClick={() => onChange(o.id)}
-          className={`h-6 px-2 text-[11px] ${o.id === value ? "bg-neutral-900 text-white" : "text-neutral-600 hover:bg-neutral-50"}`}
-        >
-          {o.label}
-        </button>
-      ))}
-    </div>
+    <>
+      <button
+        type="button"
+        aria-label="Close filters"
+        onClick={onClose}
+        className="fixed inset-0 z-20 cursor-default bg-neutral-950/20"
+      />
+      <aside className="fixed top-0 right-0 z-30 flex h-full w-80 max-w-[calc(100vw-2rem)] flex-col border-l border-neutral-200 bg-white shadow-xl">
+        <header className="flex items-start justify-between border-b border-neutral-200 px-5 py-4">
+          <div>
+            <h2 className="text-sm font-semibold text-neutral-900">Result filters</h2>
+            <p className="mt-0.5 text-xs text-neutral-500">Narrow this report run without changing its saved conditions.</p>
+          </div>
+          <button type="button" onClick={onClose} className="text-lg leading-none text-neutral-400 hover:text-neutral-900" aria-label="Close filters">
+            ×
+          </button>
+        </header>
+        <div className="flex-1 space-y-5 overflow-y-auto px-5 py-5">
+          <FilterGroup label="Currency pair">
+            {pairs.map((pair) => <FilterCheck key={pair} label={pair} checked={filters.pairs.includes(pair)} onChange={() => toggle("pairs", pair)} />)}
+          </FilterGroup>
+          <FilterGroup label="Counterparty">
+            {counterparties.map((counterparty) => <FilterCheck key={counterparty} label={counterparty} checked={filters.counterparties.includes(counterparty)} onChange={() => toggle("counterparties", counterparty)} />)}
+          </FilterGroup>
+          <FilterGroup label="Direction">
+            {(["Buy", "Sell"] as const).map((side) => <FilterCheck key={side} label={side} checked={filters.sides.includes(side)} onChange={() => toggle("sides", side)} />)}
+          </FilterGroup>
+          <FilterGroup label="Review status">
+            <select
+              value={filters.review}
+              onChange={(e) => onChange({ ...filters, review: e.target.value as ResultFilters["review"] })}
+              className="h-8 w-full border border-neutral-200 bg-white px-2 text-xs text-neutral-800 outline-none focus:border-indigo-500"
+            >
+              <option value="all">All statuses</option>
+              <option value="commented">Commented</option>
+              <option value="awaiting">Awaiting comment</option>
+            </select>
+          </FilterGroup>
+          <FilterGroup label="Minimum excess spread">
+            <div className="relative">
+              <input
+                type="number"
+                min="0"
+                step="0.1"
+                value={filters.minExcess}
+                onChange={(e) => onChange({ ...filters, minExcess: e.target.value })}
+                placeholder="0.0"
+                className="h-8 w-full border border-neutral-200 bg-white px-2 pr-10 text-xs text-neutral-800 outline-none placeholder:text-neutral-400 focus:border-indigo-500"
+              />
+              <span className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-xs text-neutral-400">bps</span>
+            </div>
+          </FilterGroup>
+        </div>
+        <footer className="flex items-center justify-between border-t border-neutral-200 px-5 py-3">
+          <button type="button" onClick={onClear} className="text-xs text-neutral-500 hover:text-neutral-900">Clear all</button>
+          <button type="button" onClick={onClose} className="bg-neutral-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-neutral-700">Done</button>
+        </footer>
+      </aside>
+    </>
   );
 }
 
-const signColour = (v: number) => (v > 0 ? TONE.neg : TONE.pos);
+function FilterGroup({ label, children }: { label: string; children: React.ReactNode }) {
+  return <fieldset className="space-y-2"><legend className="mb-2 text-[10px] font-semibold tracking-widest text-neutral-400 uppercase">{label}</legend>{children}</fieldset>;
+}
 
-const bpsTooltip = {
-  pointFormatter(this: { y?: number; series: { name: string } }) {
-    const y = this.y ?? 0;
-    return `<span style="color:#a3a3a3">${this.series.name}</span> <b>${y > 0 ? "+" : ""}${y.toFixed(1)} bps</b>`;
-  },
-};
+function FilterCheck({ label, checked, onChange }: { label: string; checked: boolean; onChange: () => void }) {
+  return <label className="flex items-center gap-2 text-xs text-neutral-700"><input type="checkbox" checked={checked} onChange={onChange} className="h-3.5 w-3.5 accent-indigo-600" />{label}</label>;
+}
 
 function ReportView({ reportIds, onBack }: { reportIds: string[]; onBack: () => void }) {
   const report = REPORTS.find((r) => r.id === reportIds[0]) ?? REPORTS[0];
   const [view, setView] = useState<View>("summary");
-  const [dimension, setDimension] = useState<Dimension | "">("");
-  const [rank, setRank] = useState<"worst" | "best">("worst");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [filters, setFilters] = useState<ResultFilters>(EMPTY_RESULT_FILTERS);
+
+  const filteredTrades = useMemo(() => {
+    const minimum = Number(filters.minExcess);
+    return TRADES.filter((trade) =>
+      (filters.pairs.length === 0 || filters.pairs.includes(trade.pair)) &&
+      (filters.counterparties.length === 0 || filters.counterparties.includes(trade.counterparty)) &&
+      (filters.sides.length === 0 || filters.sides.includes(trade.side)) &&
+      (filters.review === "all" || (filters.review === "commented" ? trade.commented : !trade.commented)) &&
+      (!filters.minExcess || diff(trade) >= minimum),
+    );
+  }, [filters]);
+
+  const activeFilterCount = [filters.pairs.length, filters.counterparties.length, filters.sides.length, filters.review !== "all" ? 1 : 0, filters.minExcess ? 1 : 0].filter(Boolean).length;
 
   const stats = useMemo(() => {
-    const diffs = TRADES.map(diff);
+    const diffs = filteredTrades.map(diff);
     const costs = diffs.filter((d) => d > 0);
-    const commented = TRADES.filter((t) => t.commented).length;
-    const notional = TRADES.reduce((s, t) => s + t.notionalM, 0);
+    const commented = filteredTrades.filter((t) => t.commented).length;
+    const notional = filteredTrades.reduce((s, t) => s + t.notionalM, 0);
     return {
-      exceptions: TRADES.length,
-      rate: (TRADES.length / TOTAL_TRADES_IN_PERIOD) * 100,
-      avgExcess: costs.reduce((s, d) => s + d, 0) / costs.length,
-      worst: Math.max(...diffs),
+      exceptions: filteredTrades.length,
+      rate: (filteredTrades.length / TOTAL_TRADES_IN_PERIOD) * 100,
+      avgExcess: costs.length ? costs.reduce((s, d) => s + d, 0) / costs.length : 0,
+      worst: diffs.length ? Math.max(...diffs) : 0,
       commented,
-      awaiting: TRADES.length - commented,
+      awaiting: filteredTrades.length - commented,
       notional,
-      // $ cost ≈ bps × notional
-      costUsd: TRADES.reduce((s, t) => s + (Math.max(diff(t), 0) / 1e4) * t.notionalM * 1e6, 0),
+      costUsd: filteredTrades.reduce((s, t) => s + (Math.max(diff(t), 0) / 1e4) * t.notionalM * 1e6, 0),
     };
-  }, []);
+  }, [filteredTrades]);
 
-  /* 1 · Spread & impact — actual vs expected, per component. */
-  const spreadOptions = useMemo<Options>(
-    () => ({
+  /* Each chart below is a ChartFrame, which owns the metric, break-down,
+   * denomination, order, chart-or-table and expand controls. What is left
+   * here is only "which rows" and "how are they drawn" — and three of the
+   * five charts share one bar renderer, because once the rows are a common
+   * shape there is nothing chart-specific left to write.
+   *
+   * getData and toOptions are useCallback because the frame memoises on
+   * them; the filtered trades in the dependency list are what makes a filter
+   * change flow into every chart. */
+
+  /* 1 · Spread & impact — the one chart that plots two series. */
+  const spreadData = useCallback(
+    (q: ChartQuery<MetricId, ChartDimension>): ChartData => ({
+      categoryLabel: "Component",
+      valueLabel: "Actual",
+      compareLabel: "Expected",
+      rows: COMPONENTS.map((c) => ({
+        key: c.key,
+        name: c.name,
+        value: aggregateBps(filteredTrades, c.actual, q.unit),
+        compare: aggregateBps(filteredTrades, c.expected, q.unit),
+      })),
+    }),
+    [filteredTrades],
+  );
+
+  const spreadOptions = useCallback(
+    (data: ChartData, q: ChartQuery<MetricId, ChartDimension>): Options => ({
       chart: { type: "column" },
-      xAxis: { categories: ["Spot impact", "Spot spread", "Forward spread", "Total spread"] },
-      yAxis: {
-        title: { text: undefined },
-        labels: { format: "{value} bps" },
-        plotLines: [{ value: 0, color: "#a3a3a3", width: 1, zIndex: 3 }],
-      },
+      xAxis: { categories: data.rows.map((r) => r.name) },
+      yAxis: valueAxis(q.unit, 1),
       legend: { align: "left", verticalAlign: "top", margin: 4 },
-      tooltip: { shared: true, ...bpsTooltip, headerFormat: "<b>{point.key}</b><br/>" },
+      tooltip: { shared: true, ...valueTooltip(q.unit, 1) },
+      plotOptions: { column: { dataLabels: labelFor(data, q.unit) } },
       series: [
-        { type: "column", name: "Actual", color: "#4f46e5", data: [4.2, 18.6, 6.1, 24.7] },
-        { type: "column", name: "Expected", color: "#c7d2fe", data: [1.1, 2.4, 1.3, 3.8] },
+        { type: "column", name: "Actual", color: "#4f46e5", data: data.rows.map((r) => r.value) },
+        { type: "column", name: "Expected", color: "#c7d2fe", data: data.rows.map((r) => r.compare ?? 0) },
       ],
-      plotOptions: {
-        column: {
-          dataLabels: { enabled: true, format: "{y:.1f}", style: { color: "#525252" } },
-        },
-      },
     }),
     [],
   );
 
-  /* 2 · Performance vs benchmarks — horizontal, one sign convention. */
-  const benchOptions = useMemo<Options>(() => {
-    const data = [
-      ["Arrival price", 14.2],
-      ["Risk transfer", 14.3],
-      ["1 hr TWAP", 13.8],
-      ["Q Best", 0.2],
-      ["Q Avg", 0.1],
-      ["Q Worst", -0.4],
-      ["WMR LN 4pm fix", 14.1],
-    ] as const;
-    return {
+  /* The shared horizontal-bar renderer: benchmarks, ranked trades, break-downs. */
+  const barOptions = useCallback(
+    (data: ChartData, q: ChartQuery<MetricId, ChartDimension>): Options => ({
       chart: { type: "bar" },
-      xAxis: { categories: data.map((d) => d[0]) },
-      yAxis: {
-        title: { text: undefined },
-        labels: { format: "{value}" },
-        plotLines: [{ value: 0, color: "#a3a3a3", width: 1, zIndex: 3 }],
-      },
+      xAxis: { categories: data.rows.map((r) => r.name) },
+      yAxis: valueAxis(q.unit, data.decimals ?? 1),
       legend: { enabled: false },
-      tooltip: bpsTooltip,
+      tooltip: valueTooltip(q.unit, data.decimals ?? 1),
       series: [
         {
           type: "bar",
-          name: "Cost vs benchmark",
-          data: data.map(([, y]) => ({ y, color: signColour(y) })),
-          dataLabels: { enabled: true, format: "{y:+.1f}", style: { color: "#525252" } },
+          name: data.valueLabel,
+          data: data.rows.map((r) => ({
+            y: r.value,
+            // Notional is a size, never a cost or a saving, so it stays brand-coloured.
+            color: data.signed === false ? "#4f46e5" : signColour(r.value),
+          })),
+          dataLabels: labelFor(data, q.unit),
         },
       ],
-    };
-  }, []);
+    }),
+    [],
+  );
 
-  /* 3 · Worst / best ten trades by excess spread. */
-  const rankOptions = useMemo<Options>(() => {
-    const sorted = [...TRADES].sort((a, b) =>
-      rank === "worst" ? diff(b) - diff(a) : diff(a) - diff(b),
-    );
-    const top = sorted.slice(0, 10);
-    return {
-      chart: { type: "bar" },
+  /* 2 · Cost vs benchmarks. */
+  const benchData = useCallback(
+    (q: ChartQuery<MetricId, ChartDimension>): ChartData => {
+      const base = aggregateMetric(filteredTrades, q.metric, q.unit);
+      return {
+        categoryLabel: "Benchmark",
+        valueLabel: METRICS[q.metric].label,
+        signed: METRICS[q.metric].signed,
+        decimals: METRICS[q.metric].decimals,
+        rows: BENCHMARKS.map((b) => ({ key: b.key, name: b.name, value: base * b.factor })),
+      };
+    },
+    [filteredTrades],
+  );
+
+  /* 3 · Ranked trades. The frame slices to ten after sorting, so "worst"
+   * follows the denomination: 40 bps on a small ticket drops out of the top
+   * ten as soon as the chart is switched to cash. */
+  const tradeData = useCallback(
+    (q: ChartQuery<MetricId, ChartDimension>): ChartData => ({
+      categoryLabel: "Trade",
+      valueLabel: METRICS[q.metric].label,
+      signed: METRICS[q.metric].signed,
+      decimals: METRICS[q.metric].decimals,
+      limit: 10,
+      rows: filteredTrades.map((t) => ({
+        key: t.id,
+        name: `${t.pair} · ${t.id.slice(-4)}`,
+        value: metricValue(t, q.metric, q.unit),
+        meta: [
+          { label: "Notional", value: `${t.notionalM.toFixed(1)}M` },
+          { label: "Counterparty", value: t.counterparty },
+        ],
+      })),
+    }),
+    [filteredTrades],
+  );
+
+  const tradeBarOptions = useCallback(
+    (data: ChartData, q: ChartQuery<MetricId, ChartDimension>): Options => ({
+      ...barOptions(data, q),
       xAxis: {
-        categories: top.map((t) => `${t.pair} · ${t.id.slice(-4)}`),
+        categories: data.rows.map((r) => r.name),
         labels: { style: { fontFamily: "ui-monospace, monospace" } },
       },
-      yAxis: {
-        title: { text: undefined },
-        plotLines: [{ value: 0, color: "#a3a3a3", width: 1, zIndex: 3 }],
-      },
-      legend: { enabled: false },
-      tooltip: bpsTooltip,
-      series: [
-        {
-          type: "bar",
-          name: "Actual − expected",
-          data: top.map((t) => ({ y: diff(t), color: signColour(diff(t)) })),
-          dataLabels: { enabled: true, format: "{y:+.1f}", style: { color: "#525252" } },
-        },
-      ],
-    };
-  }, [rank]);
+    }),
+    [barOptions],
+  );
 
-  /* 4 · Implementation shortfall — where along the order's life cost was added. */
-  const shortfallOptions = useMemo<Options>(
-    () => ({
+  /* 4 · Implementation shortfall. Stage order is the meaning, so the frame
+   * gets sortable={false} and renders no sort control at all. */
+  const shortfallData = useCallback(
+    (q: ChartQuery<MetricId, ChartDimension>): ChartData => {
+      const total = aggregateMetric(filteredTrades, q.metric, q.unit);
+      return {
+        categoryLabel: "Stage",
+        valueLabel: METRICS[q.metric].label,
+        signed: METRICS[q.metric].signed,
+        decimals: METRICS[q.metric].decimals,
+        rows: [
+          ...STAGES.map((stage) => ({
+            key: stage.key,
+            name: stage.name,
+            value: total * stage.share,
+            meta: [{ label: "Elapsed", value: stage.lag }],
+          })),
+          {
+            key: "total",
+            name: "Total shortfall",
+            value: total,
+            meta: [{ label: "Elapsed", value: "+695 ms" }],
+          },
+        ],
+      };
+    },
+    [filteredTrades],
+  );
+
+  const shortfallOptions = useCallback(
+    (data: ChartData, q: ChartQuery<MetricId, ChartDimension>): Options => ({
       chart: { type: "waterfall" },
       xAxis: {
-        categories: [
-          "Desk arrival",
-          "→ Market sent<br/><span style='color:#a3a3a3'>+420 ms</span>",
-          "→ Quote time<br/><span style='color:#a3a3a3'>+180 ms</span>",
-          "→ Completed<br/><span style='color:#a3a3a3'>+95 ms</span>",
-          "Total shortfall",
-        ],
+        // The elapsed time rides under the stage name, as it did before the
+        // table view existed; the table shows it as its own column.
+        categories: data.rows.map((r) => {
+          const lag = r.meta?.[0]?.value;
+          return lag && lag !== "—"
+            ? `${r.name}<br/><span style='color:#a3a3a3'>${lag}</span>`
+            : r.name;
+        }),
         labels: { useHTML: true },
       },
-      yAxis: { title: { text: undefined }, labels: { format: "{value} bps" } },
+      yAxis: valueAxis(q.unit, data.decimals ?? 1),
       legend: { enabled: false },
-      tooltip: bpsTooltip,
+      tooltip: valueTooltip(q.unit, data.decimals ?? 1),
       series: [
         {
           type: "waterfall",
-          name: "Shortfall",
+          name: data.valueLabel,
           upColor: TONE.neg,
           color: TONE.pos,
-          data: [
-            { y: 0, color: "#d4d4d4" },
-            { y: 3.1 },
-            { y: 9.4 },
-            { y: 1.7 },
-            { isSum: true, color: "#4f46e5" },
-          ],
-          dataLabels: { enabled: true, format: "{y:.1f}", style: { color: "#525252" } },
+          data: data.rows.map((r, i) =>
+            i === 0
+              ? { y: r.value, color: "#d4d4d4" }
+              : i === data.rows.length - 1
+                ? { isSum: true, color: "#4f46e5" }
+                : { y: r.value },
+          ),
+          dataLabels: labelFor(data, q.unit),
         },
       ],
     }),
     [],
   );
 
-  const breakdown = useMemo(() => {
-    if (!dimension) return [];
-    const r = seeded(dimension.length * 97);
-    return DIMENSION_VALUES[dimension]
-      .map((name) => ({ name, count: 1 + Math.floor(r() * 14), bps: +(4 + r() * 26).toFixed(1) }))
-      .sort((a, b) => b.bps - a.bps);
-  }, [dimension]);
+  /* 5 · Break down by any trade dimension — what used to be a mode for the
+   * whole screen, now a chart like any other. */
+  const breakdownData = useCallback(
+    (q: ChartQuery<MetricId, ChartDimension>): ChartData => {
+      // The break-down frame only offers the twelve trade dimensions.
+      const field = DIMENSION_OF[q.dimension as Dimension];
+      const groups = new Map<string, TradeException[]>();
+      for (const trade of filteredTrades) {
+        const key = field(trade);
+        const bucket = groups.get(key);
+        if (bucket) bucket.push(trade);
+        else groups.set(key, [trade]);
+      }
+      return {
+        categoryLabel: q.dimension,
+        valueLabel: METRICS[q.metric].label,
+        signed: METRICS[q.metric].signed,
+        decimals: METRICS[q.metric].decimals,
+        rows: [...groups].map(([name, trades]) => ({
+          key: name,
+          name,
+          value: aggregateMetric(trades, q.metric, q.unit),
+          meta: [{ label: "Trades", value: String(trades.length) }],
+        })),
+      };
+    },
+    [filteredTrades],
+  );
 
   const algos = [
     { name: "Auto Price Test Bank Market", share: 100, trades: 42 },
@@ -1024,17 +1415,12 @@ function ReportView({ reportIds, onBack }: { reportIds: string[]; onBack: () => 
             </button>
             <button
               type="button"
+              onClick={() => setFiltersOpen(true)}
               className="inline-flex h-8 items-center gap-1.5 border border-neutral-200 bg-white px-3 text-sm text-neutral-800 hover:border-neutral-300"
             >
               <Icon d={I.filter} className="h-3.5 w-3.5 text-neutral-400" />
               Filters
-              <span className="bg-indigo-50 px-1 text-[11px] text-indigo-700">2</span>
-            </button>
-            <button
-              type="button"
-              className="inline-flex h-8 items-center border border-neutral-200 bg-white px-3 text-sm text-neutral-800 hover:border-neutral-300"
-            >
-              USD
+              {activeFilterCount > 0 && <span className="bg-indigo-50 px-1 text-[11px] text-indigo-700">{activeFilterCount}</span>}
             </button>
             <IconButton label="Re-run report" d={I.refresh} />
             <button
@@ -1047,13 +1433,30 @@ function ReportView({ reportIds, onBack }: { reportIds: string[]; onBack: () => 
           </div>
         </div>
 
-        {/* View switch + break-down menu, replacing 14 tabs */}
-        <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
+        {activeFilterCount > 0 && (
+          <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-neutral-100 pt-3">
+            <span className="mr-1 text-[11px] text-neutral-400">Filtered results:</span>
+            {[...filters.pairs, ...filters.counterparties, ...filters.sides].map((value) => (
+              <span key={value} className="inline-flex items-center gap-1 bg-indigo-50 px-1.5 py-0.5 text-[11px] text-indigo-700">
+                {value}
+              </span>
+            ))}
+            {filters.review !== "all" && <span className="bg-indigo-50 px-1.5 py-0.5 text-[11px] text-indigo-700">{filters.review === "commented" ? "Commented" : "Awaiting comment"}</span>}
+            {filters.minExcess && <span className="bg-indigo-50 px-1.5 py-0.5 text-[11px] text-indigo-700">Excess ≥ {filters.minExcess} bps</span>}
+            <button type="button" onClick={() => setFilters(EMPTY_RESULT_FILTERS)} className="ml-1 text-[11px] text-neutral-500 underline hover:text-neutral-900">Clear</button>
+          </div>
+        )}
+
+        {/* View switch, replacing 14 tabs. Breaking down by a dimension, and
+            the denomination the numbers are in, are chart controls now, so
+            neither lives up here: the header only changes which trades are
+            in scope. */}
+        <div className="mt-4 flex flex-wrap items-end gap-3">
           <div role="tablist" aria-label="Report view" className="flex gap-6">
             {(
               [
                 { id: "summary", label: "Summary" },
-                { id: "trades", label: `Trades (${TRADES.length})` },
+                { id: "trades", label: `Trades (${filteredTrades.length})` },
               ] as const
             ).map((t) => (
               <button
@@ -1072,21 +1475,6 @@ function ReportView({ reportIds, onBack }: { reportIds: string[]; onBack: () => 
               </button>
             ))}
           </div>
-          <label className="mb-2 flex items-center gap-2 text-xs text-neutral-500">
-            Break down by
-            <select
-              value={dimension}
-              onChange={(e) => setDimension(e.target.value as Dimension | "")}
-              className="h-7 border border-neutral-200 bg-white px-2 text-sm text-neutral-800 outline-none focus:border-indigo-500"
-            >
-              <option value="">None</option>
-              {DIMENSIONS.map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </select>
-          </label>
         </div>
       </div>
 
@@ -1129,9 +1517,11 @@ function ReportView({ reportIds, onBack }: { reportIds: string[]; onBack: () => 
           />
         </div>
 
-        {/* Legend strip — say the rule once, instead of per chart */}
+        {/* Legend strip — the sign convention is the one thing that holds
+            across every chart, so it is said once here rather than per card.
+            The denomination is not: each chart states its own. */}
         <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-neutral-500">
-          <span>All values in basis points.</span>
+          <span>Every chart carries its own measure and denomination.</span>
           <span className="inline-flex items-center gap-1.5">
             <span className="h-2.5 w-2.5" style={{ background: TONE.neg }} />
             Above zero = cost
@@ -1142,68 +1532,46 @@ function ReportView({ reportIds, onBack }: { reportIds: string[]; onBack: () => 
           </span>
         </div>
 
-        {dimension && (
-          <Card
-            title={`Excess spread by ${dimension.toLowerCase()}`}
-            hint="Average actual − expected, highest cost first"
-            right={
-              <button
-                type="button"
-                onClick={() => setDimension("")}
-                className="text-xs text-neutral-500 hover:text-neutral-900"
-              >
-                Clear
-              </button>
-            }
-          >
-            <RankedBars
-              rows={breakdown.map((b) => ({
-                name: b.name,
-                value: b.bps,
-                label: `+${b.bps.toFixed(1)} bps`,
-                meta: `${b.count} trades`,
-              }))}
-              tone="neg"
-            />
-          </Card>
-        )}
-
         {view === "summary" ? (
           <>
             <div className="grid gap-4 xl:grid-cols-3">
-              <Card title="Spread & impact cost" hint="Actual paid vs BestX expected, by component">
-                <HighchartsView options={spreadOptions} height={260} />
-              </Card>
-              <Card title="Cost vs benchmarks" hint="How far fills sat from each benchmark">
-                <HighchartsView options={benchOptions} height={260} />
-              </Card>
-              <Card
-                title={rank === "worst" ? "Ten worst trades" : "Ten best trades"}
-                hint="Total spread, actual − expected"
-                right={
-                  <Segmented
-                    label="Rank"
-                    value={rank}
-                    onChange={setRank}
-                    options={[
-                      { id: "worst", label: "Worst" },
-                      { id: "best", label: "Best" },
-                    ]}
-                  />
-                }
-              >
-                <HighchartsView options={rankOptions} height={260} />
-              </Card>
+              <ChartFrame
+                title="Spread & impact cost"
+                hint="Actual paid vs BestX expected"
+                dimensions={[{ id: "Component", label: "Component" }]}
+                sortable={false}
+                getData={spreadData}
+                toOptions={spreadOptions}
+              />
+              <ChartFrame
+                hint="How far fills sat from each benchmark"
+                metrics={COST_METRICS}
+                dimensions={[{ id: "Benchmark", label: "Benchmark" }]}
+                unitsFor={unitsForMetric}
+                getData={benchData}
+                toOptions={barOptions}
+              />
+              <ChartFrame
+                hint={`Top 10 of ${filteredTrades.length}`}
+                metrics={ALL_METRICS}
+                dimensions={[{ id: "Trade", label: "Trade" }]}
+                unitsFor={unitsForMetric}
+                getData={tradeData}
+                toOptions={tradeBarOptions}
+              />
             </div>
 
             <div className="grid gap-4 xl:grid-cols-3">
-              <Card
-                title="Implementation shortfall"
-                hint="Cost added at each stage of the order, with time taken"
+              <ChartFrame
                 className="xl:col-span-2"
-              >
-                <HighchartsView options={shortfallOptions} height={260} />
-              </Card>
+                hint="Cost added at each stage of the order, with time taken"
+                metrics={COST_METRICS}
+                dimensions={[{ id: "Stage", label: "Stage" }]}
+                unitsFor={unitsForMetric}
+                sortable={false}
+                getData={shortfallData}
+                toOptions={shortfallOptions}
+              />
               <div className="grid gap-4">
                 <Card title="Review status" hint="Exceptions need a comment before sign-off">
                   <ReviewStatus
@@ -1227,6 +1595,17 @@ function ReportView({ reportIds, onBack }: { reportIds: string[]; onBack: () => 
               </div>
             </div>
 
+            <ChartFrame
+              hint="Averaged per trade in basis points, totalled in cash"
+              height={300}
+              metrics={ALL_METRICS}
+              dimensions={DIMENSION_OPTIONS}
+              unitsFor={unitsForMetric}
+              initial={{ metric: "totalSpread", dimension: "Counterparty" }}
+              getData={breakdownData}
+              toOptions={barOptions}
+            />
+
             <Card
               title="Largest exceptions"
               hint="Top 8 by excess spread"
@@ -1236,19 +1615,32 @@ function ReportView({ reportIds, onBack }: { reportIds: string[]; onBack: () => 
                   onClick={() => setView("trades")}
                   className="text-xs font-medium text-indigo-600 hover:text-indigo-800"
                 >
-                  View all {TRADES.length} →
+                  View all {filteredTrades.length} →
                 </button>
               }
             >
-              <TradeTable trades={[...TRADES].sort((a, b) => diff(b) - diff(a)).slice(0, 8)} />
+              <TradeTable trades={[...filteredTrades].sort((a, b) => diff(b) - diff(a)).slice(0, 8)} />
             </Card>
           </>
         ) : (
           <Card title="Exception trades" hint="Every trade that breached the report's conditions">
-            <TradeTable trades={[...TRADES].sort((a, b) => diff(b) - diff(a))} />
+            {filteredTrades.length > 0 ? (
+              <TradeTable trades={[...filteredTrades].sort((a, b) => diff(b) - diff(a))} />
+            ) : (
+              <div className="px-2 py-10 text-center text-sm text-neutral-500">No trades match these filters.</div>
+            )}
           </Card>
         )}
       </div>
+      {filtersOpen && (
+        <FilterDrawer
+          filters={filters}
+          trades={TRADES}
+          onChange={setFilters}
+          onClear={() => setFilters(EMPTY_RESULT_FILTERS)}
+          onClose={() => setFiltersOpen(false)}
+        />
+      )}
     </div>
   );
 }
@@ -1295,7 +1687,7 @@ function ReviewStatus({
   onOpen: () => void;
 }) {
   const total = commented + awaiting;
-  const pct = (commented / total) * 100;
+  const pct = total > 0 ? (commented / total) * 100 : 0;
   return (
     <div className="px-2 py-1">
       <div className="flex items-baseline gap-2">
