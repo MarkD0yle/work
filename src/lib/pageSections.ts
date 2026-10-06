@@ -143,6 +143,7 @@ const SLUG_SECTION: Record<string, string> = {
   // Patterns & Tools
   "pattern-gallery": "patterns",
   "right-panel-patterns": "patterns",
+  "order-config-patterns": "patterns",
   "github-cheatsheet": "patterns",
   "date-picker-business-day": "patterns",
   "date-picker-settlement": "patterns",
