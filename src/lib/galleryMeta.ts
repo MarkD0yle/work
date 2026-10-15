@@ -35,6 +35,7 @@ export const SECTION_ACCENT: Record<string, Accent> = {
   forms: { from: "#8b5cf6", to: "#d946ef" }, // violet → fuchsia
   wealth: { from: "#f59e0b", to: "#059669" }, // amber → emerald
   patterns: { from: "#06b6d4", to: "#6366f1" }, // cyan → indigo
+  library: { from: "#171717", to: "#525252" }, // neutral
   processing: { from: "#0ea5e9", to: "#22d3ee" }, // sky → cyan
   pitch: { from: "#0ea5e9", to: "#22c55e" }, // sky → green
   dashboards: { from: "#0f766e", to: "#4f46e5" }, // teal → indigo
@@ -53,6 +54,7 @@ const DEFAULT_MOTIF: Record<string, Motif> = {
   forms: "form",
   wealth: "panel",
   patterns: "panel",
+  library: "grid",
   processing: "flow",
   pitch: "flow",
   dashboards: "chart",
@@ -360,6 +362,12 @@ export const GALLERY_META: Record<string, GalleryMeta> = {
   },
 
   // Patterns & Tools
+  "pattern-library": {
+    description:
+      "The shared pattern library: 22 patterns extracted from ~100 screens, each with rules, sources and a live demo.",
+    tags: ["patterns", "design system", "components"],
+    motif: "grid",
+  },
   "pattern-gallery": {
     description:
       "A live harness wiring the reusable UI patterns — grid, context panel and modal.",
