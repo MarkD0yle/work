@@ -1,8 +1,8 @@
 import { useState } from "react";
 import CommentThread from "./CommentThread";
-import { formatStamp, userName } from "../../lib/fundConnect2/engine";
-import { FIELD_BY_ID } from "../../lib/fundConnect2/schema";
-import type { FundRecord2, User } from "../../lib/fundConnect2/types";
+import { formatStamp, userName } from "../lib/engine";
+import { FIELD_BY_ID } from "../lib/schema";
+import type { FundRecord2, User } from "../lib/types";
 
 /* Comments + audit, side by side as tabs.
  *

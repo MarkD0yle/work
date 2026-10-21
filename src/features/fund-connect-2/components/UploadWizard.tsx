@@ -7,9 +7,9 @@ import {
   SAMPLE_PASTE,
   type ColumnMapping,
   type Grid,
-} from "../../lib/fundConnect2/importer";
-import { FIELDS, isRequiredAt } from "../../lib/fundConnect2/schema";
-import { blankValues } from "../../lib/fundConnect2/engine";
+} from "../lib/importer";
+import { FIELDS, isRequiredAt } from "../lib/schema";
+import { blankValues } from "../lib/engine";
 
 /* Upload wizard — the FC2 entry point. Upload → validate, one step at a time.
  *

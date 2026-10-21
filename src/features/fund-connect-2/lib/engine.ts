@@ -26,7 +26,7 @@ import type {
   RecordState2,
   User,
 } from "./types";
-import type { Permission, SectionStatus } from "../fundConnect/types";
+import type { Permission, SectionStatus } from "./core/types";
 import {
   FIELD_BY_ID,
   FIELDS,

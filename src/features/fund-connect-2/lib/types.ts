@@ -1,8 +1,8 @@
 /* Fund Connect 2 — core types.
  *
- * Same split as Fund Connect: pure logic in src/lib/fundConnect2, dumb
- * props-driven components on top. The schema, validation and reference
- * masters are shared with Fund Connect (src/lib/fundConnect) — what changes
+ * Same split as Fund Connect: pure logic in lib/, dumb props-driven
+ * components on top. The schema, validation and reference masters come
+ * from lib/core (this feature's own copy of the Fund Connect base) — what changes
  * here is the record model:
  *
  *   - lifecycle gains a terminal `active` state (approve ≠ activate)
@@ -14,7 +14,7 @@
  * No amendment fork — FC2's focus is the submit → reject → resubmit loop.
  */
 
-import type { AuditEntry, FieldFlag, FieldSource, User } from "../fundConnect/types";
+import type { AuditEntry, FieldFlag, FieldSource, User } from "./core/types";
 
 export type { AuditEntry, FieldFlag, FieldSource, User };
 

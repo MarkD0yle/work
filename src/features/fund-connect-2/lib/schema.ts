@@ -2,8 +2,9 @@
  * identity & listing section in front of it.
  *
  * The base sections (fund & mandate, counterparty, order, fees, settlement,
- * attestation) and all their validation come from src/lib/fundConnect —
- * unchanged, so Fund Connect is unaffected. What FC2 adds is the identity
+ * attestation) and all their validation come from lib/core — this
+ * feature's own copy of the Fund Connect base, so the two never drift into
+ * each other. What FC2 adds is the identity
  * every primary-market grid row is keyed on: region, provider, long/short
  * name, ticker, trust and the house fund number.
  */
@@ -15,8 +16,8 @@ import {
   type FieldDef,
   type Issue,
   type SectionDef,
-} from "../fundConnect/schema";
-import { lookupMaster } from "../fundConnect/reference";
+} from "./core/schema";
+import { lookupMaster } from "./core/reference";
 import { entryErrors, offeredFor, parseOrderTypes } from "./orderTypes";
 
 export {
@@ -33,7 +34,7 @@ export {
   type IssueLevel,
   type SectionDef,
   type ValidationStage,
-} from "../fundConnect/schema";
+} from "./core/schema";
 
 /* Fictional issuers only — see the repo naming rules. */
 export const REGIONS = ["US", "EMEA", "APAC"];
@@ -111,7 +112,7 @@ const IDENTITY_FIELDS: FieldDef[] = [
 ];
 
 /* Fund distribution — cobrand channels and their dealing terms. Rendered as
- * a compact table (components/fund-connect2/CobrandTable), stored in the
+ * a compact table (components/CobrandTable), stored in the
  * single `cobrands` field in a readable serialised form so audit and delta
  * review stay legible. Codes live in ./cobrands. */
 const DISTRIBUTION_SECTION: SectionDef = {
@@ -133,7 +134,7 @@ const DISTRIBUTION_FIELDS: FieldDef[] = [
 
 /* Order types — the creation / redemption order types the ETF accepts,
  * plus the default for each direction. Rendered by
- * components/fund-connect2/OrderTypeTable (grid + add/edit modal); the list
+ * components/OrderTypeTable (grid + add/edit modal); the list
  * is serialised into `orderTypes` (see ./orderTypes). */
 const ORDER_TYPES_SECTION: SectionDef = {
   id: "orderTypes",

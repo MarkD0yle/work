@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { canAlterComment, formatStamp, userName } from "../../lib/fundConnect2/engine";
-import { FIELD_BY_ID, SECTIONS, fieldsInSection } from "../../lib/fundConnect2/schema";
-import type { FundRecord2, RecordComment, User } from "../../lib/fundConnect2/types";
+import { canAlterComment, formatStamp, userName } from "../lib/engine";
+import { FIELD_BY_ID, SECTIONS, fieldsInSection } from "../lib/schema";
+import type { FundRecord2, RecordComment, User } from "../lib/types";
 
 /* The record's conversation, as one timeline.
  *

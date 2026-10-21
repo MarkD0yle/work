@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { RecordSummary } from "../../lib/fundConnect2/engine";
+import type { RecordSummary } from "../lib/engine";
 
 /* Record status strip — the FC2 take on the progress header.
  *

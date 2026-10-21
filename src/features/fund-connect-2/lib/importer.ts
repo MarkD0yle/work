@@ -1,6 +1,6 @@
 /* Fund Connect 2 — upload mapping over the extended schema.
  *
- * Parsing (parseDelimited) is shared with Fund Connect. Auto-mapping,
+ * Parsing (parseDelimited) comes from lib/core. Auto-mapping,
  * normalisation and preview are re-declared here because the base versions
  * close over the base field list, and FC2's sheets carry the identity
  * columns (region, provider, names, ticker, trust) as well. The rules are
@@ -13,7 +13,7 @@ import {
   type Grid,
   type PreviewCell,
   type PreviewRow,
-} from "../fundConnect/importer";
+} from "./core/importer";
 import { FIELD_BY_ID, FIELDS, validateValue, type FieldDef } from "./schema";
 
 export { parseDelimited };

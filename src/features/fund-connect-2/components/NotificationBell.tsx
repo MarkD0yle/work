@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { ageLabel } from "../../lib/fundConnect2/engine";
-import type { Notice } from "../../lib/fundConnect2/types";
+import { ageLabel } from "../lib/engine";
+import type { Notice } from "../lib/types";
 
 /* Per-user notification inbox. What changed, and whether you are expected
  * to act on it — clicking an item jumps to the record and marks it read. */

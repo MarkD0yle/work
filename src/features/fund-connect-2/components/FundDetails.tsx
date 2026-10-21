@@ -1,9 +1,9 @@
 import { useState, type ReactNode } from "react";
 import CobrandTable from "./CobrandTable";
 import OrderTypeTable from "./OrderTypeTable";
-import { FIELD_BY_ID } from "../../lib/fundConnect2/schema";
-import { formatDay, formatStamp, userName } from "../../lib/fundConnect2/engine";
-import type { FundRecord2 } from "../../lib/fundConnect2/types";
+import { FIELD_BY_ID } from "../lib/schema";
+import { formatDay, formatStamp, userName } from "../lib/engine";
+import type { FundRecord2 } from "../lib/types";
 
 /* Fund details — the read-only face of a record.
  *

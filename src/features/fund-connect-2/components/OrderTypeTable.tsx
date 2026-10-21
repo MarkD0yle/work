@@ -1,5 +1,5 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import Modal, { ConfirmDialog } from "../patterns/Modal";
+import Modal, { ConfirmDialog } from "../ui/Modal";
 import {
   CATALOG,
   CATALOG_BY_NAME,
@@ -16,7 +16,7 @@ import {
   type CatalogItem,
   type OrderTypeEntry,
   type YesNo,
-} from "../../lib/fundConnect2/orderTypes";
+} from "../lib/orderTypes";
 
 /* Order types editor — grid of every configured type + add/edit modal.
  *

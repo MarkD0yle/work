@@ -5,7 +5,7 @@ import {
   serialiseCobrands,
   type CobrandEntry,
   type CobrandScope,
-} from "../../lib/fundConnect2/cobrands";
+} from "../lib/cobrands";
 
 /* Fund distribution editor — the repeating group drawn as a table.
  *
