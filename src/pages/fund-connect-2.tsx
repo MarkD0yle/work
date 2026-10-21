@@ -7,6 +7,7 @@ import NotificationBell from "../components/fund-connect2/NotificationBell";
 import RightPanel from "../components/fund-connect2/RightPanel";
 import StatusStrip from "../components/fund-connect2/StatusStrip";
 import UploadWizard, { type WizardDraft } from "../components/fund-connect2/UploadWizard";
+import FundDetails from "../components/fund-connect2/FundDetails";
 import CobrandTable from "../components/fund-connect2/CobrandTable";
 import { summariseCobrands } from "../lib/fundConnect2/cobrands";
 import OrderTypeTable from "../components/fund-connect2/OrderTypeTable";
@@ -272,6 +273,8 @@ export default function FundConnect2Page() {
   const [notices, setNotices] = useState<Notice[]>(SEED_NOTICES);
   const [userId, setUserId] = useState("p.raman");
   const [openId, setOpenId] = useState<string | null>(null);
+  /* An open record shows either its read-only details or the editor. */
+  const [mode, setMode] = useState<"view" | "edit">("edit");
   const [dark, setDark] = useState(false);
   const [openSection, setOpenSection] = useState("identity");
   const [showAll, setShowAll] = useState(false);
@@ -324,9 +327,10 @@ export default function FundConnect2Page() {
     setToast(message);
   }
 
-  function openRecord(id: string) {
+  function openRecord(id: string, nextMode: "view" | "edit" = "edit") {
     if (!records.some((r) => r.id === id)) return;
     setOpenId(id);
+    setMode(nextMode);
     setOpenSection("identity");
     setShowAll(false);
     setHighlight(null);
@@ -719,7 +723,7 @@ export default function FundConnect2Page() {
                 <span className="font-mono text-sm text-neutral-500">
                   {record.values.ticker || record.id}
                 </span>
-                {record.state === "draft" && edit.allowed ? (
+                {record.state === "draft" && edit.allowed && mode === "edit" ? (
                   <input
                     value={record.title}
                     onChange={(e) => update(setTitle(record, e.target.value, user))}
@@ -890,7 +894,32 @@ export default function FundConnect2Page() {
             })}
           </div>
         ) : (
+          mode === "view" ? (
+          <div className="flex flex-wrap items-center justify-between gap-4 px-6 pb-3 pl-36">
+            <p className="text-xs text-neutral-500">
+              Read-only fund details · last updated {formatStamp(record.updatedAt)}
+            </p>
+            <button
+              type="button"
+              onClick={() => openRecord(record.id, "edit")}
+              className={`rounded-md px-3 py-1.5 text-xs font-semibold ${
+                rowAction(record).urgent
+                  ? "bg-neutral-900 text-white"
+                  : "border border-neutral-900 text-neutral-900 hover:bg-neutral-900 hover:text-white"
+              }`}
+            >
+              {rowAction(record).label === "View" ? "Open record" : rowAction(record).label}
+            </button>
+          </div>
+          ) : (
           <div className="flex flex-wrap items-end justify-between gap-4 px-6 pb-3 pl-36">
+            <button
+              type="button"
+              onClick={() => setMode("view")}
+              className="self-center rounded-md border border-neutral-300 px-2.5 py-1 text-[11px] font-medium text-neutral-600 hover:bg-neutral-50"
+            >
+              View details
+            </button>
             {summary && (
               <StatusStrip
                 summary={summary}
@@ -1010,9 +1039,10 @@ export default function FundConnect2Page() {
               )}
             </div>
           </div>
+          )
         )}
 
-        {(toast || (record && !edit.allowed && record.state === "draft")) && (
+        {(toast || (record && mode === "edit" && !edit.allowed && record.state === "draft")) && (
           <div className="border-t border-neutral-100 bg-neutral-50 px-6 py-2 text-xs text-neutral-600">
             {toast ?? edit.reason}
             {toast && (
@@ -1187,7 +1217,7 @@ export default function FundConnect2Page() {
                   return (
                     <tr
                       key={r.id}
-                      onClick={() => openRecord(r.id)}
+                      onClick={() => openRecord(r.id, "view")}
                       className="cursor-pointer hover:bg-white"
                     >
                       {cols.has("region") && (
@@ -1197,9 +1227,17 @@ export default function FundConnect2Page() {
                         <td className="px-3 py-2 text-neutral-600">{r.values.provider || "—"}</td>
                       )}
                       <td className="px-3 py-2">
-                        <span className="font-medium text-neutral-900">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openRecord(r.id, "view");
+                          }}
+                          title="View fund details"
+                          className="text-left font-medium text-neutral-900 underline-offset-2 hover:text-blue-800 hover:underline"
+                        >
                           {r.values.fundLongName || r.title}
-                        </span>
+                        </button>
                         {waiting && (
                           <span className={`ml-2 text-[10px] tabular-nums ${waiting.text}`}>
                             waiting {ageLabel(r.submittedAt!)}
@@ -1280,7 +1318,7 @@ export default function FundConnect2Page() {
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              openRecord(r.id);
+                              openRecord(r.id, action.label === "View" ? "view" : "edit");
                             }}
                             className={`rounded-md border px-2.5 py-1 text-[11px] font-medium ${
                               action.urgent
@@ -1332,8 +1370,15 @@ export default function FundConnect2Page() {
         </main>
       )}
 
+      {/* ================= Fund details (read-only) ================= */}
+      {record && mode === "view" && (
+        <main className="min-h-0 flex-1 overflow-y-auto p-6">
+          <FundDetails record={record} />
+        </main>
+      )}
+
       {/* ================= Record editor ================= */}
-      {record && (
+      {record && mode === "edit" && (
         <div className="flex min-h-0 flex-1">
           {leftPanelOpen ? (
           <aside className="hidden w-64 shrink-0 flex-col overflow-y-auto border-r border-neutral-200 bg-neutral-100/70 lg:flex">
