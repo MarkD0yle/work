@@ -63,6 +63,12 @@ const gbpEquityBase: Record<string, string> = {
   attestation: "Confirmed",
   comments: "",
   cobrands: "WL1 c-30 r-30 all; AIS c0 r0 none",
+  orderTypes:
+    "Cash Create {u=50000 ms=1 mi= ap=n cm=n md=n sd=y nt=n c=y co=-30 cs=T+1 ct=TA-CC01 cb= r=n}; " +
+    "In-Kind Redeem {u=50000 ms=1 mi= ap=n cm=n md=n sd=y nt=n c=n r=y}; " +
+    "Negotiated Basket {u=25000 ms=1 mi=1000000 ap=y cm=y md=y sd=y nt=n c=y co=-60 cs=T+2 ct= cb=NB-01 r=y}",
+  defaultCreationOrderType: "Cash Create",
+  defaultRedemptionOrderType: "In-Kind Redeem",
 };
 
 const gbpBondBase: Record<string, string> = {
@@ -80,6 +86,9 @@ const gbpBondBase: Record<string, string> = {
   cutoff: "15:00 London",
   paymentRef: "RED-AUG-0231",
   cobrands: "LMB c-15 r-15 none",
+  orderTypes: "Standard Create {u=100000 ms=1 mi= ap=n cm=n md=n sd=y nt=y c=y co=0 cs=T+2 ct= cb= r=n}; Standard Redeem {u=100000 ms=1 mi= ap=n cm=n md=n sd=y nt=y c=n r=y}",
+  defaultCreationOrderType: "Standard Create",
+  defaultRedemptionOrderType: "Standard Redeem",
 };
 
 const eurBase: Record<string, string> = {
@@ -245,6 +254,9 @@ const SCENARIOS: FundRecord2[] = [
       attestation: "Not confirmed",
       paymentRef: "",
       cobrands: "",
+      orderTypes: "",
+      defaultCreationOrderType: "",
+      defaultRedemptionOrderType: "",
     },
     imported: [
       "fundLongName",

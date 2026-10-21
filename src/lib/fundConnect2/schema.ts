@@ -17,6 +17,7 @@ import {
   type SectionDef,
 } from "../fundConnect/schema";
 import { lookupMaster } from "../fundConnect/reference";
+import { entryErrors, offeredFor, parseOrderTypes } from "./orderTypes";
 
 export {
   derivedFor,
@@ -130,9 +131,49 @@ const DISTRIBUTION_FIELDS: FieldDef[] = [
   },
 ];
 
+/* Order types — the creation / redemption order types the ETF accepts,
+ * plus the default for each direction. Rendered by
+ * components/fund-connect2/OrderTypeTable (grid + add/edit modal); the list
+ * is serialised into `orderTypes` (see ./orderTypes). */
+const ORDER_TYPES_SECTION: SectionDef = {
+  id: "orderTypes",
+  label: "Order types",
+  blurb: "Creation and redemption order types the fund supports, and the defaults.",
+};
+
+const ORDER_TYPE_FIELDS: FieldDef[] = [
+  {
+    id: "orderTypes",
+    label: "Order types",
+    sectionId: "orderTypes",
+    kind: "text",
+    requirement: "submit",
+    importAliases: [],
+  },
+  {
+    id: "defaultCreationOrderType",
+    label: "Default creation order type",
+    sectionId: "orderTypes",
+    kind: "text",
+    requirement: "submit",
+    help: "Used when an AP creates without naming a type.",
+    importAliases: ["default creation order type", "default creation"],
+  },
+  {
+    id: "defaultRedemptionOrderType",
+    label: "Default redemption order type",
+    sectionId: "orderTypes",
+    kind: "text",
+    requirement: "submit",
+    help: "Used when an AP redeems without naming a type.",
+    importAliases: ["default redemption order type", "default redemption"],
+  },
+];
+
 const BASE_WITH_DISTRIBUTION: SectionDef[] = (() => {
   const out = [...BASE_SECTIONS];
-  out.splice(out.findIndex((s) => s.id === "attest"), 0, DISTRIBUTION_SECTION);
+  const at = out.findIndex((s) => s.id === "attest");
+  out.splice(at, 0, DISTRIBUTION_SECTION, ORDER_TYPES_SECTION);
   return out;
 })();
 
@@ -145,7 +186,12 @@ export const SECTIONS: SectionDef[] = [
   ...BASE_WITH_DISTRIBUTION,
 ];
 
-export const FIELDS: FieldDef[] = [...IDENTITY_FIELDS, ...BASE_FIELDS, ...DISTRIBUTION_FIELDS];
+export const FIELDS: FieldDef[] = [
+  ...IDENTITY_FIELDS,
+  ...BASE_FIELDS,
+  ...DISTRIBUTION_FIELDS,
+  ...ORDER_TYPE_FIELDS,
+];
 
 export const FIELD_BY_ID: Record<string, FieldDef> = Object.fromEntries(
   FIELDS.map((f) => [f.id, f]),
@@ -177,6 +223,21 @@ export function validateValue(
         level: "error",
         message: "A cobrand is scoped to countries but has no market picked.",
       };
+    }
+    if (field.id === "orderTypes") {
+      const bad = parseOrderTypes(raw).filter((e) => Object.keys(entryErrors(e)).length > 0);
+      if (bad.length) {
+        return {
+          level: "error",
+          message: `${bad.map((e) => e.name).join(", ")} ${bad.length === 1 ? "is" : "are"} incomplete.`,
+        };
+      }
+    }
+    if (field.id === "defaultCreationOrderType" || field.id === "defaultRedemptionOrderType") {
+      const dir = field.id === "defaultCreationOrderType" ? "creation" : "redemption";
+      if (!offeredFor(parseOrderTypes(values.orderTypes), dir).some((e) => e.name === raw)) {
+        return { level: "error", message: `${raw} is not offered for ${dir}.` };
+      }
     }
   }
   return baseValidateValue(field, values);

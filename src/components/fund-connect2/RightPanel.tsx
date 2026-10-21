@@ -24,6 +24,7 @@ export default function RightPanel({
   onEditComment,
   onDeleteComment,
   onJumpField,
+  onCollapse,
 }: {
   record: FundRecord2;
   user: User;
@@ -33,6 +34,7 @@ export default function RightPanel({
   onDeleteComment: (commentId: string) => void;
   /** Open the form on the exact field an entry is about. */
   onJumpField: (fieldId: string) => void;
+  onCollapse: () => void;
 }) {
   const [tab, setTab] = useState<"comments" | "audit">("comments");
   const [cycleOnly, setCycleOnly] = useState(false);
@@ -65,6 +67,17 @@ export default function RightPanel({
             {label}
           </button>
         ))}
+        <button
+          type="button"
+          onClick={onCollapse}
+          className="shrink-0 px-2 text-neutral-400 hover:bg-neutral-50 hover:text-neutral-900"
+          aria-label="Collapse workflow panel"
+          title="Collapse workflow panel"
+        >
+          <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5" aria-hidden>
+            <path fillRule="evenodd" d="M7.21 15.71a.75.75 0 0 0 0-1.06L11.86 10 7.21 5.35a.75.75 0 1 0-1.06-1.06l-5.18 5.18a.75.75 0 0 0 0 1.06l5.18 5.18a.75.75 0 0 0 1.06 0Z" clipRule="evenodd" />
+          </svg>
+        </button>
       </div>
 
       {tab === "comments" && (

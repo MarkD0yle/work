@@ -9,6 +9,8 @@ import StatusStrip from "../components/fund-connect2/StatusStrip";
 import UploadWizard, { type WizardDraft } from "../components/fund-connect2/UploadWizard";
 import CobrandTable from "../components/fund-connect2/CobrandTable";
 import { summariseCobrands } from "../lib/fundConnect2/cobrands";
+import OrderTypeTable from "../components/fund-connect2/OrderTypeTable";
+import { summariseOrderTypes } from "../lib/fundConnect2/orderTypes";
 import {
   USERS,
   activateNow,
@@ -273,6 +275,8 @@ export default function FundConnect2Page() {
   const [dark, setDark] = useState(false);
   const [openSection, setOpenSection] = useState("identity");
   const [showAll, setShowAll] = useState(false);
+  const [leftPanelOpen, setLeftPanelOpen] = useState(true);
+  const [rightPanelOpen, setRightPanelOpen] = useState(true);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectText, setRejectText] = useState("");
@@ -1331,11 +1335,25 @@ export default function FundConnect2Page() {
       {/* ================= Record editor ================= */}
       {record && (
         <div className="flex min-h-0 flex-1">
+          {leftPanelOpen ? (
           <aside className="hidden w-64 shrink-0 flex-col overflow-y-auto border-r border-neutral-200 bg-neutral-100/70 lg:flex">
             <div className="px-3 py-3">
-              <p className="px-1 text-[10px] font-semibold tracking-wide text-neutral-400 uppercase">
-                Sections
-              </p>
+              <div className="flex items-center justify-between gap-2">
+                <p className="px-1 text-[10px] font-semibold tracking-wide text-neutral-400 uppercase">
+                  Sections
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setLeftPanelOpen(false)}
+                  className="rounded p-1 text-neutral-400 hover:bg-white hover:text-neutral-900"
+                  aria-label="Collapse sections panel"
+                  title="Collapse sections panel"
+                >
+                  <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5" aria-hidden>
+                    <path fillRule="evenodd" d="M12.79 4.29a.75.75 0 0 1 0 1.06L8.14 10l4.65 4.65a.75.75 0 1 1-1.06 1.06l-5.18-5.18a.75.75 0 0 1 0-1.06l5.18-5.18a.75.75 0 0 1 1.06 0Z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </div>
             </div>
             <StatusRail
               items={rail}
@@ -1433,6 +1451,21 @@ export default function FundConnect2Page() {
               </div>
             </dl>
           </aside>
+          ) : (
+            <aside className="hidden w-9 shrink-0 flex-col items-center border-r border-neutral-200 bg-neutral-100/70 lg:flex">
+              <button
+                type="button"
+                onClick={() => setLeftPanelOpen(true)}
+                className="mt-3 rounded p-1 text-neutral-400 hover:bg-white hover:text-neutral-900"
+                aria-label="Expand sections panel"
+                title="Expand sections panel"
+              >
+                <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5" aria-hidden>
+                  <path fillRule="evenodd" d="M7.21 15.71a.75.75 0 0 1 0-1.06L11.86 10 7.21 5.35a.75.75 0 1 1 1.06-1.06l5.18 5.18a.75.75 0 0 1 0 1.06l-5.18 5.18a.75.75 0 0 1-1.06 0Z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </aside>
+          )}
 
           <main className="min-w-0 flex-1 overflow-y-auto p-6">
             <div className="flex flex-col gap-3">
@@ -1535,7 +1568,9 @@ export default function FundConnect2Page() {
                     summary={
                       s.id === "distribution"
                         ? summariseCobrands(record.values.cobrands)
-                        : summariseSection(s.id, record.values)
+                        : s.id === "orderTypes"
+                          ? summariseOrderTypes(record.values)
+                          : summariseSection(s.id, record.values)
                     }
                     expanded={expanded}
                     errors={item.errors}
@@ -1576,6 +1611,48 @@ export default function FundConnect2Page() {
                           value={record.values.cobrands ?? ""}
                           readOnly={!edit.allowed}
                           onChange={(raw) => update(setField(record, "cobrands", raw, user))}
+                        />
+                      </div>
+                    ) : s.id === "orderTypes" ? (
+                      <div>
+                        {showDelta &&
+                          fieldsInSection("orderTypes").some((f) => deltaMap.has(f.id)) && (
+                            <div className="flex flex-col gap-1 px-4 pt-2 text-[10px]">
+                              {fieldsInSection("orderTypes")
+                                .filter((f) => deltaMap.has(f.id))
+                                .map((f) => (
+                                  <p key={f.id} className="flex flex-wrap items-center gap-2">
+                                    <span className="rounded-full bg-blue-100 px-1.5 font-medium tracking-wide text-blue-800 uppercase">
+                                      Changed this cycle
+                                    </span>
+                                    <span className="font-mono text-neutral-500">
+                                      {f.label} was{" "}
+                                      <span className="line-through">
+                                        {deltaMap.get(f.id)!.from || "empty"}
+                                      </span>
+                                    </span>
+                                  </p>
+                                ))}
+                            </div>
+                          )}
+                        <OrderTypeTable
+                          values={record.values}
+                          readOnly={!edit.allowed}
+                          ccy={record.values.baseCcy ?? ""}
+                          onChange={(patch) =>
+                            update(
+                              Object.entries(patch).reduce(
+                                (acc, [id, value]) => setField(acc, id, value, user),
+                                record,
+                              ),
+                            )
+                          }
+                          fieldClass={(id) =>
+                            `transition-shadow duration-500 ${
+                              deltaMap.has(id) && showDelta ? "border-l-2 border-blue-400 pl-2" : ""
+                            } ${highlight && highlight.ids.includes(id) ? highlight.cls : ""}`
+                          }
+                          issueFor={(id) => fieldState(record, id, "submit").issue?.message ?? null}
                         />
                       </div>
                     ) : (
@@ -1637,11 +1714,13 @@ export default function FundConnect2Page() {
             </div>
           </main>
 
-          <aside className="hidden w-80 shrink-0 xl:block">
-            <RightPanel
+          {rightPanelOpen ? (
+            <aside className="hidden w-80 shrink-0 xl:block">
+              <RightPanel
               record={record}
               user={user}
               canComment={record.state !== "active"}
+              onCollapse={() => setRightPanelOpen(false)}
               onComment={(text, fieldId) =>
                 act(
                   commentOnRecord(record, user, text, fieldId),
@@ -1659,8 +1738,23 @@ export default function FundConnect2Page() {
                 setToast("Comment deleted — the audit trail keeps what it said.");
               }}
               onJumpField={(id) => jumpToField(id)}
-            />
-          </aside>
+              />
+            </aside>
+          ) : (
+            <aside className="hidden w-9 shrink-0 border-l border-neutral-200 bg-white xl:flex xl:flex-col xl:items-center">
+              <button
+                type="button"
+                onClick={() => setRightPanelOpen(true)}
+                className="mt-3 rounded p-1 text-neutral-400 hover:bg-neutral-50 hover:text-neutral-900"
+                aria-label="Expand workflow panel"
+                title="Expand workflow panel"
+              >
+                <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5" aria-hidden>
+                  <path fillRule="evenodd" d="M12.79 4.29a.75.75 0 0 0 0 1.06L8.14 10l4.65 4.65a.75.75 0 1 0 1.06-1.06l-5.18-5.18a.75.75 0 0 0 0-1.06l5.18-5.18a.75.75 0 0 0-1.06 0Z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </aside>
+          )}
         </div>
       )}
 
