@@ -174,6 +174,7 @@ const SLUG_SECTION: Record<string, string> = {
   "pension-funding": "dashboards",
   "clo-surveillance": "dashboards",
   "bestx-exceptions": "dashboards",
+  "reports-inbox": "dashboards",
 
   // Global Markets — trade lifecycle, one page per stage
   "gm-rfq-inbox": "dashboards",
