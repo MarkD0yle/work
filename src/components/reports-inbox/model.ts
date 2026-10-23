@@ -43,6 +43,8 @@ export type Run = {
   rejected?: number;
   /** Regulatory: whether the output went to its distribution list. */
   distributed?: boolean;
+  /** Dates a manual run covered, e.g. "21 Oct" or "19–23 Oct". */
+  period?: string;
 };
 
 export type Thread = {
@@ -147,6 +149,16 @@ export function longWhen(iso: string): string {
   const { date, time, d } = parse(iso);
   const day = d === TODAY ? "Today" : `${DAYS[date.getDay()]} ${date.getDate()} ${MONTHS[date.getMonth()]} ${date.getFullYear()}`;
   return `${day}, ${time}`;
+}
+
+/** "21 Oct", "19–23 Oct" or "28 Sep – 2 Oct" for yyyy-mm-dd dates. */
+export function periodLabel(start: string, end: string): string {
+  const a = parse(start).date;
+  const b = parse(end).date;
+  const dm = (x: Date) => `${x.getDate()} ${MONTHS[x.getMonth()]}`;
+  if (start === end) return dm(a);
+  if (a.getMonth() === b.getMonth()) return `${a.getDate()}–${dm(b)}`;
+  return `${dm(a)} – ${dm(b)}`;
 }
 
 export function nowIso(): string {

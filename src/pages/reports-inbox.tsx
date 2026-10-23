@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Banner, ChipToggle, FilterBar, FilterSelect, PageHeader, SplitView, Tabs, tokens, type Option } from "../components/patterns";
-import { ReadingPane } from "../components/reports-inbox/ReadingPane";
+import { Banner, ChipToggle, FilterBar, FilterSelect, PageHeader, Tabs, tokens, type Option } from "../components/patterns";
+import { ActionBar, type RunRequest } from "../components/reports-inbox/ActionBar";
 import { ThreadList, type Selection } from "../components/reports-inbox/ThreadList";
 import {
   ME,
   THREADS,
   needsAttention,
   nowIso,
+  periodLabel,
   shortWhen,
   type Frequency,
   type Kind,
@@ -30,7 +31,10 @@ export const fullWidth = true;
  *   - Regulatory: best execution and disclosure packs with distribution.
  *
  * One definition = one thread. Each run is a message in it, newest on
- * top. Open a thread to see earlier runs; select any run to read it.
+ * top. The list is full width. Click a report and the action bar above
+ * the list fills in and stays put while you scroll: run now, run for a
+ * date or range, download, review. The report opens in place to show its
+ * set-up and every run, each of which can be re-run for its own date.
  *
  * Processing (ingestion, CSV parsing, recalcs) is a separate tab, not a
  * report type. People don't read it; reports depend on it. So it gets its
@@ -155,7 +159,9 @@ export default function ReportsInbox() {
     }
   };
 
-  const rerun = (t: Thread, of?: Run) => {
+  /** Start a manual run. `period` is the dates it covers, when the user
+   * picked them; otherwise it runs for the report's usual period. */
+  const runFor = (t: Thread, period?: string) => {
     const id = `${t.id}-m${++seq.current}`;
     const run: Run = {
       id,
@@ -163,11 +169,18 @@ export default function ReportsInbox() {
       status: "running",
       trigger: "Manual",
       by: ME,
-      summary: of ? `Re-running for ${shortWhen(of.at)}.` : "Manual run started.",
+      period,
+      summary: period ? `Running for ${period}.` : "Manual run started.",
     };
     update(t.id, (x) => ({ ...x, runs: [run, ...x.runs] }));
     setSelected({ threadId: t.id, runId: null });
     later(2500, () => finish(t.id, id));
+  };
+
+  const runRequest = (t: Thread, req: RunRequest) => runFor(t, req ? periodLabel(req.start, req.end) : undefined);
+  const rerunOf = (t: Thread, r: Run) => {
+    const day = r.at.slice(0, 10);
+    runFor(t, r.period ?? periodLabel(day, day));
   };
 
   const upload = (fileName: string) => {
@@ -200,8 +213,10 @@ export default function ReportsInbox() {
     );
   };
 
+  /** Selecting a report also opens it, so its history is one click away. */
   const select = (s: Selection) => {
     setSelected(s);
+    setExpanded((e) => (e.has(s.threadId) ? e : new Set(e).add(s.threadId)));
     update(s.threadId, (t) => (t.unread ? { ...t, unread: false } : t));
   };
 
@@ -250,17 +265,13 @@ export default function ReportsInbox() {
   const tabOptions = (defs: { value: TabId; label: string }[]): Option<TabId>[] =>
     defs.map((d) => ({ ...d, count: threads.filter((t) => inTab(t, d.value) && t.unread).length || undefined }));
 
-  // Fall back to the first visible thread so the pane is never blank while
-  // the list has something in it.
-  const sel = selected && visible.some((t) => t.id === selected.threadId) ? selected : visible[0] ? { threadId: visible[0].id, runId: null } : null;
+  // A selection hidden by the filters clears the action bar.
+  const sel = selected && visible.some((t) => t.id === selected.threadId) ? selected : null;
   const selThread = sel ? (threads.find((t) => t.id === sel.threadId) ?? null) : null;
   const selRun = selThread ? (selThread.runs.find((r) => r.id === sel?.runId) ?? selThread.runs[0]) : null;
 
-  const jobs = Object.fromEntries(threads.filter((t) => t.kind === "processing").map((t) => [t.id, t]));
-  const dependents = selThread?.kind === "processing" ? threads.filter((t) => t.inputs?.includes(selThread.id)) : [];
-
   const failedJobs = threads.filter((t) => t.kind === "processing" && t.runs[0].status === "failed");
-  const jobCount = Object.keys(jobs).length;
+  const jobCount = threads.filter((t) => t.kind === "processing").length;
 
   const active = [
     status && { key: "status", label: `Status: ${STATUS_OPTIONS.find((o) => o.value === status)?.label}`, onRemove: () => setStatus("") },
@@ -271,7 +282,7 @@ export default function ReportsInbox() {
   ].filter(Boolean) as { key: string; label: string; onRemove: () => void }[];
 
   return (
-    <div className="flex h-full flex-col overflow-y-auto bg-neutral-50 lg:overflow-hidden">
+    <div className="h-full overflow-y-auto bg-neutral-50">
       {/* sm:pl-36 clears the app's fixed Home pill; below sm it sits above. */}
       <PageHeader
         className="pt-16 sm:pt-4 sm:pl-36"
@@ -316,30 +327,10 @@ export default function ReportsInbox() {
             </button>
           </>
         }
-      >
-        <div className="flex flex-wrap items-end gap-x-5 gap-y-2">
-          <Tabs<TabId> label="Report type" tabs={tabOptions(REPORT_TABS)} value={tab} onChange={setTab} />
-          <span aria-hidden className="mb-2 h-4 w-px bg-neutral-300" />
-          <Tabs<TabId> label="Processing" tabs={tabOptions([{ value: "processing", label: "Processing" }])} value={tab} onChange={setTab} />
-        </div>
-      </PageHeader>
-
-      <FilterBar
-        search={query}
-        onSearch={setQuery}
-        searchPlaceholder={tab === "processing" ? "Search jobs" : "Search reports, files"}
-        active={active}
-        onClearAll={clearFilters}
-      >
-        <FilterSelect label="Status" value={status} options={STATUS_OPTIONS} onChange={setStatus} />
-        {tab !== "processing" && <FilterSelect label="Frequency" value={freq} options={FREQ_OPTIONS} onChange={setFreq} />}
-        <ChipToggle label="Needs attention" pressed={attention} onChange={setAttention} count={attentionCount} />
-        <ChipToggle label="Unread" pressed={unreadOnly} onChange={setUnreadOnly} count={unreadCount} />
-        {tab !== "processing" && <ChipToggle label="Mine" pressed={mine} onChange={setMine} />}
-      </FilterBar>
+      />
 
       {failedJobs.length > 0 && (
-        <div className="px-6 pt-4">
+        <div className="flex flex-col gap-2 px-6 pt-4">
           {failedJobs.map((job) => {
             const held = threads.filter((t) => t.inputs?.includes(job.id) && t.runs[0].status === "waiting");
             return (
@@ -347,7 +338,7 @@ export default function ReportsInbox() {
                 key={job.id}
                 tone="negative"
                 title={`${job.name} failed at ${shortWhen(job.runs[0].at)}.`}
-                action={{ label: "Retry now", onClick: () => rerun(job) }}
+                action={{ label: "Retry now", onClick: () => runFor(job) }}
               >
                 {job.runs[0].summary}{" "}
                 {held.length > 0 &&
@@ -358,34 +349,53 @@ export default function ReportsInbox() {
         </div>
       )}
 
-      <div className="px-6 py-4 lg:min-h-0 lg:flex-1">
-        <SplitView
-          fill
-          detailWidth="reading"
-          list={
-            <ThreadList
-              threads={visible}
-              selected={sel}
-              expanded={expanded}
-              showKind={tab === "all"}
-              onSelect={select}
-              onToggle={toggle}
-              onClearFilters={clearFilters}
-            />
-          }
-          detail={
-            <ReadingPane
+      <div className="px-6 py-4 max-sm:px-0 max-sm:pb-48">
+        <section aria-label="Reports inbox" className={tokens.border.default}>
+          {/* From sm up, tabs, filters and actions stick to the top. On a
+              phone only the action bar stays, pinned to the bottom. */}
+          <div className="border-b border-neutral-200 sm:sticky sm:top-0 sm:z-20">
+            {/* sm:pl-32 keeps the tabs clear of the fixed Home pill once stuck. */}
+            <div className="flex flex-wrap items-end gap-x-5 gap-y-2 border-b border-neutral-200 bg-white px-4 pt-3 sm:pl-32">
+              <Tabs<TabId> label="Report type" tabs={tabOptions(REPORT_TABS)} value={tab} onChange={setTab} />
+              <span aria-hidden className="mb-2 h-4 w-px bg-neutral-300" />
+              <Tabs<TabId> label="Processing" tabs={tabOptions([{ value: "processing", label: "Processing" }])} value={tab} onChange={setTab} />
+            </div>
+            <FilterBar
+              search={query}
+              onSearch={setQuery}
+              searchPlaceholder={tab === "processing" ? "Search jobs" : "Search reports, files"}
+              active={active}
+              onClearAll={clearFilters}
+            >
+              <FilterSelect label="Status" value={status} options={STATUS_OPTIONS} onChange={setStatus} />
+              {tab !== "processing" && <FilterSelect label="Frequency" value={freq} options={FREQ_OPTIONS} onChange={setFreq} />}
+              <ChipToggle label="Needs attention" pressed={attention} onChange={setAttention} count={attentionCount} />
+              <ChipToggle label="Unread" pressed={unreadOnly} onChange={setUnreadOnly} count={unreadCount} />
+              {tab !== "processing" && <ChipToggle label="Mine" pressed={mine} onChange={setMine} />}
+            </FilterBar>
+            <ActionBar
               thread={selThread}
               run={selRun}
-              jobs={jobs}
-              dependents={dependents}
-              onRerun={rerun}
+              onRun={runRequest}
               onTogglePause={(t) => update(t.id, (x) => ({ ...x, paused: !x.paused }))}
-              onOpenThread={openThread}
+              onClear={() => setSelected(null)}
+              onBackToLatest={() => sel && select({ threadId: sel.threadId, runId: null })}
               onUploadAgain={() => fileInput.current?.click()}
             />
-          }
-        />
+          </div>
+          <ThreadList
+            threads={visible}
+            allThreads={threads}
+            selected={sel}
+            expanded={expanded}
+            showKind={tab === "all"}
+            onSelect={select}
+            onToggle={toggle}
+            onRerun={rerunOf}
+            onOpenThread={openThread}
+            onClearFilters={clearFilters}
+          />
+        </section>
       </div>
     </div>
   );
