@@ -187,6 +187,12 @@ export const GALLERY_META: Record<string, GalleryMeta> = {
     tags: ["tca", "exceptions", "best-execution", "redesign"],
     motif: "chart",
   },
+  "reports-inbox": {
+    description:
+      "BestX reports as a mail-style inbox: each report definition is a thread of runs, with exceptions, post-trade uploads, regulatory packs and the processing jobs they depend on.",
+    tags: ["bestx", "reports", "inbox", "scheduling"],
+    motif: "panel",
+  },
   "liquidity-ladder": {
     description:
       "Liquidity ladder bucketed by maturity and currency, with cumulative gap.",

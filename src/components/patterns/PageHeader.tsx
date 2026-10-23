@@ -6,7 +6,8 @@ import { border, cx, space, surface, text } from "./tokens";
  * Eyebrow (where you are), title (what this is), one line of context
  * (as-of time, scope), and the page-level actions on the right. Optional
  * `meta` sits under the title for freshness or scope chips, and `children`
- * renders a second row for tabs or a lens bar that belongs to the header. */
+ * renders a second row for tabs or a lens bar that belongs to the header.
+ * `className` is for layout only, e.g. clearing the app's fixed Home pill. */
 
 export function PageHeader({
   eyebrow,
@@ -15,6 +16,7 @@ export function PageHeader({
   meta,
   actions,
   children,
+  className,
 }: {
   eyebrow?: string;
   title: string;
@@ -22,9 +24,10 @@ export function PageHeader({
   meta?: ReactNode;
   actions?: ReactNode;
   children?: ReactNode;
+  className?: string;
 }) {
   return (
-    <header className={cx("border-b", border.divider, surface.card, space.pageX, "pt-4", children ? "pb-0" : "pb-4")}>
+    <header className={cx("border-b", border.divider, surface.card, space.pageX, "pt-4", children ? "pb-0" : "pb-4", className)}>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
           {eyebrow && <div className={text.eyebrow}>{eyebrow}</div>}
