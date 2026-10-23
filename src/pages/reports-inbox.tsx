@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Banner, ChipToggle, FilterBar, FilterSelect, PageHeader, Tabs, tokens, type Option } from "../components/patterns";
+import { Banner, ChipToggle, FilterBar, FilterSelect, PageHeader, SegmentedControl, Tabs, tokens, type Option } from "../components/patterns";
+import { useLocalStorage } from "../hooks/useLocalStorage";
+import { HistoryPanel } from "../components/reports-inbox/HistoryPanel";
 import { ActionBar, type RunRequest } from "../components/reports-inbox/ActionBar";
 import { ThreadList, type Selection } from "../components/reports-inbox/ThreadList";
 import {
@@ -36,11 +38,19 @@ export const fullWidth = true;
  * date or range, download, review. The report opens in place to show its
  * set-up and every run, each of which can be re-run for its own date.
  *
+ * Two layouts to compare, switched in the header (remembered per browser):
+ *   A · In the list   — a report opens in place, history under its row.
+ *   B · Side panel    — the list stays one line per report; the picked
+ *                       report's set-up and history dock on the right.
+ * Both keep the same action bar above the list.
+ *
  * Processing (ingestion, CSV parsing, recalcs) is a separate tab, not a
  * report type. People don't read it; reports depend on it. So it gets its
  * own view, and when a job fails the banner says which reports it holds
  * up, with a retry that releases them.
  * ------------------------------------------------------------------ */
+
+type Layout = "inline" | "panel";
 
 type TabId = "all" | Exclude<Kind, "processing"> | "processing";
 
@@ -103,6 +113,7 @@ function finishedRun(t: Thread, run: Run): Run {
 
 export default function ReportsInbox() {
   const [threads, setThreads] = useState<Thread[]>(THREADS);
+  const [layout, setLayout] = useLocalStorage<Layout>("reports-inbox.layout", "inline");
   const [tab, setTab] = useState<TabId>("all");
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<RunStatus | "">("");
@@ -281,8 +292,8 @@ export default function ReportsInbox() {
     mine && { key: "mine", label: "Mine", onRemove: () => setMine(false) },
   ].filter(Boolean) as { key: string; label: string; onRemove: () => void }[];
 
-  return (
-    <div className="h-full overflow-y-auto bg-neutral-50">
+  const header = (
+    <>
       {/* sm:pl-36 clears the app's fixed Home pill; below sm it sits above. */}
       <PageHeader
         className="pt-16 sm:pt-4 sm:pl-36"
@@ -319,6 +330,15 @@ export default function ReportsInbox() {
                 e.target.value = "";
               }}
             />
+            <SegmentedControl<Layout>
+              label="Layout"
+              value={layout}
+              onChange={setLayout}
+              options={[
+                { value: "inline", label: "A · In the list" },
+                { value: "panel", label: "B · Side panel" },
+              ]}
+            />
             <button type="button" className={tokens.button.secondary} onClick={() => fileInput.current?.click()}>
               Upload trade file
             </button>
@@ -328,73 +348,123 @@ export default function ReportsInbox() {
           </>
         }
       />
+    </>
+  );
 
-      {failedJobs.length > 0 && (
-        <div className="flex flex-col gap-2 px-6 pt-4">
-          {failedJobs.map((job) => {
-            const held = threads.filter((t) => t.inputs?.includes(job.id) && t.runs[0].status === "waiting");
-            return (
-              <Banner
-                key={job.id}
-                tone="negative"
-                title={`${job.name} failed at ${shortWhen(job.runs[0].at)}.`}
-                action={{ label: "Retry now", onClick: () => runFor(job) }}
-              >
-                {job.runs[0].summary}{" "}
-                {held.length > 0 &&
-                  `${held.length} report${held.length === 1 ? " is" : "s are"} waiting on it: ${held.map((h) => h.name).join(", ")}.`}
-              </Banner>
-            );
-          })}
+  const banners = failedJobs.length > 0 && (
+      <div className="flex flex-col gap-2 px-6 pt-4">
+        {failedJobs.map((job) => {
+          const held = threads.filter((t) => t.inputs?.includes(job.id) && t.runs[0].status === "waiting");
+          return (
+            <Banner
+              key={job.id}
+              tone="negative"
+              title={`${job.name} failed at ${shortWhen(job.runs[0].at)}.`}
+              action={{ label: "Retry now", onClick: () => runFor(job) }}
+            >
+              {job.runs[0].summary}{" "}
+              {held.length > 0 &&
+                `${held.length} report${held.length === 1 ? " is" : "s are"} waiting on it: ${held.map((h) => h.name).join(", ")}.`}
+            </Banner>
+          );
+        })}
+      </div>
+  );
+
+  const controls = (
+    <>
+      {/* sm:pl-32 keeps the tabs clear of the fixed Home pill once stuck. */}
+      <div className="flex flex-wrap items-end gap-x-5 gap-y-2 border-b border-neutral-200 bg-white px-4 pt-3 sm:pl-32">
+        <Tabs<TabId> label="Report type" tabs={tabOptions(REPORT_TABS)} value={tab} onChange={setTab} />
+        <span aria-hidden className="mb-2 h-4 w-px bg-neutral-300" />
+        <Tabs<TabId> label="Processing" tabs={tabOptions([{ value: "processing", label: "Processing" }])} value={tab} onChange={setTab} />
+      </div>
+      <FilterBar
+        search={query}
+        onSearch={setQuery}
+        searchPlaceholder={tab === "processing" ? "Search jobs" : "Search reports, files"}
+        active={active}
+        onClearAll={clearFilters}
+      >
+        <FilterSelect label="Status" value={status} options={STATUS_OPTIONS} onChange={setStatus} />
+        {tab !== "processing" && <FilterSelect label="Frequency" value={freq} options={FREQ_OPTIONS} onChange={setFreq} />}
+        <ChipToggle label="Needs attention" pressed={attention} onChange={setAttention} count={attentionCount} />
+        <ChipToggle label="Unread" pressed={unreadOnly} onChange={setUnreadOnly} count={unreadCount} />
+        {tab !== "processing" && <ChipToggle label="Mine" pressed={mine} onChange={setMine} />}
+      </FilterBar>
+      <ActionBar
+        thread={selThread}
+        run={selRun}
+        onRun={runRequest}
+        onTogglePause={(t) => update(t.id, (x) => ({ ...x, paused: !x.paused }))}
+        onClear={() => setSelected(null)}
+        onBackToLatest={() => sel && select({ threadId: sel.threadId, runId: null })}
+        onUploadAgain={() => fileInput.current?.click()}
+      />
+    </>
+  );
+
+  const list = (
+    <ThreadList
+      threads={visible}
+      allThreads={threads}
+      selected={sel}
+      expanded={expanded}
+      showKind={tab === "all"}
+      onSelect={select}
+      onToggle={toggle}
+      onRerun={rerunOf}
+      onOpenThread={openThread}
+      onClearFilters={clearFilters}
+      inline={layout === "inline"}
+    />
+  );
+
+  if (layout === "panel") {
+    // B · Side panel. Nothing scrolls the page from lg up: the top stays put
+    // and the list and panel scroll on their own. On a phone the panel is a
+    // full-screen sheet above the list, under the bottom action bar.
+    return (
+      <div className="flex h-full flex-col overflow-y-auto bg-neutral-50 lg:overflow-hidden">
+        {header}
+        {banners}
+        <div className="flex flex-col px-6 py-4 max-sm:px-0 max-sm:pb-48 lg:min-h-0 lg:flex-1">
+          <section aria-label="Reports inbox" className={tokens.cx("flex flex-col lg:min-h-0 lg:flex-1", tokens.border.default)}>
+            <div className="shrink-0 border-b border-neutral-200">{controls}</div>
+            <div className={tokens.cx("grid grid-cols-1 lg:min-h-0 lg:flex-1", selThread && "lg:grid-cols-[minmax(0,1fr)_30rem]")}>
+              <div className="min-w-0 bg-white lg:min-h-0 lg:overflow-y-auto">{list}</div>
+              {selThread && selRun && (
+                <div className="z-20 min-w-0 bg-white max-lg:fixed max-lg:inset-0 max-lg:pt-16 max-lg:pb-40 lg:min-h-0">
+                  <HistoryPanel
+                    thread={selThread}
+                    run={selRun}
+                    selected={sel}
+                    allThreads={threads}
+                    onSelect={select}
+                    onRerun={rerunOf}
+                    onOpenThread={openThread}
+                    onClose={() => setSelected(null)}
+                  />
+                </div>
+              )}
+            </div>
+          </section>
         </div>
-      )}
+      </div>
+    );
+  }
 
+  // A · In the list. The page scrolls; from sm up the tabs, filters and
+  // action bar stick to the top. On a phone only the action bar stays,
+  // pinned to the bottom.
+  return (
+    <div className="h-full overflow-y-auto bg-neutral-50">
+      {header}
+      {banners}
       <div className="px-6 py-4 max-sm:px-0 max-sm:pb-48">
         <section aria-label="Reports inbox" className={tokens.border.default}>
-          {/* From sm up, tabs, filters and actions stick to the top. On a
-              phone only the action bar stays, pinned to the bottom. */}
-          <div className="border-b border-neutral-200 sm:sticky sm:top-0 sm:z-20">
-            {/* sm:pl-32 keeps the tabs clear of the fixed Home pill once stuck. */}
-            <div className="flex flex-wrap items-end gap-x-5 gap-y-2 border-b border-neutral-200 bg-white px-4 pt-3 sm:pl-32">
-              <Tabs<TabId> label="Report type" tabs={tabOptions(REPORT_TABS)} value={tab} onChange={setTab} />
-              <span aria-hidden className="mb-2 h-4 w-px bg-neutral-300" />
-              <Tabs<TabId> label="Processing" tabs={tabOptions([{ value: "processing", label: "Processing" }])} value={tab} onChange={setTab} />
-            </div>
-            <FilterBar
-              search={query}
-              onSearch={setQuery}
-              searchPlaceholder={tab === "processing" ? "Search jobs" : "Search reports, files"}
-              active={active}
-              onClearAll={clearFilters}
-            >
-              <FilterSelect label="Status" value={status} options={STATUS_OPTIONS} onChange={setStatus} />
-              {tab !== "processing" && <FilterSelect label="Frequency" value={freq} options={FREQ_OPTIONS} onChange={setFreq} />}
-              <ChipToggle label="Needs attention" pressed={attention} onChange={setAttention} count={attentionCount} />
-              <ChipToggle label="Unread" pressed={unreadOnly} onChange={setUnreadOnly} count={unreadCount} />
-              {tab !== "processing" && <ChipToggle label="Mine" pressed={mine} onChange={setMine} />}
-            </FilterBar>
-            <ActionBar
-              thread={selThread}
-              run={selRun}
-              onRun={runRequest}
-              onTogglePause={(t) => update(t.id, (x) => ({ ...x, paused: !x.paused }))}
-              onClear={() => setSelected(null)}
-              onBackToLatest={() => sel && select({ threadId: sel.threadId, runId: null })}
-              onUploadAgain={() => fileInput.current?.click()}
-            />
-          </div>
-          <ThreadList
-            threads={visible}
-            allThreads={threads}
-            selected={sel}
-            expanded={expanded}
-            showKind={tab === "all"}
-            onSelect={select}
-            onToggle={toggle}
-            onRerun={rerunOf}
-            onOpenThread={openThread}
-            onClearFilters={clearFilters}
-          />
+          <div className="border-b border-neutral-200 sm:sticky sm:top-0 sm:z-20">{controls}</div>
+          {list}
         </section>
       </div>
     </div>

@@ -11,7 +11,11 @@ const { button, cx, focus, text, border, surface } = tokens;
  * open it. Open shows how the report is set up and its full run history;
  * each run can be selected, downloaded or re-run for its own date.
  * Unread (a run you haven't opened) is a blue dot plus a bold name, so it
- * never relies on colour alone. */
+ * never relies on colour alone.
+ *
+ * With `inline={false}` rows don't open in place: the page shows the
+ * selected report's set-up and history in a side panel instead, built
+ * from the same Setup and RunHistory parts exported below. */
 
 export type Selection = { threadId: string; runId: string | null };
 
@@ -26,6 +30,7 @@ export function ThreadList({
   onRerun,
   onOpenThread,
   onClearFilters,
+  inline = true,
 }: {
   threads: Thread[];
   /** Every thread, to resolve "built on" and "used by" links. */
@@ -39,6 +44,8 @@ export function ThreadList({
   onRerun: (thread: Thread, run: Run) => void;
   onOpenThread: (threadId: string) => void;
   onClearFilters: () => void;
+  /** Open reports in the list (true) or leave that to a side panel. */
+  inline?: boolean;
 }) {
   if (threads.length === 0) {
     return (
@@ -55,12 +62,14 @@ export function ThreadList({
     <ul aria-label="Reports" className={cx("divide-y bg-white", border.divide)}>
       {threads.map((t) => {
         const latest = t.runs[0];
-        const open = expanded.has(t.id);
+        const open = inline && expanded.has(t.id);
         const isSel = selected?.threadId === t.id;
         const o = outcome(t, latest);
         return (
           <li key={t.id}>
             <div className={cx("flex items-stretch", isSel ? surface.selected : "hover:bg-neutral-50")}>
+              {!inline && <span aria-hidden className="w-4 shrink-0" />}
+              {inline && (
               <button
                 type="button"
                 onClick={() => onToggle(t.id)}
@@ -72,6 +81,7 @@ export function ThreadList({
                   <path d="M6 4l4 4-4 4" />
                 </svg>
               </button>
+              )}
               <button
                 type="button"
                 onClick={() => onSelect({ threadId: t.id, runId: null })}
@@ -133,7 +143,7 @@ export function ThreadList({
 }
 
 /** How the report is set up, in one or two lines. No charts. */
-function Setup({ thread: t, allThreads, onOpenThread }: { thread: Thread; allThreads: Thread[]; onOpenThread: (id: string) => void }) {
+export function Setup({ thread: t, allThreads, onOpenThread }: { thread: Thread; allThreads: Thread[]; onOpenThread: (id: string) => void }) {
   const facts: string[] = [];
   if (t.kind === "posttrade") {
     const first = t.runs[t.runs.length - 1];
@@ -190,16 +200,19 @@ function Setup({ thread: t, allThreads, onOpenThread }: { thread: Thread; allThr
 }
 
 /** Every run, newest first. Each can be picked, downloaded or re-run. */
-function RunHistory({
+export function RunHistory({
   thread: t,
   selected,
   onSelect,
   onRerun,
+  compact = false,
 }: {
   thread: Thread;
   selected: Selection | null;
   onSelect: (s: Selection) => void;
   onRerun: (thread: Thread, run: Run) => void;
+  /** Narrow layout for a side panel: summary under the date and outcome. */
+  compact?: boolean;
 }) {
   const busy = t.runs[0].status === "running" || t.runs[0].status === "queued";
   const selRunId = selected?.threadId === t.id ? (selected.runId ?? t.runs[0].id) : null;
@@ -217,7 +230,8 @@ function RunHistory({
                 onClick={() => onSelect({ threadId: t.id, runId: i === 0 ? null : r.id })}
                 aria-current={on ? "true" : undefined}
                 className={cx(
-                  "grid min-w-0 flex-1 basis-80 grid-cols-[6.5rem_8.5rem_minmax(0,1fr)] items-center gap-3 py-2 pl-3 text-left max-sm:grid-cols-[5.5rem_minmax(0,1fr)]",
+                  "grid min-w-0 flex-1 items-center gap-x-3 gap-y-0.5 py-2 pl-3 text-left",
+                  compact ? "basis-56 grid-cols-[5.5rem_minmax(0,1fr)]" : "basis-80 grid-cols-[6.5rem_8.5rem_minmax(0,1fr)] max-sm:grid-cols-[5.5rem_minmax(0,1fr)]",
                   focus,
                 )}
               >
@@ -228,12 +242,12 @@ function RunHistory({
                 <span>
                   <StatusBadge dot tone={ro.tone} label={ro.label} />
                 </span>
-                <span className="min-w-0 truncate text-xs text-neutral-600 max-sm:col-span-2">
+                <span className={cx("min-w-0 truncate text-xs text-neutral-600", compact ? "col-span-2" : "max-sm:col-span-2")}>
                   {r.period && <span className="mr-1.5 font-medium text-neutral-800">For {r.period}.</span>}
                   {r.summary}
                 </span>
               </button>
-              <span className={cx("hidden w-28 truncate text-[11px] text-neutral-500 md:block", text.numeric)}>
+              <span className={cx("hidden w-28 truncate text-[11px] text-neutral-500", !compact && "md:block", text.numeric)}>
                 {r.trigger === "Schedule" ? "Schedule" : `${r.trigger} · ${r.by}`}
               </span>
               <span className="flex gap-1">
