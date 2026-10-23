@@ -168,6 +168,7 @@ const SLUG_SECTION: Record<string, string> = {
   "fixed-income-portfolio": "dashboards",
   "climate-portfolio": "dashboards",
   "var-backtesting": "dashboards",
+  "execution-analytics": "dashboards",
   "banking-book-rate-risk": "dashboards",
   "mortgage-pipeline": "dashboards",
   "settlement-fails": "dashboards",

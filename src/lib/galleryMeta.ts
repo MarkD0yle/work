@@ -477,6 +477,12 @@ export const GALLERY_META: Record<string, GalleryMeta> = {
     tags: ["dashboard", "esg", "climate", "emissions"],
     motif: "treemap",
   },
+  "execution-analytics": {
+    description:
+      "Execution analytics platform redesign: rail and fixed-toolbar shell, light/dark tokens, shared table and chart panel, eight screens.",
+    tags: ["dashboard", "execution", "tca", "design system"],
+    motif: "panel",
+  },
   "var-backtesting": {
     description:
       "VaR backtest over 250 days: P&L against VaR with exceptions, the Basel traffic light, desk small multiples and an exception log.",

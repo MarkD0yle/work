@@ -23,6 +23,8 @@ Think of it as a design/UX sandbox rather than a wired-up product. There's no ba
 
 > **Design rule:** all components use **0 border radius** (square corners), enforced via `--radius: 0rem` in [`src/index.css`](src/index.css). Don't reintroduce a non-zero `--radius`.
 
+> **Execution Analytics** (`src/pages/execution-analytics.tsx`) is a multi-screen product shell rather than a single page: its rail, toolbar, tokens, `DataTable` and `ChartPanel` live in [`src/components/exec-analytics/`](src/components/exec-analytics). Screen conventions are in its `BRIEF.md`; brand strings come only from `config/brand.ts`.
+
 ## Getting started
 
 ```bash
