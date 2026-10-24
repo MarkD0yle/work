@@ -50,6 +50,27 @@ Page counts are approximate. They show how many pages hold a local version today
 | 20 | Insight card | `InsightCard` | ~5 | payments-center, pitch-perfect |
 | 21 | Side panel | `ContextPanel` (existing) | ~18 | blotter, oversight, settlement-timeline |
 | 22 | Modal / confirm | `Modal`, `ConfirmDialog` (existing) | ~39 | block-allocation, fx-hedge-order |
+| 23 | Panel host | `PanelHost` | ~7 | blotter, settlement-timeline, payments-center |
+| 24 | Edit panel | `EditPanel`, `PanelInput`, `PanelSelect` | ~4 | settings, banking-book-rate-risk, fund-flows |
+| 25 | Drill-in panel | `PanelTrail`, `usePanelStack` | ~3 | order-config-patterns, accordion-modal-forms |
+| 26 | Compare panel | `ComparePanel` | ~2 | reconciliation, collateral-optimizer |
+| 27 | Comment thread | `CommentThread` | ~4 | bestx-exceptions, new-product-approval |
+| 28 | Help panel | `HelpPanel`, `useFieldHelp` | 0 (new) | candidates: client-onboarding, counterparty-onboarding |
+| 29 | Command palette | `CommandPalette`, `useCommandShortcut` | 0 (new) | candidate: Sidebar (90+ screens, no search) |
+| 30 | Facet rail | `FacetRail` | ~3 | loan-book-health, aml-alert-operations |
+| 31 | Toast with undo | `ToastProvider`, `useToast` | ~4 | aml-alert-operations, settlement-fails |
+| 32 | Skeleton | `SkeletonTable`, `SkeletonCard`, `SkeletonPanel` | 0 (new) | candidates: blotter, payments-center |
+
+Patterns 23–32 were added after the first inventory. Their page counts come from a
+grep of `src/pages` and `src/components`, so read them as a floor. Patterns 23–28
+are the side-panel family: 21 is the shell, the rest are what goes in it or around
+it. A "0 (new)" row means no screen has built it locally, so it adds capability and
+replaces nothing. Skeleton is one: the only `animate-pulse` in the repo marks a live
+dot, never a loading state.
+
+The ten domain panels on the **Right Panel Patterns** page (order ticket, counterparty 360,
+limit breach…) are examples of what to put *in* a panel. 23–28 are the structure
+around them: how a panel opens, edits, drills, compares, discusses and explains.
 
 Each pattern's "use when", "don't use when" and rules live in
 `src/components/pattern-library/catalog.ts` and on the library page.
@@ -62,7 +83,6 @@ Each pattern's "use when", "don't use when" and rules live in
 | Gauge / ring | 4 pages. Too few to set a standard. Prefer `BulletBar`. |
 | Slider | 1–2 pages. Wait for a second real use. |
 | Gantt | settlement-timeline only. Specialist; keep local. |
-| Facet rail | loan-book-health, banking-book. Could become a vertical `FilterBar`. |
 
 ---
 
@@ -72,6 +92,11 @@ These were split across screens. The library picks one of each.
 
 | Question | Decision | Why |
 |---|---|---|
+| Panel width | Stepped S / M / L, not dragged | Patterns carry no inline styles, and a drag needs a pixel width. The divider also takes arrow keys. |
+| Panel: push or overlay | Push to read beside the list; overlay over wide tables | A push reflows the table and moves the row the user just clicked. |
+| Edit in a panel | Inline "Discard changes?" on close, no modal | "Never open a modal from a modal" applies to a panel that is itself a decision surface. |
+| Trail in a drill-in | Ancestors only | The panel title is the current level. Repeating it truncated every crumb in a 20rem panel. |
+| Toast failures | Stay until dismissed | A 6-second error is a lost error. |
 | Corners | Square (`rounded-none`); pills and dots stay round | Matches the zero-radius rule in `index.css` and the newer screens. It is one token (`radius`), so it can be changed in one place. |
 | Eyebrow / micro-label | `text-[10px] semibold tracking-widest uppercase neutral-500` | Most common form. neutral-400 fails contrast on white. |
 | Page title | `text-xl semibold tracking-tight neutral-900` | Most common. `2xl` titles compete with KPI values. |
@@ -103,7 +128,8 @@ The library is in place, but **no existing screen uses it yet.** Migrate in this
 1. **Ops overview, Order blotter, TCA** (screens 1, 6, 11). These are the most complete. Swap their local tiles, toolbars and filters for the patterns, then run `grade-screen`.
 2. **The dashboard family** (mortgage-pipeline, pension-funding, private-markets, settlement-fails, var-backtesting, climate, loan-book, fund-flows, banking-book, clo). Delete each folder's `ui.tsx` kit.
 3. **The 5 wizard pages.** Extract the summary rail first.
-4. **Bespoke drawers** → `ContextPanel` / `SplitView`.
+4. **Bespoke drawers** → `ContextPanel` / `SplitView` / `PanelHost`. Blotter and settlement-timeline hand-build a drawer with its own width and close logic; `PanelHost` replaces both.
+5. **Settlement-fails, AML queue, fraud feed, mortgage pipeline** each build a local undo bar. Swap them for `useToast`.
 
 The **Composition test** on the library page builds the order blotter from patterns only. Use it as the target for step 1.
 
@@ -111,4 +137,7 @@ The **Composition test** on the library page builds the order blotter from patte
 
 - Tokens are Tailwind classes, not `--ssds-*` variables. When SSDS ships, change `tokens.ts` only.
 - Charts are slots. The library sets the card and grid, not the chart engine (Highcharts stays in `components/highcharts`).
+- `ContextPanel` gained an optional `footer` prop (pinned outside the scroll area) for `EditPanel`. Existing callers are unaffected.
+- `CommandPalette` is not mounted anywhere in the app yet. It needs a decision on where the command list comes from (the page registry in `src/App.tsx` is the obvious source).
+- `PanelHost` and `CommandPalette` were checked in a browser (Chromium via Playwright, Oct 2026), not with a screen reader. Run VoiceOver / NVDA on the combobox, the separator and the toast live regions before relying on them.
 - `MonitorGrid` has an existing lint error (`Date.now()` default prop). It is not fixed here.

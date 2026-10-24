@@ -29,6 +29,7 @@ export default function ContextPanel({
   severity,
   onClose,
   actions,
+  footer,
   children,
 }: {
   title: string;
@@ -37,6 +38,8 @@ export default function ContextPanel({
   onClose?: () => void;
   /** Sticky action bar pinned below the header. */
   actions?: ReactNode;
+  /** Bar pinned to the bottom edge, outside the scroll area. Save / discard. */
+  footer?: ReactNode;
   children: ReactNode;
 }) {
   const accentBorder = severity
@@ -93,6 +96,8 @@ export default function ContextPanel({
         )}
         {children}
       </div>
+
+      {footer && <footer className="shrink-0 border-t border-neutral-200 bg-white px-5 py-3">{footer}</footer>}
     </aside>
   );
 }

@@ -35,6 +35,7 @@ import {
   tokens,
   type Column,
 } from "../patterns";
+import { NewPatternDemo } from "./demos-new";
 import { ORDERS, STAGES, TREND, type Order, statusTone } from "./fixtures";
 
 /* One small, working demo per catalog entry. Fixture data only. */
@@ -434,7 +435,7 @@ const DEMOS: Record<string, ComponentType> = {
 /** Renders the live demo for a catalog entry. */
 export function PatternDemo({ id }: { id: string }) {
   const Demo = DEMOS[id];
-  return Demo ? <Demo /> : null;
+  return Demo ? <Demo /> : <NewPatternDemo id={id} />;
 }
 
 /* Composition: screen 6 (order blotter) built only from patterns. Proves

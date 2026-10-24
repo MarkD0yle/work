@@ -5,7 +5,7 @@
  * screens each pattern was extracted from, so a designer can see the
  * pattern in context. Keep this file and docs/patterns/README.md in step. */
 
-export type PatternGroup = "Page structure" | "Numbers" | "State" | "Controls" | "Tables and lists" | "Visuals" | "Overlays";
+export type PatternGroup = "Page structure" | "Numbers" | "State" | "Controls" | "Tables and lists" | "Visuals" | "Side panels" | "Overlays" | "Feedback";
 
 export type PatternEntry = {
   id: string;
@@ -13,7 +13,7 @@ export type PatternEntry = {
   group: PatternGroup;
   /** Exported component names. */
   exports: string[];
-  /** Approximate number of pages with a local version of this pattern. */
+  /** Approximate number of pages with a local version of this pattern. 0 = new: no screen has built it yet. */
   pages: number;
   seenIn: string[];
   useWhen: string;
@@ -21,7 +21,7 @@ export type PatternEntry = {
   rules: string[];
 };
 
-export const GROUPS: PatternGroup[] = ["Page structure", "Numbers", "State", "Controls", "Tables and lists", "Visuals", "Overlays"];
+export const GROUPS: PatternGroup[] = ["Page structure", "Numbers", "State", "Controls", "Tables and lists", "Visuals", "Side panels", "Overlays", "Feedback"];
 
 export const CATALOG: PatternEntry[] = [
   {
@@ -252,7 +252,7 @@ export const CATALOG: PatternEntry[] = [
   {
     id: "side-panel",
     name: "Side panel",
-    group: "Overlays",
+    group: "Side panels",
     exports: ["ContextPanel", "PanelSection", "PanelMetaGrid"],
     pages: 18,
     seenIn: ["pattern-gallery", "blotter", "oversight", "settlement-timeline"],
@@ -271,6 +271,171 @@ export const CATALOG: PatternEntry[] = [
     avoidWhen: "Long forms or anything the user needs to compare against the page.",
     rules: ["Destructive confirms are red and name the action.", "Never open a modal from a modal."],
   },
+
+  /* 23–32 added Oct 2026. Page counts here come from a grep of src/pages and
+   * src/components, so treat them as a floor. 0 means no screen has a local
+   * version yet; "seenIn" then names the screens most likely to use it first. */
+  {
+    id: "panel-host",
+    name: "Panel host",
+    group: "Side panels",
+    exports: ["PanelHost"],
+    pages: 7,
+    seenIn: ["blotter", "settlement-timeline", "payments-center", "bestx-exceptions", "ops-overview (PipelineDrawer)"],
+    useWhen: "A panel that comes and goes beside a list: it needs a mode (push or overlay), a width, and a collapsed state.",
+    avoidWhen: "A queue where the detail is always on screen. Use SplitView.",
+    rules: [
+      "Push when the user reads the panel against the list; overlay over wide tables so rows don't shift.",
+      "Width is stepped S / M / L. The separator also takes ← → from the keyboard.",
+      "Collapsing keeps the selection in a rail. Close clears it.",
+      "Esc closes from inside the panel. Below lg it is always an overlay.",
+    ],
+  },
+  {
+    id: "edit-panel",
+    name: "Edit panel",
+    group: "Side panels",
+    exports: ["EditPanel", "PanelInput", "PanelSelect"],
+    pages: 4,
+    seenIn: ["settings", "banking-book-rate-risk", "fund-flows", "accordion-modal-forms"],
+    useWhen: "Changing one record's fields while the list stays in view: limits, assumptions, static data.",
+    avoidWhen: "Long or multi-step forms. Use a page or a wizard.",
+    rules: [
+      "Save and Discard are disabled until something changes.",
+      "Mark each changed field with `changed`.",
+      "Closing with unsaved edits asks inline, not in a modal.",
+      "A failed save shows why at the top and keeps the edits.",
+    ],
+  },
+  {
+    id: "panel-trail",
+    name: "Drill-in panel",
+    group: "Side panels",
+    exports: ["PanelTrail", "usePanelStack"],
+    pages: 3,
+    seenIn: ["order-config-patterns", "accordion-modal-forms", "fund-connect"],
+    useWhen: "The user follows links inside the panel: order → counterparty → credit line.",
+    avoidWhen: "Two levels or fewer. A link that swaps the panel is enough.",
+    rules: [
+      "Back goes one level; crumbs jump further.",
+      "The trail shows levels above the current one. The panel title names the current one.",
+      "More than two ancestors collapse the middle to …, never wrap.",
+      "Opening the same item twice does not stack it.",
+      "Selecting a new row in the main list starts a new trail.",
+    ],
+  },
+  {
+    id: "compare-panel",
+    name: "Compare panel",
+    group: "Side panels",
+    exports: ["ComparePanel"],
+    pages: 2,
+    seenIn: ["reconciliation", "collateral-optimizer"],
+    useWhen: "Choosing between 2–3 records: broker quotes, a trade and its amendment, candidate funds.",
+    avoidWhen: "More than three items. Use a DataTable with the columns side by side.",
+    rules: [
+      "Pin from the list; three is the ceiling.",
+      "Differing rows are tinted. “Differences only” hides the rest.",
+      "`better` marks the best number; a tie marks nothing.",
+      "Under two items it asks for another, never a table of one.",
+    ],
+  },
+  {
+    id: "comment-thread",
+    name: "Comment thread",
+    group: "Side panels",
+    exports: ["CommentThread"],
+    pages: 4,
+    seenIn: ["bestx-exceptions", "new-product-approval", "div-claim-clean-approval", "right-panels (desk commentary)"],
+    useWhen: "People discussing one record: a trade query, an exception, a sign-off.",
+    avoidWhen: "What the system did. Use Timeline (newest first, never edited).",
+    rules: [
+      "Oldest first, composer at the bottom.",
+      "⌘/Ctrl + Enter posts. Blank text can't be posted.",
+      "Resolving greys a comment; it is never deleted.",
+      "New comments are announced to screen readers.",
+    ],
+  },
+  {
+    id: "help-panel",
+    name: "Help panel",
+    group: "Side panels",
+    exports: ["HelpPanel", "useFieldHelp"],
+    pages: 0,
+    seenIn: ["client-onboarding", "counterparty-onboarding", "fx-hedge-order"],
+    useWhen: "Forms with rules people get wrong: what a field means, a valid example, what will be rejected.",
+    avoidWhen: "Self-explanatory fields. Don't explain “Name”.",
+    rules: [
+      "Help follows focus, not hover, so keyboard users get it.",
+      "The last topic stays when focus leaves the form.",
+      "Write the rule that will reject the value, with an example.",
+      "Nothing focused: say “Select a field”, don't go blank.",
+    ],
+  },
+  {
+    id: "command-palette",
+    name: "Command palette",
+    group: "Overlays",
+    exports: ["CommandPalette", "useCommandShortcut"],
+    pages: 0,
+    seenIn: ["Sidebar (90+ screens, no search)"],
+    useWhen: "Jumping between many screens or running frequent actions from the keyboard.",
+    avoidWhen: "Actions that need input. Run the command to open a panel or dialog.",
+    rules: [
+      "⌘/Ctrl + K opens; ↑↓ move, Enter runs, Esc closes.",
+      "Words match in any order: “ord new” finds “New order”.",
+      "Every command also exists in the normal UI.",
+      "Mount useCommandShortcut once, where `open` lives.",
+    ],
+  },
+  {
+    id: "facet-rail",
+    name: "Facet rail",
+    group: "Controls",
+    exports: ["FacetRail"],
+    pages: 3,
+    seenIn: ["loan-book-health", "aml-alert-operations", "right-panels (screen filters)"],
+    useWhen: "Many filter dimensions where a FilterBar would run out of room, and counts help the choice.",
+    avoidWhen: "Fewer than four dimensions. Use FilterBar.",
+    rules: [
+      "OR inside a facet, AND across facets.",
+      "Counts reflect the other facets' selections.",
+      "Zero-count options are disabled, so no empty results.",
+      "A ticked option is never hidden behind “Show all”.",
+    ],
+  },
+  {
+    id: "toast",
+    name: "Toast with undo",
+    group: "Feedback",
+    exports: ["ToastProvider", "useToast"],
+    pages: 4,
+    seenIn: ["aml-alert-operations", "settlement-fails", "fraud-control-room", "mortgage-pipeline"],
+    useWhen: "Confirming something the user just did, with a way back: “2 orders cancelled · Undo”.",
+    avoidWhen: "Errors the user must act on, or anything to read twice. Use Banner.",
+    rules: [
+      "Three at most; the oldest goes first.",
+      "6 seconds, paused while hovered or focused.",
+      "Failures (negative tone) stay until dismissed.",
+      "One action only, usually Undo.",
+    ],
+  },
+  {
+    id: "skeleton",
+    name: "Skeleton",
+    group: "Feedback",
+    exports: ["SkeletonTable", "SkeletonCard", "SkeletonPanel", "SkeletonLine", "SkeletonBlock"],
+    pages: 0,
+    seenIn: ["blotter", "payments-center", "asset-screener"],
+    useWhen: "Loading data for a layout you already know: a table, a card, a panel.",
+    avoidWhen: "Waits under ~300ms, or work with no shape (running a report). Show progress text.",
+    rules: [
+      "Copy the loaded layout, or the page still jumps.",
+      "One “Loading” label for screen readers, not forty boxes.",
+      "Pulse stops under reduced motion.",
+      "Today's pulsing dots mean “live”, not “loading”. Don't mix them.",
+    ],
+  },
 ];
 
 /* Patterns found in the inventory but not extracted yet, with the reason. */
@@ -279,5 +444,4 @@ export const NOT_YET: { name: string; reason: string }[] = [
   { name: "Gauge / ring", reason: "4 pages. Too few to fix a standard; prefer BulletBar." },
   { name: "Slider", reason: "1–2 pages (scenario-analysis). Wait for a second real use." },
   { name: "Gantt", reason: "settlement-timeline only. Specialist; keep local." },
-  { name: "Facet rail", reason: "loan-book-health, banking-book. Could become a vertical FilterBar later." },
 ];

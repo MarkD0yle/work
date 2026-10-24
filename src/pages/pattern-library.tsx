@@ -54,7 +54,7 @@ function PatternSection({ p, index }: { p: PatternEntry; index: number }) {
               </dd>
             </div>
             <div>
-              <dt className={text.label}>Replaces local versions in ~{p.pages} pages, e.g.</dt>
+              <dt className={text.label}>{p.pages === 0 ? "New: no screen has a local version yet. Likely first use:" : `Replaces local versions in ~${p.pages} pages, e.g.`}</dt>
               <dd className="mt-0.5 text-neutral-600">{p.seenIn.join(", ")}</dd>
             </div>
           </dl>
