@@ -27,6 +27,7 @@ export { EmptyState } from "./EmptyState";
 // Controls
 export { SegmentedControl, Tabs, type Option } from "./SegmentedControl";
 export { FilterBar, FilterSelect, ChipToggle } from "./FilterBar";
+export { FacetRail, type Facet, type FacetOption } from "./FacetRail";
 
 // Tables and lists
 export { TableToolbar, ExportButton, type BulkAction } from "./TableToolbar";
@@ -42,6 +43,23 @@ export { Heatmap } from "./Heatmap";
 export { heatClass } from "./heat";
 export { InsightCard } from "./InsightCard";
 
-// Overlays
+// Side panels
 export { default as ContextPanel, PanelSection, PanelMetaGrid } from "./ContextPanel";
+export { PanelHost, type PanelWidth } from "./PanelHost";
+export { EditPanel, PanelInput, PanelSelect } from "./EditPanel";
+export { PanelTrail } from "./PanelStack";
+export { usePanelStack, type StackItem } from "./usePanelStack";
+export { ComparePanel, COMPARE_MAX, type CompareItem, type CompareField } from "./ComparePanel";
+export { CommentThread, type Comment } from "./CommentThread";
+export { HelpPanel, type HelpTopic } from "./HelpPanel";
+export { useFieldHelp } from "./useFieldHelp";
+
+// Overlays
 export { default as Modal, ConfirmDialog } from "./Modal";
+export { CommandPalette, type Command } from "./CommandPalette";
+export { useCommandShortcut } from "./useCommandShortcut";
+
+// Feedback
+export { ToastProvider } from "./Toast";
+export { useToast, type ToastOptions } from "./useToast";
+export { SkeletonBlock, SkeletonLine, SkeletonTable, SkeletonCard, SkeletonPanel } from "./Skeleton";
