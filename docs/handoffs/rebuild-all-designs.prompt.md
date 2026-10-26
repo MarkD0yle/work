@@ -1,18 +1,42 @@
 ---
 mode: agent
-description: Review every prototype design and rebuild it from scratch on the target design system. Nothing is moved or copied.
+description: Bring every prototype screen into the target repo as is, then convert it in place until it uses only OneDS. Same screens, same content and behaviour, built entirely from OneDS.
 ---
 
-# Rebuild all designs on the design system
+# Convert all designs to OneDS, as is
 
-## Read this first: this is a rebuild, not a migration
+## The one rule: same screen, only OneDS
 
-- **Do not move, copy, or port any file** from the source designs into the target repo.
-- **Do not carry across** components, CSS, Tailwind classes, hex/rgba values, icons, chart configs, or package choices.
-- The source designs are a **visual and behavioural spec only**. Read them, understand them, then **write new code** using only the target design system.
-- If the design system has no equivalent for something, **do not invent a custom version silently**. Log it as a gap (see §6) and use the closest system component.
+The end result is every screen built **only** from OneDS: OneDS components, layout primitives, tokens, icons and approved OneDS-compatible libraries. Nothing from the source's styling or UI libraries is left.
 
-If you catch yourself pasting source code into the target repo, stop. Rewrite it.
+To keep each screen exactly as it is, you **start from the source code** and convert it in place:
+
+1. **Copy** the source page and the code it uses into the target. This keeps the structure, regions, copy, data, logic and behaviour exactly the same.
+2. **Convert** every visual element in that copied code to its OneDS equivalent, one element at a time.
+3. **Finish** only when no source styling, Tailwind classes, raw colours or non-OneDS UI libraries remain (§5).
+
+The copy is a scaffold. It is not the result. A screen that still has a Tailwind class, a hex value, an AG Grid import or a lucide icon is **not done**.
+
+### What stays exactly the same
+
+- Every screen, region, panel, tab, column, card and control. Same order, same nesting.
+- All copy, labels, units, number formats and mock data values.
+- All behaviour: sorting, filtering, selection, drill-in, inline edit, keyboard shortcuts, live updates and every state (loading, empty, error, hover, focus, selected, disabled).
+- Information density and hierarchy. A dense blotter stays dense. Use OneDS's compact or dense variants where they exist.
+
+### What OneDS decides
+
+- All colour, typography, spacing, radius, borders, shadows and elevation.
+- All controls: buttons, inputs, selects, tabs, menus, dialogs, drawers, tooltips, toasts and tables.
+- Icons and motion.
+- The source's `--radius: 0` rule does **not** carry over. OneDS decides radius.
+
+### Do not
+
+- Redesign, simplify, merge, split or "improve" a screen.
+- Drop a feature because OneDS makes it hard. Compose it from OneDS primitives, and log it (§4).
+- Add features that are not in the source.
+- Leave a screen half-converted and move on.
 
 ---
 
@@ -20,195 +44,153 @@ If you catch yourself pasting source code into the target repo, stop. Rewrite it
 
 | Setting | Value |
 | --- | --- |
-| Design system | `OneDS` <!-- change if different --> |
-| Design system docs / package | `<path, npm package or Storybook URL>` |
-| Source designs location | `<path to source, e.g. ./reference/src/pages>` (read-only) |
-| Target location for rebuilt screens | `<e.g. src/features/prototypes/>` |
-| Screens to rebuild | `ALL` <!-- or a list of slugs --> |
+| Design system | `OneDS` |
+| OneDS docs / package | `<path, npm package or Storybook URL>` |
+| Source repo location | `<path to source, e.g. ./reference>` (read-only) |
+| Target location for screens | `<e.g. src/features/prototypes/>` |
+| Screens to convert | `ALL` <!-- or a list of slugs --> |
 | Batch size | `5` screens per run |
 
-The source is a React 19 + TypeScript + Tailwind v4 prototype gallery. About 90 pages live in `src/pages/*.tsx`, one per screen. Shared pieces are in `src/components/**`, `src/components/patterns/**`, `src/hooks/**`, and `src/lib/**`.
+The source is a React 19 + TypeScript 6 + Vite 8 + Tailwind v4 prototype gallery.
+
+- Pages: about 100 files in `src/pages/*.tsx`, one per screen, each exporting `title` and `section`. `src/App.tsx` finds them with `import.meta.glob`.
+- Shared code: `src/components/**`, `src/components/patterns/**`, `src/hooks/**`, `src/lib/**`.
+- Styling: Tailwind v4 utility classes everywhere, plus tokens in `src/index.css`.
+- UI libraries to replace: `ag-grid-*`, `devextreme*`, `highcharts`, `framer-motion`, `lucide-react`, `clsx` (only if OneDS has its own class helper).
+
+`docs/handoffs/right-panels-oneds/README.md` in the source repo is a worked example of the same conversion for 11 panels. Read it first and follow its mappings.
 
 ---
 
-## 1. Phase 1: Review everything (no code written)
+## 1. Phase 1: Map the source onto OneDS (no screens yet)
 
-Read every source page and its local components. Produce **one file**: `REBUILD-PLAN.md`. Write no screen code in this phase.
+Produce one file, `ONEDS-PLAN.md`. Do not convert any screen in this phase.
 
-### 1a. Learn the target first
+### 1a. Learn OneDS and the target
 
-Before reviewing the designs, read the target repo and the design system. Record:
+Record:
 
-- Package manager, framework and version, router, state approach, test setup.
-- **Styling approach.** Does the system use Tailwind, CSS modules, CSS-in-JS, or its own tokens? Is Tailwind installed at all? Which version?
-- Available components, layout primitives, tokens (colour, type, spacing, elevation, radius), and icon set.
-- Chart and data-grid libraries already approved in the target repo.
-- Lint, format and accessibility rules the target enforces.
+- The target's package manager, React version, TypeScript settings, router, lint rules and path aliases.
+- How OneDS is styled (its own CSS, tokens, CSS-in-JS, or a Tailwind preset), and whether Tailwind is allowed in the target at all.
+- The OneDS components, layout primitives, tokens, text styles, icon set and data table.
+- The chart and grid libraries the target allows alongside OneDS.
 
-### 1b. Inventory the source
+### 1b. Build the conversion maps
 
-For **each** source page, record one row:
+These maps are the rules every screen follows. Build them once from the whole source, so that every screen converts the same way.
 
-| Field | What to capture |
-| --- | --- |
-| Slug / title / section | From the filename and the `title` / `section` exports |
-| Purpose | One sentence: what job does this screen do? |
-| Layout | Regions and their order (header, rail, filters, main, side panel, footer) |
-| Components used | Every distinct UI element (table, card, chart, modal, tabs, form, etc.) |
-| Patterns | Named patterns it uses (e.g. master/detail, side panel, filter bar, KPI strip) |
-| States | Loading, empty, error, selected, hover, focus, disabled, dark mode |
-| Behaviour | Sorting, filtering, drill-in, inline edit, keyboard shortcuts, live updates |
-| Data | Where the mock data lives; whether it is pure data (safe to reuse) |
-| Third-party deps | AG Grid, DevExtreme, Highcharts, framer-motion, lucide-react, etc. |
+1. **Token map.** Every colour, text size and weight, spacing step, radius, border and shadow used in the source, mapped to its OneDS token. Map by **role** (surface, muted text, border, positive, negative, warning, accent), not by literal value.
+2. **Component map.** Every source component and pattern in `src/components/**`, mapped to a OneDS component. Mark each `exact`, `compose` (built from several OneDS parts), or `GAP`.
+3. **Library map.**
 
-### 1c. Map the source onto the design system
+   | Source | Replace with |
+   | --- | --- |
+   | `ag-grid-*`, `devextreme` grids | OneDS data table, or the OneDS-approved grid |
+   | `highcharts` | OneDS charts, or the target's approved chart library themed with OneDS tokens |
+   | `lucide-react` | OneDS icon set |
+   | `framer-motion` | OneDS motion tokens and transitions |
+   | `devextreme` editors, pickers, popups | OneDS inputs, date pickers, dialogs |
 
-Create these tables in `REBUILD-PLAN.md`:
+   Keep the same data and behaviour when you swap a library. Only the rendering changes.
+4. **Gaps.** Everything marked `GAP`, with the OneDS primitives you will compose it from.
 
-1. **Component map.** Source element → design system component. Mark each: `exact`, `compose` (build from several), or `GAP`.
-2. **Pattern map.** Source pattern → design system pattern or layout. Same marks.
-3. **Token map.** Source colour/type/spacing/radius use → design system token. Source classes and hex values are **intent only**. Never copy them.
-4. **Dependency map.** See §3.
-5. **Duplicates.** Screens that share a pattern. Build the shared piece once, then reuse it.
-6. **Gaps.** Everything marked `GAP`, with the closest system substitute proposed.
+### 1c. Plan the order
 
-### 1d. Propose the build order
+- Convert the shared code first: the patterns and components used by many screens. Every screen then reuses one OneDS version of each.
+- Then the simplest screens, then the complex ones (multi-screen shells, dashboards, data-heavy grids).
+- List any demo-only pages (cheat sheets, resource directories, animation guides, gallery pages) and ask whether to convert them.
 
-- Group screens into batches of the configured size.
-- Order: shared patterns and shells first, then the simplest screens, then complex ones (multi-screen shells, dashboards, data-heavy grids).
-- Flag screens that are **not worth rebuilding** (demo-only pages such as cheat sheets, resource directories, animation guides, or gallery pages) and ask for a decision.
-
-**Stop after Phase 1. Wait for approval of `REBUILD-PLAN.md` before writing any screen.**
+**Stop after Phase 1. Wait for approval of `ONEDS-PLAN.md` before converting screens.**
 
 ---
 
-## 2. Phase 2: Rebuild (one batch per run)
+## 2. Phase 2: Convert the shared code
 
-For each screen in the approved batch:
+For each shared component or pattern in the approved order:
 
-1. Re-read the source page and note exactly what it shows and does.
-2. Build the screen **new** in the target location, using only design system components, tokens, and approved dependencies.
-3. Build shared pieces once. Compose screens from them. A screen must never restyle a shared piece locally.
-4. Add a short `<slug>.rebuild.md` next to the screen using the report format in §7.
-5. Run lint, typecheck, and tests. Fix everything before moving to the next screen.
+1. Copy it into the target.
+2. Replace its markup and styling with the OneDS components and tokens from the maps. Keep its props, data and behaviour the same, so the screens that use it do not need to change.
+3. Remove every Tailwind class, raw colour and non-OneDS import from it.
+4. Run typecheck, lint and tests.
 
-### Fidelity rules
-
-Keep these the same as the source:
-
-- Layout structure and region order.
-- Content, labels, copy, units, and number formats.
-- Mock data values and fixtures. Pure data and pure logic files **may be recreated verbatim**, as long as they hold no styling.
-- Behaviour, states, interactions, and keyboard support.
-- Information hierarchy and density.
-
-Change these to match the design system:
-
-- All colour, typography, spacing, borders, radius, shadows, and elevation.
-- Icons (use the system's icon set).
-- Controls (use the system's inputs, buttons, tabs, menus, dialogs).
-- Motion (use the system's tokens; honour `prefers-reduced-motion`).
-
-Do **not**:
-
-- Redesign, simplify, merge, or "improve" a screen.
-- Add features that are not in the source.
-- Drop features because they are hard. Log them as gaps.
-- Hardcode any colour, font size, or spacing value. If no token exists, use the nearest semantic token and log a gap.
-- Keep the source's `--radius: 0` rule unless the design system says the same. The system decides radius.
+Pure data and pure logic files (`src/lib/**` mock data, formatters, calculations, and hooks with no styling) may be copied unchanged.
 
 ---
 
-## 3. Dependencies and Tailwind: assume they differ
+## 3. Phase 3: Convert the screens (one batch per run)
 
-The source stack may not match the target. Handle each case like this.
+For each screen in the batch:
 
-### Tailwind
+1. **Copy** `src/pages/<slug>.tsx` into the target. Point its imports at the converted shared code.
+2. **Register** it in the target's router. Use the page's `title` and `section` exports for the route and nav entry.
+3. **Convert** the page top to bottom, using the maps:
+   - Layout wrappers → OneDS layout primitives (stack, grid, page, panel, toolbar).
+   - Every element → its mapped OneDS component.
+   - Every class string → OneDS props and tokens. Delete the class string.
+   - Every icon, chart, grid and animation → its OneDS replacement.
+4. **Replace `localStorage` hooks** with the target's state approach, if it has one. Keep the same keys and behaviour.
+5. **Check** the screen against §5. Do not move on until it passes.
+6. **Write** `<slug>.oneds.md` using the format in §6.
 
-| Target situation | What to do |
-| --- | --- |
-| Tailwind installed, same major version, system provides a preset | Use utilities **only** for layout (flex, grid, gap, sizing). Take colour, type, and spacing from the system's theme tokens. |
-| Tailwind installed, different major version | Check the syntax of the target version. Do not assume v4 features (`@theme`, `@import "tailwindcss"`). |
-| Tailwind **not** installed | **Do not add it.** Use the design system's layout primitives and styling method. |
-| System uses its own CSS/tokens | Follow the system. No Tailwind classes at all. |
+If OneDS has no equivalent for an element:
 
-Never copy a Tailwind class string from the source. Decide each style from the design system.
-
-### Other packages
-
-For every third-party dependency in the source, decide one of:
-
-- **Use the design system's equivalent** (preferred). Examples: system data table instead of AG Grid or DevExtreme; system icons instead of `lucide-react`; system motion instead of `framer-motion`.
-- **Use the target repo's approved library.** Examples: its chart library instead of Highcharts, if one exists.
-- **Add a new dependency** only if nothing else works. Ask first, and list it in the PR with a reason.
-
-If you need to swap a library, keep the **same data and behaviour**. Only the rendering changes.
-
-Also check and adapt:
-
-- React version and any APIs that differ.
-- TypeScript strictness settings.
-- Router or navigation. The source has none (pages are auto-discovered). Use the target's routing.
-- State and storage. The source uses `localStorage` hooks. Use the target's approach.
-- Path aliases, file naming, and folder conventions.
+1. Use the closest OneDS component.
+2. If there is none, compose it from OneDS primitives and tokens.
+3. Never fall back to the source's Tailwind classes or library to "keep it working".
+4. Log it in `GAPS.md` (§4).
 
 ---
 
-## 4. Non-negotiables (check before opening a PR)
-
-1. **No source code copied** except pure data/logic files with no styling.
-2. **No hardcoded colour, font size, spacing, or radius.** Tokens only.
-3. **No custom components that duplicate a system component.**
-4. **One shared build for each repeated pattern.**
-5. **Accessibility.** Semantic landmarks, labelled controls, visible focus, full keyboard access, WCAG 2.1 AA contrast, and no colour-only meaning.
-6. **Tabular figures** for any number that changes or is compared.
-7. **Live or changing data stays stable.** Row counts fixed, values update in place, motion stops under reduced-motion.
-8. **All states present.** Loading, empty, and error states exist where the source has them or implies them.
-9. **Lint, typecheck, tests, and build all pass.**
-
----
-
-## 5. Verification per screen
-
-Before marking a screen done:
-
-- Open the source and the rebuild side by side. Check layout, copy, data, and behaviour.
-- Check every state listed in the Phase 1 inventory.
-- Check keyboard-only use and a screen-reader pass of the landmarks.
-- Check narrow and wide widths.
-- Check dark mode if the system supports it.
-- Confirm there are zero hardcoded style values (search for `#`, `rgb(`, `rgba(`, `px` literals in styles).
-
----
-
-## 6. Gaps register
+## 4. Gaps register
 
 Keep one running list, `GAPS.md`:
 
-| Screen | Source element | What the system lacks | Closest substitute used | Proposed action |
+| Screen | Source element | What OneDS lacks | What was built instead (from OneDS parts) | Proposed action |
 | --- | --- | --- | --- | --- |
 
-Every substitute must appear here. Nothing is substituted silently.
+Every composed or substituted element is listed. Nothing is substituted silently.
 
 ---
 
-## 7. Per-screen report format (`<slug>.rebuild.md`)
+## 5. Done check per screen
+
+A screen is done only when **all** of these pass.
+
+**It is the same screen**
+
+- [ ] Source and OneDS version side by side: same regions, order, content, copy, data and number formats.
+- [ ] Every interaction and state from the source works.
+- [ ] Keyboard-only use works. Landmarks, labels and focus are correct. WCAG 2.1 AA contrast.
+- [ ] It works at narrow and wide widths, and in dark mode if OneDS supports it.
+
+**It is only OneDS.** Search the screen and every file it imports:
+
+- [ ] No Tailwind classes. No `className` strings with utilities such as `flex`, `px-`, `text-`, `bg-`, `border-`, `rounded`.
+- [ ] No raw colours: `#`, `rgb(`, `rgba(`, `hsl(`, or Tailwind palette names such as `slate-`, `emerald-`, `rose-`.
+- [ ] No hardcoded sizes in styles: `px`, `rem` or `em` literals for spacing, font size or radius.
+- [ ] No imports from `ag-grid-*`, `devextreme*`, `highcharts`, `framer-motion` or `lucide-react`, unless the plan approved one as OneDS-compatible.
+- [ ] No imports of unconverted source components.
+- [ ] Typecheck, lint, tests and build pass.
+
+---
+
+## 6. Per-screen report format (`<slug>.oneds.md`)
 
 ```
 # <Screen title>
-Source: <path>        Rebuilt: <path>
+Source: <path>        OneDS version: <path>
 
-## Mapped
-- <source element> → <system component>
+## Converted
+- <source element> → <OneDS component>
 
-## Substituted (also in GAPS.md)
-- <source element> → <substitute>, because <reason>
+## Composed from OneDS parts (also in GAPS.md)
+- <source element> → <OneDS parts used>, because <reason>
 
-## Dependencies
-- Removed: <list>   Added: <list>   Swapped: <list>
+## Libraries
+- Removed: <list>   Replaced with: <list>
 
-## Behaviour check
-- [x] States   [x] Keyboard   [x] Data matches   [x] Tokens only
+## Done check
+- [x] Same screen   [x] Interactions and states   [x] Only OneDS   [x] Build passes
 
 ## Open questions
 - <anything a person must decide>
@@ -216,16 +198,18 @@ Source: <path>        Rebuilt: <path>
 
 ---
 
-## 8. Definition of done (whole project)
+## 7. Definition of done (whole project)
 
-- Every approved screen is rebuilt, with a rebuild report.
+- Every approved screen is converted, with a report.
+- No Tailwind, source CSS, raw colours or source UI libraries remain anywhere in the converted code.
+- The source dependencies listed in §0 are not in the target's `package.json`, unless the plan approved them.
 - `GAPS.md` is complete and reviewed.
-- No source files, styles, or class strings exist in the target repo.
-- Lint, typecheck, tests, and build pass.
-- A summary lists screens done, screens skipped (and why), new dependencies, and open gaps.
+- Typecheck, lint, tests and build pass.
+- A summary lists screens converted, screens skipped (and why), and open gaps.
 
 ## Working rules
 
-- Work in batches. Never try to rebuild all screens in one run.
-- If the source and the design system conflict, **the design system wins on visuals; the source wins on content and behaviour.** Raise real conflicts in the PR description.
+- Work in batches. Never try to convert every screen in one run.
+- **The source wins on content, structure and behaviour. OneDS wins on everything visual.**
+- If keeping the source behaviour means leaving OneDS, stop and ask.
 - Ask when unsure. Do not guess and move on.
