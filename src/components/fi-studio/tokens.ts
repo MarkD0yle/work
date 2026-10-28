@@ -13,7 +13,8 @@
 
 export const s = {
   page: "bg-[#f6f5f1]",
-  card: "bg-white border border-stone-200 shadow-[0_1px_2px_rgba(28,25,23,0.04)]",
+  // Soft edge: a faint border plus a gentle shadow does the separating, not a hard line.
+  card: "bg-white border border-stone-200/50 shadow-[0_1px_3px_rgba(28,25,23,0.05),0_1px_2px_rgba(28,25,23,0.03)]",
   sunken: "bg-stone-50",
   hover: "hover:bg-stone-50",
   selected: "bg-indigo-50",
