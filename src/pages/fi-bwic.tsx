@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
 import { TerminalShell } from "../components/fi-terminal/TerminalShell";
 import { Panel, Row, Segmented, Stat, Tag } from "../components/fi-terminal/ui";
 import { divergingHeat, moveText, t } from "../components/fi-terminal/tokens";
-import { BONDS, DEALERS, seeded, shortName, type Bond } from "../components/fi-terminal/bonds";
+import { shortName } from "../components/fi-terminal/bonds";
+import { DEALER_CODES, LINES, MAX_DEV, useBwic } from "../components/fi-terminal/model/bwic";
 import { mm, signed, usd } from "../components/fi-terminal/format";
 
 export const title = "FI · BWIC List Sale";
@@ -21,94 +21,12 @@ export const fullWidth = true;
  * Best and cover are marked in every row. A line only trades if its best
  * bid clears the reserve, unless the PM overrides it. */
 
-const DEALER_CODES = DEALERS.slice(0, 6).map((d) => d.code);
-
-type Line = {
-  n: number;
-  bond: Bond;
-  face: number;
-  mark: number;
-  reserve: number;
-  bids: (number | null)[]; // per dealer; null = did not bid
-};
-
-function buildLines(): Line[] {
-  const pick = ["CHTR-34", "PARA-30", "F-30", "GM-33", "T-36", "VZ-32", "ORCL-34", "OXY-33", "DUK-34", "NEE-29", "CCL-29", "BA-35", "PLD-34", "MET-33"];
-  return pick.map((id, i) => {
-    const bond = BONDS.find((b) => b.id === id)!;
-    const r = seeded(i * 977 + 13);
-    const mark = Math.round((bond.mid - 0.05) * 1000) / 1000;
-    const softness = (10 - bond.liq) * 0.06;
-    const bids = DEALER_CODES.map((_, di) => {
-      // Some dealers skip illiquid lines; the axed one is aggressive.
-      if (r() < 0.12 + softness * 0.35) return null;
-      const axe = (i + di) % 5 === 0 ? 0.18 : 0;
-      const bid = mark - 0.12 - softness * 1.3 + axe + (r() - 0.45) * 0.4;
-      return Math.round(bid * 1000) / 1000;
-    });
-    return {
-      n: i + 1,
-      bond,
-      face: [10, 5, 15, 20, 10, 25, 15, 8, 6, 12, 10, 20, 5, 25][i] * 1_000_000,
-      mark,
-      reserve: Math.round((mark - 0.15 - softness * 0.2) * 1000) / 1000,
-      bids,
-    };
-  });
-}
-
-const LINES = buildLines();
-
-type View = "px" | "vsmark";
-type Filter = "all" | "trade" | "dnt";
-
-function rank(l: Line) {
-  const sorted = l.bids
-    .map((b, i) => ({ b, i }))
-    .filter((x): x is { b: number; i: number } => x.b !== null)
-    .sort((a, b) => b.b - a.b);
-  return { best: sorted[0], cover: sorted[1], count: sorted.length };
-}
-
 export default function FiBwic() {
-  const [view, setView] = useState<View>("vsmark");
-  const [filter, setFilter] = useState<Filter>("all");
-  const [override, setOverride] = useState<Record<number, boolean>>({});
-  const [stage, setStage] = useState<"deciding" | "confirm" | "awarded">("deciding");
-  const [left, setLeft] = useState(9 * 60 + 42);
-  const [focus, setFocus] = useState(1);
-
-  useEffect(() => {
-    if (stage === "awarded") return;
-    const id = setInterval(() => setLeft((s) => Math.max(0, s - 1)), 1000);
-    return () => clearInterval(id);
-  }, [stage]);
-
-  const rows = LINES.map((l) => {
-    const { best, cover, count } = rank(l);
-    const clears = !!best && best.b >= l.reserve;
-    const trade = override[l.n] ?? clears;
-    return { l, best, cover, count, clears, trade: trade && !!best };
-  });
-
-  const shown = rows.filter((r) => filter === "all" || (filter === "trade" ? r.trade : !r.trade));
-  const trading = rows.filter((r) => r.trade);
-  const totalFace = LINES.reduce((a, l) => a + l.face, 0);
-  const proceeds = trading.reduce((a, r) => a + (r.best!.b / 100) * r.l.face, 0);
-  const vsMark = trading.reduce((a, r) => a + ((r.best!.b - r.l.mark) / 100) * r.l.face, 0);
-  const bidsIn = LINES.reduce((a, l) => a + l.bids.filter((b) => b !== null).length, 0);
-  const maxDev = 0.6;
-
-  const dealerStats = DEALER_CODES.map((code, di) => {
-    const wins = trading.filter((r) => r.best!.i === di);
-    const bidsGiven = LINES.filter((l) => l.bids[di] !== null);
-    const avg = bidsGiven.reduce((a, l) => a + (l.bids[di]! - l.mark), 0) / (bidsGiven.length || 1);
-    return { code, wins: wins.length, face: wins.reduce((a, r) => a + r.l.face, 0), resp: bidsGiven.length, avg: avg * 100 };
-  }).sort((a, b) => b.face - a.face);
-  const maxFace = Math.max(...dealerStats.map((d) => d.face), 1);
-
-  const fr = rows.find((r) => r.l.n === focus) ?? rows[0];
-  const mmss = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}`;
+  const {
+    view, setView, filter, setFilter, override, stage, setStage, left,
+    focus, setFocus, toggleTrade, shown, trading, totalFace, tradingFace, proceeds, vsMark, bidsIn, bidsMax, belowReserve, winners,
+    dealerStats, maxFace, fr, mmss, focusAdvice,
+  } = useBwic();
 
   return (
     <TerminalShell
@@ -124,9 +42,9 @@ export default function FiBwic() {
         <div className={`grid shrink-0 grid-cols-8 gap-4 ${t.panel} px-4 py-2.5`}>
           <Stat label="Status" value={stage === "awarded" ? "Awarded" : "Bids in · deciding"} valueClass={stage === "awarded" ? "text-emerald-300" : "text-amber-300"} sub="Bids due 14:00 · closed" />
           <Stat label="Decide by" value={stage === "awarded" ? "—" : mmss} valueClass={left < 120 && stage !== "awarded" ? "text-rose-400" : t.value} sub="bids firm until 14:15" />
-          <Stat label="Bids received" value={`${bidsIn}/${LINES.length * DEALER_CODES.length}`} sub={`${Math.round((bidsIn / (LINES.length * DEALER_CODES.length)) * 100)}% response`} />
-          <Stat label="Lines trading" value={`${trading.length}/${LINES.length}`} sub={`${rows.filter((r) => !r.clears).length} below reserve`} />
-          <Stat label="Face trading" value={`$${usd(trading.reduce((a, r) => a + r.l.face, 0) / 1e6)}MM`} sub={`of $${usd(totalFace / 1e6)}MM`} />
+          <Stat label="Bids received" value={`${bidsIn}/${bidsMax}`} sub={`${Math.round((bidsIn / bidsMax) * 100)}% response`} />
+          <Stat label="Lines trading" value={`${trading.length}/${LINES.length}`} sub={`${belowReserve} below reserve`} />
+          <Stat label="Face trading" value={`$${usd(tradingFace / 1e6)}MM`} sub={`of $${usd(totalFace / 1e6)}MM`} />
           <Stat label="Proceeds" value={`$${usd(proceeds / 1e6, 2)}MM`} sub="clean, ex-accrued" />
           <Stat label="vs Mark" value={`${vsMark >= 0 ? "+" : "−"}$${usd(Math.abs(vsMark))}`} valueClass={moveText(vsMark)} sub="P&L on award" />
           <div className="flex items-center justify-end">
@@ -135,7 +53,7 @@ export default function FiBwic() {
                 Award {trading.length} lines
               </button>
             )}
-            {stage === "awarded" && <Tag tone="up">Tickets sent to {new Set(trading.map((r) => r.best!.i)).size} dealers</Tag>}
+            {stage === "awarded" && <Tag tone="up">Tickets sent to {winners} dealers</Tag>}
           </div>
         </div>
 
@@ -166,9 +84,8 @@ export default function FiBwic() {
                 </tr>
               </thead>
               <tbody>
-                {shown.map(({ l, best, cover, clears, trade }) => {
+                {shown.map(({ l, best, cover, trade, overridden }) => {
                   const bestVs = best ? (best.b - l.mark) * 100 : 0;
-                  const overridden = override[l.n] !== undefined;
                   return (
                     <tr key={l.n} onClick={() => setFocus(l.n)} className={`cursor-pointer ${focus === l.n ? "bg-amber-400/[0.06]" : t.hover} ${!trade ? "opacity-60" : ""}`}>
                       <td className={`border-b ${t.border} px-2 py-1 text-neutral-500`}>{l.n}</td>
@@ -190,7 +107,7 @@ export default function FiBwic() {
                             ) : (
                               <div
                                 className={`flex h-6 items-center justify-center ${isBest ? "font-bold text-amber-200 ring-1 ring-inset ring-amber-400" : isCover ? "text-neutral-100 ring-1 ring-inset ring-neutral-500" : "text-neutral-300"} ${b < l.reserve ? "line-through decoration-rose-400/70" : ""}`}
-                                style={{ backgroundColor: divergingHeat(-dev / maxDev) }}
+                                style={{ backgroundColor: divergingHeat(-dev / MAX_DEV) }}
                                 title={`${DEALER_CODES[di]} ${b.toFixed(3)} · ${signed(dev * 100)}¢ vs mark${isBest ? " · BEST" : isCover ? " · COVER" : ""}`}
                               >
                                 {view === "px" ? b.toFixed(3) : signed(dev * 100, 1)}
@@ -208,13 +125,7 @@ export default function FiBwic() {
                           disabled={!best || stage !== "deciding"}
                           onClick={(e) => {
                             e.stopPropagation();
-                            setOverride((o) => {
-                              const next = { ...o };
-                              const want = !trade;
-                              if (want === clears) delete next[l.n];
-                              else next[l.n] = want;
-                              return next;
-                            });
+                            toggleTrade(l.n);
                           }}
                           aria-pressed={trade}
                           aria-label={`Line ${l.n} ${shortName(l.bond)}: ${trade ? "trading, click to hold back" : "do not trade, click to trade"}`}
@@ -243,7 +154,7 @@ export default function FiBwic() {
                 <div className={`w-[460px] border ${t.borderStrong} ${t.raised} p-5`}>
                   <p id="bwic-confirm" className={t.label}>Award BWIC</p>
                   <p className="mt-3 text-[15px] leading-snug text-neutral-100">
-                    You are <span className="font-bold text-rose-400">SELLING</span> {trading.length} lines, ${usd(trading.reduce((a, r) => a + r.l.face, 0) / 1e6)}MM face, to {new Set(trading.map((r) => r.best!.i)).size} dealers for ${usd(proceeds / 1e6, 2)}MM.
+                    You are <span className="font-bold text-rose-400">SELLING</span> {trading.length} lines, ${usd(tradingFace / 1e6)}MM face, to {winners} dealers for ${usd(proceeds / 1e6, 2)}MM.
                   </p>
                   <div className="mt-3 text-[11px]">
                     <Row k="P&L vs mark" v={`${vsMark >= 0 ? "+" : "−"}$${usd(Math.abs(vsMark))}`} vClass={moveText(vsMark)} />
@@ -291,13 +202,7 @@ export default function FiBwic() {
                 <Row k="Liquidity score" v={`${fr.l.bond.liq}/10`} />
               </div>
               <p className="mt-2 border-l-2 border-amber-400/60 pl-2 text-neutral-400">
-                {!fr.best
-                  ? "No dealer bid. Hold it back and try an all-to-all session."
-                  : fr.clears
-                    ? fr.cover && fr.best.b - fr.cover.b > 0.25
-                      ? "Best is well clear of cover — the winner is likely axed. Good line to trade."
-                      : "Clears reserve with a tight cover. Fair, competitive level."
-                    : "Best bid is below reserve. Default is do-not-trade; override only with a reason."}
+                {focusAdvice}
               </p>
             </Panel>
 

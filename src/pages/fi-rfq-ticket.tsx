@@ -1,11 +1,9 @@
-import { useEffect, useState } from "react";
 import { TerminalShell } from "../components/fi-terminal/TerminalShell";
 import { Panel, Row, Segmented, SideToggle, Stat, Tag } from "../components/fi-terminal/ui";
 import { moveText, sideBg, sideText, t, type Side } from "../components/fi-terminal/tokens";
-import {
-  BONDS, DEALERS, SETTLE_T1, accrued, bondById, midAnalytics, seeded, shortName, spreadFromYield, yieldFromPrice, type Bond,
-} from "../components/fi-terminal/bonds";
-import { openWith, readHandoff, writeHandoff } from "../components/fi-terminal/selection";
+import { BONDS, DEALERS, SETTLE_T1, accrued, shortName, spreadFromYield, yieldFromPrice, type Bond } from "../components/fi-terminal/bonds";
+import { openWith } from "../components/fi-terminal/selection";
+import { FUNDS, MAX_DEALERS, POSITION, SIZES, TIMERS, tracePrints, useRfq, type Quote } from "../components/fi-terminal/model/rfq";
 import { date, mm, signed, usd } from "../components/fi-terminal/format";
 
 export const title = "FI · Multi-Dealer RFQ";
@@ -25,130 +23,13 @@ export const fullWidth = true;
  *   · Every quote is shown against the composite, so "good" has a reference.
  *   · One primary action at a time: Send → Lift/Hit best → New RFQ. */
 
-type Phase = "draft" | "live" | "done" | "expired";
-
-type Quote = {
-  dealer: string;
-  delay: number; // seconds until the dealer responds
-  pass: boolean;
-  price: number;
-  size: number;
-};
-
-const SIZES = [1_000_000, 2_000_000, 5_000_000, 10_000_000, 25_000_000];
-const TIMERS = [
-  { id: "15", label: "15s" },
-  { id: "30", label: "30s" },
-  { id: "60", label: "60s" },
-] as const;
-const FUNDS = ["IG CORE FUND", "LONG CREDIT", "MULTI-ASSET INC"];
-const MAX_DEALERS = 5;
-
-function axesFor(b: Bond) {
-  const r = seeded(b.id.length * 97 + Math.round(b.coupon * 1000));
-  const axes = DEALERS.filter(() => r() < 0.3).map((d) => ({ code: d.code, side: (r() < 0.5 ? "Buy" : "Sell") as Side, size: 2 + Math.floor(r() * 20) }));
-  // Every bond has at least one axed dealer — the street always has a view.
-  return axes.length ? axes : [{ code: DEALERS[3].code, side: "Sell" as Side, size: 10 }];
-}
-
-function buildQuotes(b: Bond, side: Side, face: number, dealers: string[], seed: number): Quote[] {
-  const r = seeded(seed);
-  const axes = axesFor(b);
-  const half = 0.06 + (10 - b.liq) * 0.025 + (face >= 10_000_000 ? 0.04 : 0);
-  return dealers.map((code) => {
-    // An axe that matches our flow (they want to sell when we buy) means a sharper price.
-    const axed = axes.some((a) => a.code === code && a.side !== side);
-    const edge = (axed ? -0.05 : 0) + r() * 0.09 - 0.02;
-    const px = side === "Buy" ? b.mid + half + edge : b.mid - half - edge;
-    return {
-      dealer: code,
-      delay: 1.2 + r() * 9,
-      pass: !axed && r() < 0.16,
-      price: Math.round(px * 1000) / 1000,
-      size: face,
-    };
-  });
-}
-
 export default function FiRfqTicket() {
-  const init = readHandoff();
-  const [bondId, setBondId] = useState(init.bondId);
-  const [side, setSide] = useState<Side>(init.side);
-  const [face, setFace] = useState(init.face);
-  const [fund, setFund] = useState(FUNDS[0]);
-  const [timer, setTimer] = useState<(typeof TIMERS)[number]["id"]>("30");
-  const [picked, setPicked] = useState<string[]>(["MSX", "HLB", "CRN", "VTX", "BRK"]);
-
-  const [phase, setPhase] = useState<Phase>("draft");
-  const [quotes, setQuotes] = useState<Quote[]>([]);
-  const [elapsed, setElapsed] = useState(0);
-  const [filled, setFilled] = useState<{ q: Quote; at: number } | null>(null);
-  const [rfqNo, setRfqNo] = useState(40217);
-
-  const bond = bondById(bondId);
-  const comp = midAnalytics(bond);
-  const axes = axesFor(bond);
-  const limit = Number(timer);
-  const remaining = Math.max(0, limit - elapsed);
-
-  useEffect(() => {
-    if (phase !== "live") return;
-    // The clock starts when the RFQ goes live; reading it here keeps render pure.
-    const startedAt = Date.now();
-    const id = setInterval(() => {
-      const e = (Date.now() - startedAt) / 1000;
-      setElapsed(e);
-      if (e >= limit) setPhase("expired");
-    }, 100);
-    return () => clearInterval(id);
-  }, [phase, limit]);
-
-  // Escape cancels a live RFQ.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && phase === "live") setPhase("expired");
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [phase]);
-
-  const visible = quotes.filter((q) => elapsed >= q.delay || phase === "done" || phase === "expired");
-  const responded = quotes.filter((q) => elapsed >= q.delay);
-  const live = visible
-    .filter((q) => !q.pass && elapsed >= q.delay)
-    .sort((a, b) => (side === "Buy" ? a.price - b.price : b.price - a.price));
-  const best = live[0];
-  const cover = live[1];
-
-  const editable = phase === "draft";
-
-  function send() {
-    setQuotes(buildQuotes(bond, side, face, picked, rfqNo + face / 1e6 + (side === "Buy" ? 1 : 2)));
-    setElapsed(0);
-    setFilled(null);
-    setPhase("live");
-    writeHandoff({ bondId, side, face });
-  }
-
-  function execute(q: Quote) {
-    setFilled({ q, at: elapsed });
-    setPhase("done");
-  }
-
-  function reset() {
-    setPhase("draft");
-    setQuotes([]);
-    setElapsed(0);
-    setFilled(null);
-    setRfqNo((n) => n + 1);
-  }
-
-  function toggleDealer(code: string) {
-    setPicked((p) => (p.includes(code) ? p.filter((c) => c !== code) : p.length >= MAX_DEALERS ? p : [...p, code]));
-  }
-
-  const verb = side === "Buy" ? "Lift" : "Hit";
-  const compSide = side === "Buy" ? bond.mid + 0.125 : bond.mid - 0.125;
+  const {
+    bondId, setBondId, side, setSide, face, setFace, fund, setFund, timer, setTimer, picked,
+    phase, quotes, elapsed, filled, rfqNo, bond, comp, axes, limit, remaining,
+    responded, live, best, cover, ordered, editable,
+    send, execute, reset, toggleDealer, verb, compSide, vsComp, fillCover, positionAfter, goesShort, issuerUse,
+  } = useRfq();
 
   return (
     <TerminalShell
@@ -320,12 +201,7 @@ export default function FiRfqTicket() {
                       </tr>
                     ))}
                   {phase !== "draft" &&
-                    [...quotes]
-                      .sort((a, b) => {
-                        const ra = live.indexOf(a);
-                        const rb = live.indexOf(b);
-                        return (ra < 0 ? 99 : ra) - (rb < 0 ? 99 : rb) || a.delay - b.delay;
-                      })
+                    ordered
                       .map((q) => {
                         const arrived = elapsed >= q.delay || phase !== "live";
                         const rank = live.indexOf(q);
@@ -335,7 +211,7 @@ export default function FiRfqTicket() {
                         const yld = yieldFromPrice(bond, q.price);
                         const sprd = spreadFromYield(bond, yld);
                         // Positive = better than composite for us.
-                        const vsComp = (side === "Buy" ? compSide - q.price : q.price - compSide) * 100;
+                        const vsC = vsComp(q.price);
                         const timedOut = !arrived || (phase !== "live" && elapsed < q.delay);
                         return (
                           <tr
@@ -366,7 +242,7 @@ export default function FiRfqTicket() {
                                 <td className={`px-2 py-2 text-right text-[13px] font-semibold ${isBest ? "text-amber-300" : "text-neutral-100"}`}>{q.price.toFixed(3)}</td>
                                 <td className="px-2 py-2 text-right text-neutral-300">{yld.toFixed(3)}</td>
                                 <td className="px-2 py-2 text-right text-neutral-300">{sprd.toFixed(1)}</td>
-                                <td className={`px-2 py-2 text-right ${moveText(vsComp)}`}>{signed(vsComp, 1)}¢</td>
+                                <td className={`px-2 py-2 text-right ${moveText(vsC)}`}>{signed(vsC, 1)}¢</td>
                                 <td className="px-2 py-2 text-right text-neutral-400">{mm(q.size)}</td>
                                 <td className="px-2 py-2 text-right text-neutral-500">{q.delay.toFixed(1)}s</td>
                                 <td className="px-2 py-1.5 text-right">
@@ -408,7 +284,7 @@ export default function FiRfqTicket() {
                   Window closed without a trade. {live.length > 0 ? `Best was ${best.price.toFixed(3)} (${best.dealer}).` : ""} Start a new RFQ to re-quote.
                 </p>
               )}
-              {phase === "done" && filled && <Confirmation bond={bond} side={side} face={face} fund={fund} q={filled.q} cover={cover && cover !== filled.q ? cover : live.find((l) => l !== filled.q)} rfqNo={rfqNo} compSide={compSide} />}
+              {phase === "done" && filled && <Confirmation bond={bond} side={side} face={face} fund={fund} q={filled.q} cover={fillCover} rfqNo={rfqNo} compSide={compSide} />}
             </div>
           </Panel>
         </div>
@@ -436,9 +312,9 @@ export default function FiRfqTicket() {
           </Panel>
 
           <Panel n={5} title="Your position" bodyClassName="p-3 text-[11px]">
-            <Row k={fund} v={`${mm(8_000_000)} long`} />
-            <Row k="After this trade" v={`${mm(side === "Buy" ? 8_000_000 + face : Math.max(0, 8_000_000 - face))}${side === "Sell" && face > 8_000_000 ? " · short!" : ""}`} vClass={side === "Sell" && face > 8_000_000 ? "text-rose-400" : t.value} />
-            <Row k="Issuer limit used" v={`${side === "Buy" ? 61 + Math.round(face / 1e6) : 61 - Math.round(face / 1e6)}%`} />
+            <Row k={fund} v={`${mm(POSITION)} long`} />
+            <Row k="After this trade" v={`${mm(positionAfter)}${goesShort ? " · short!" : ""}`} vClass={goesShort ? "text-rose-400" : t.value} />
+            <Row k="Issuer limit used" v={`${issuerUse}%`} />
             <button type="button" onClick={() => openWith("fi-bond-ticket", { bondId, side, face })} className={`mt-2 w-full py-1.5 text-[10px] font-semibold uppercase tracking-wider ${t.ghost} ${t.focus}`}>
               Open full order ticket →
             </button>
@@ -479,15 +355,7 @@ function Confirmation({ bond, side, face, fund, q, cover, rfqNo, compSide }: {
 }
 
 function Trace({ bond }: { bond: Bond }) {
-  const r = seeded(bond.outstanding + bond.id.length);
-  const rows = Array.from({ length: 12 }, (_, i) => {
-    const side = r() < 0.5 ? "B" : "S";
-    const px = bond.mid + (side === "B" ? 0.08 : -0.08) + (r() - 0.5) * 0.18;
-    const size = r() < 0.3 ? "5MM+" : `${(0.25 + Math.floor(r() * 18) * 0.25).toFixed(2)}MM`;
-    // Newest first: walk back from 15:58 in uneven steps.
-    const mins = 15 * 60 + 58 - Math.round(i * 23 + r() * 15);
-    return { time: `${Math.floor(mins / 60)}:${String(mins % 60).padStart(2, "0")}`, side, px, size };
-  });
+  const rows = tracePrints(bond);
   return (
     <table className="w-full text-[11px] tabular-nums">
       <thead className={`sticky top-0 ${t.panel}`}>

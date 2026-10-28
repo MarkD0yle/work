@@ -298,6 +298,38 @@ export const GALLERY_META: Record<string, GalleryMeta> = {
     motif: "chart",
   },
 
+  // FI Studio — the same five screens, friendly and plain-spoken (shared model)
+  "fi-studio-credit-map": {
+    description:
+      "Friendly credit heat map: a plain-English take on today's moves, sector × maturity spreads, a bucket that explains itself, and Buy / Sell / Order on every bond.",
+    tags: ["fixed income", "credit", "heatmap", "studio"],
+    motif: "heatmap",
+  },
+  "fi-studio-rfq": {
+    description:
+      "Get quotes in four steps: choose a bond, pick dealers, watch quotes slide in against a countdown ring with the best price called out, then trade.",
+    tags: ["fixed income", "rfq", "execution", "studio"],
+    motif: "panel",
+  },
+  "fi-studio-ticket": {
+    description:
+      "Order ticket that reads your order back as a sentence, links price, yield and spread side by side, and turns pre-trade checks into a checklist.",
+    tags: ["fixed income", "order ticket", "pre-trade", "studio"],
+    motif: "form",
+  },
+  "fi-studio-bwic": {
+    description:
+      "Sell a list: countdown and proceeds up front, every bid tinted against our mark with stars for the best, Sell / Keep switches and a dealer scorecard.",
+    tags: ["fixed income", "bwic", "list trading", "studio"],
+    motif: "heatmap",
+  },
+  "fi-studio-rv": {
+    description:
+      "Curve ideas: which Treasuries look cheap or rich, stretched curve spreads and butterflies, and a switch builder that keeps rate risk the same.",
+    tags: ["fixed income", "rates", "relative value", "studio"],
+    motif: "chart",
+  },
+
   // Global Markets — trade lifecycle
   "gm-rfq-inbox": {
     description:
