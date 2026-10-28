@@ -266,6 +266,38 @@ export const GALLERY_META: Record<string, GalleryMeta> = {
     motif: "form",
   },
 
+  // FI Terminal — five linked, Bloomberg-style fixed income screens
+  "fi-credit-heatmap": {
+    description:
+      "Credit spread heat map: sector × tenor by OAS, 1D/1W/1M change or 3M z-score, with top movers and a bucket drill-down that hands any bond to the RFQ.",
+    tags: ["fixed income", "credit", "heatmap", "terminal"],
+    motif: "heatmap",
+  },
+  "fi-rfq-ticket": {
+    description:
+      "Multi-dealer RFQ: buy or sell a corporate bond in competition with up to five dealers, live quote stack against a countdown, lift/hit best, trade confirmation.",
+    tags: ["fixed income", "rfq", "execution", "terminal"],
+    motif: "panel",
+  },
+  "fi-bond-ticket": {
+    description:
+      "Bond order ticket with linked price ↔ yield ↔ spread, fund allocation, trade economics, blocking pre-trade checks and a two-step confirm.",
+    tags: ["fixed income", "order ticket", "pre-trade", "terminal"],
+    motif: "form",
+  },
+  "fi-bwic": {
+    description:
+      "BWIC list sale: 14 lines × 6 dealers bid grid shaded against mark, best/cover per line, reserve rule with PM override, dealer scorecard and award.",
+    tags: ["fixed income", "bwic", "list trading", "terminal"],
+    motif: "heatmap",
+  },
+  "fi-rates-rv": {
+    description:
+      "Treasury relative value: fitted curve with rich/cheap residuals, curve-spread heat matrix, butterflies, and a DV01-neutral switch builder.",
+    tags: ["fixed income", "rates", "relative value", "terminal"],
+    motif: "chart",
+  },
+
   // Global Markets — trade lifecycle
   "gm-rfq-inbox": {
     description:
