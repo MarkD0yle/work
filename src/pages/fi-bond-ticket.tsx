@@ -1,11 +1,9 @@
-import { useState } from "react";
 import { TerminalShell } from "../components/fi-terminal/TerminalShell";
 import { Panel, Row, Segmented, SideToggle, Stat, Tag } from "../components/fi-terminal/ui";
 import { moveText, sideBg, sideText, t, type Side } from "../components/fi-terminal/tokens";
-import {
-  BONDS, SETTLE_T1, accrued, benchYield, bondById, midAnalytics, priceFromYield, pv01, shortName, spreadFromYield, yieldFromPrice, yieldFromSpread, yearsToMaturity,
-} from "../components/fi-terminal/bonds";
-import { openWith, readHandoff, writeHandoff } from "../components/fi-terminal/selection";
+import { BONDS, SETTLE_T1, benchYield, bondById, shortName, yearsToMaturity } from "../components/fi-terminal/bonds";
+import { openWith } from "../components/fi-terminal/selection";
+import { ORD_TYPES, PORTFOLIO, ROUTES, SIZE_PRESETS, TIFS, useTicket } from "../components/fi-terminal/model/ticket";
 import { date, mm, signed, usd } from "../components/fi-terminal/format";
 
 export const title = "FI · Bond Order Ticket";
@@ -22,159 +20,14 @@ export const fullWidth = true;
  * pre-trade checklist that blocks on a hard fail, and a two-step confirm
  * that restates the whole order in a sentence. Nothing is sent on one click. */
 
-type Field = "price" | "yield" | "spread";
-type OrdType = "limit" | "market" | "work";
-type Tif = "day" | "gtc" | "ioc";
-type Stage = "edit" | "review" | "sent";
-
-const ORD_TYPES = [
-  { id: "limit", label: "Limit" },
-  { id: "market", label: "Market" },
-  { id: "work", label: "Work" },
-] as const;
-const TIFS = [
-  { id: "day", label: "Day" },
-  { id: "gtc", label: "GTC" },
-  { id: "ioc", label: "IOC" },
-] as const;
-const SIZE_PRESETS = [1, 2, 5, 10, 25];
-const ROUTES = ["Auto-RFQ (best of 5)", "All-to-all", "Voice · MSX", "Voice · HLB", "Algo · TWAP"];
-
-type Fund = { name: string; pct: number; cash: number; pos: number; aum: number };
-const FUNDS0: Fund[] = [
-  { name: "IG CORE FUND", pct: 60, cash: 42_500_000, pos: 8_000_000, aum: 2_400_000_000 },
-  { name: "LONG CREDIT", pct: 40, cash: 6_200_000, pos: 3_000_000, aum: 910_000_000 },
-  { name: "MULTI-ASSET INC", pct: 0, cash: 18_900_000, pos: 0, aum: 1_350_000_000 },
-];
-
-const WORKING0 = [
-  { id: "ORD-77410", side: "Buy" as Side, bond: "AAPL-33", face: 10_000_000, filled: 6_000_000, px: 100.95, route: "Auto-RFQ" },
-  { id: "ORD-77406", side: "Sell" as Side, bond: "PARA-30", face: 5_000_000, filled: 0, px: 96.4, route: "All-to-all" },
-  { id: "ORD-77395", side: "Buy" as Side, bond: "UNH-35", face: 3_000_000, filled: 3_000_000, px: 101.38, route: "Voice · HLB" },
-];
-
-type Check = { name: string; status: "pass" | "warn" | "fail"; detail: string };
-
 export default function FiBondTicket() {
-  const init = readHandoff();
-  const [bondId, setBondId] = useState(init.bondId);
-  const [side, setSide] = useState<Side>(init.side);
-  const [faceMM, setFaceMM] = useState(String(init.face / 1e6));
-  const bond = bondById(bondId);
-  const comp = midAnalytics(bond);
-  const bid = bond.mid - 0.125;
-  const ask = bond.mid + 0.125;
-
-  const [px, setPx] = useState(() => (init.side === "Buy" ? bondById(init.bondId).mid + 0.125 : bondById(init.bondId).mid - 0.125));
-  const [editing, setEditing] = useState<{ f: Field; text: string } | null>(null);
-  const [ordType, setOrdType] = useState<OrdType>("limit");
-  const [tif, setTif] = useState<Tif>("day");
-  const [route, setRoute] = useState(ROUTES[0]);
-  const [funds, setFunds] = useState(FUNDS0);
-  const [stage, setStage] = useState<Stage>("edit");
-  const [working, setWorking] = useState(WORKING0);
-  const [seq, setSeq] = useState(77418);
-
-  const face = Math.max(0, Number(faceMM) || 0) * 1e6;
-  const effPx = ordType === "market" ? (side === "Buy" ? ask : bid) : px;
-  const yld = yieldFromPrice(bond, effPx);
-  const sprd = spreadFromYield(bond, yld);
-  const ai = accrued(bond);
-  const principal = (effPx / 100) * face;
-  const accruedAmt = (ai.amount / 100) * face;
-  const net = principal + accruedAmt;
-  const dv01 = (pv01(bond, yld) / 100) * face;
-  const allocTotal = funds.reduce((a, f) => a + f.pct, 0);
-
-  function resetPx(b = bond, s = side) {
-    setPx(s === "Buy" ? b.mid + 0.125 : b.mid - 0.125);
-    setEditing(null);
-  }
-
-  function display(f: Field) {
-    if (editing?.f === f) return editing.text;
-    if (f === "price") return effPx.toFixed(3);
-    if (f === "yield") return yld.toFixed(3);
-    return sprd.toFixed(1);
-  }
-
-  function onField(f: Field, text: string) {
-    setEditing({ f, text });
-    const v = Number(text);
-    if (!text.trim() || !Number.isFinite(v)) return;
-    if (f === "price") setPx(v);
-    if (f === "yield") setPx(priceFromYield(bond, v));
-    if (f === "spread") setPx(priceFromYield(bond, yieldFromSpread(bond, v)));
-  }
-
-  /* --- Aggressiveness: where the limit sits against the composite --- */
-  // Positive = more aggressive (paying up to buy / giving up to sell).
-  const throughMid = (side === "Buy" ? effPx - bond.mid : bond.mid - effPx) * 100;
-  const fillProb = Math.max(3, Math.min(98, 50 + throughMid * 3.2));
-
-  /* --- Pre-trade checks --- */
-  const checks: Check[] = [];
-  const dev = Math.abs(effPx - bond.mid);
-  checks.push(
-    dev > 2
-      ? { name: "Price tolerance", status: "fail", detail: `Limit is ${dev.toFixed(2)} pts from composite mid. Max 2.00 — check for a fat-finger.` }
-      : dev > 0.75
-        ? { name: "Price tolerance", status: "warn", detail: `${dev.toFixed(2)} pts from mid. Within tolerance but unusual.` }
-        : { name: "Price tolerance", status: "pass", detail: `${dev.toFixed(3)} pts from mid.` },
-  );
-  checks.push(
-    allocTotal !== 100
-      ? { name: "Allocation", status: "fail", detail: `Fund split adds to ${allocTotal}%. It must equal 100%.` }
-      : { name: "Allocation", status: "pass", detail: `${funds.filter((f) => f.pct > 0).length} funds · 100%.` },
-  );
-  if (side === "Buy") {
-    const short = funds.find((f) => (f.pct / 100) * net > f.cash);
-    checks.push(
-      short
-        ? { name: "Cash available", status: "fail", detail: `${short.name} needs $${usd((short.pct / 100) * net)} but has $${usd(short.cash)}.` }
-        : { name: "Cash available", status: "pass", detail: "All funds have cash to settle." },
-    );
-  } else {
-    const short = funds.find((f) => (f.pct / 100) * face > f.pos);
-    checks.push(
-      short
-        ? { name: "Position available", status: "fail", detail: `${short.name} holds ${mm(short.pos)} — selling ${mm((short.pct / 100) * face)} would go short.` }
-        : { name: "Position available", status: "pass", detail: "Every fund holds enough to deliver." },
-    );
-  }
-  const issuerUse = 61 + (side === "Buy" ? 1 : -1) * Math.round(face / 1e6);
-  checks.push(
-    issuerUse > 85
-      ? { name: "Issuer limit", status: "fail", detail: `${bond.issuer} would be ${issuerUse}% of limit. Hard cap 85%.` }
-      : issuerUse > 70
-        ? { name: "Issuer limit", status: "warn", detail: `${issuerUse}% of ${bond.issuer} limit after trade.` }
-        : { name: "Issuer limit", status: "pass", detail: `${issuerUse}% of limit after trade.` },
-  );
-  checks.push({ name: "Restricted list", status: "pass", detail: `${bond.ticker} not restricted · no MNPI flags.` });
-  const advPct = (face / 1e6 / (bond.liq * 4)) * 100;
-  checks.push(
-    advPct > 60
-      ? { name: "Liquidity", status: "warn", detail: `Size is ${advPct.toFixed(0)}% of 20-day ADV. Consider working it.` }
-      : { name: "Liquidity", status: "pass", detail: `Size is ${advPct.toFixed(0)}% of ADV.` },
-  );
-  checks.push(
-    throughMid > 15
-      ? { name: "Best execution", status: "warn", detail: `Paying ${throughMid.toFixed(1)}¢ through mid. Record a reason.` }
-      : { name: "Best execution", status: "pass", detail: `${signed(throughMid, 1)}¢ vs mid.` },
-  );
-  if (face === 0) checks.unshift({ name: "Quantity", status: "fail", detail: "Enter a size above zero." });
-  const fails = checks.filter((c) => c.status === "fail").length;
-  const warns = checks.filter((c) => c.status === "warn").length;
-
-  function submit() {
-    const id = `ORD-${seq}`;
-    setWorking((w) => [{ id, side, bond: bondId, face, filled: 0, px: effPx, route: route.split(" (")[0] }, ...w]);
-    setSeq((n) => n + 1);
-    setStage("sent");
-    writeHandoff({ bondId, side, face });
-  }
-
-  const verbing = side === "Buy" ? "BUYING" : "SELLING";
+  const {
+    bondId, setBond, side, setSide, faceMM, setFaceMM, bond, comp, bid, ask,
+    editing, ordType, setOrdType, tif, setTif, route, setRoute, funds, setFundPct, stage, setStage, working,
+    face, effPx, yld, sprd, ai, principal, accruedAmt, net, dv01, allocTotal,
+    display, onField, nudge, focusField, blurField,
+    throughMid, vsTouch, fillProb, checks, fails, warns, fundImpact, risk, submit, verbing,
+  } = useTicket();
 
   return (
     <TerminalShell
@@ -190,22 +43,14 @@ export default function FiBondTicket() {
         <Panel n={1} title="Order" bodyClassName="relative flex flex-col overflow-auto p-3">
           <SideToggle
             side={side}
-            onChange={(s) => {
-              setSide(s);
-              resetPx(bond, s);
-              setStage("edit");
-            }}
+            onChange={setSide}
           />
 
           <label className="mt-3 block">
             <span className={t.colHead}>Security</span>
             <select
               value={bondId}
-              onChange={(e) => {
-                setBondId(e.target.value);
-                resetPx(bondById(e.target.value), side);
-                setStage("edit");
-              }}
+              onChange={(e) => setBond(e.target.value)}
               className={`mt-1 w-full ${t.input}`}
             >
               {BONDS.map((b) => (
@@ -258,15 +103,13 @@ export default function FiBondTicket() {
                 <input
                   inputMode="decimal"
                   value={display(f)}
-                  onFocus={() => setEditing({ f, text: display(f) })}
-                  onBlur={() => setEditing(null)}
+                  onFocus={() => focusField(f)}
+                  onBlur={blurField}
                   onChange={(e) => onField(f, e.target.value)}
                   onKeyDown={(e) => {
-                    const step = f === "price" ? 0.125 : f === "yield" ? 0.01 : 1;
                     if (e.key === "ArrowUp" || e.key === "ArrowDown") {
                       e.preventDefault();
-                      const v = Number(display(f)) + (e.key === "ArrowUp" ? step : -step);
-                      onField(f, f === "spread" ? v.toFixed(1) : v.toFixed(3));
+                      nudge(f, e.key === "ArrowUp" ? 1 : -1);
                     }
                   }}
                   aria-label={`Limit ${f}`}
@@ -312,10 +155,7 @@ export default function FiBondTicket() {
                   inputMode="numeric"
                   aria-label={`${f.name} allocation percent`}
                   value={f.pct}
-                  onChange={(e) => {
-                    const v = Math.min(100, Math.max(0, Number(e.target.value.replace(/\D/g, "")) || 0));
-                    setFunds((fs) => fs.map((x, j) => (j === i ? { ...x, pct: v } : x)));
-                  }}
+                  onChange={(e) => setFundPct(i, e.target.value)}
                   className={`w-12 py-0.5 text-right tabular-nums ${t.input}`}
                 />
                 <span className="text-neutral-500">%</span>
@@ -395,7 +235,7 @@ export default function FiBondTicket() {
             <PriceTrack bid={bid} ask={ask} mid={bond.mid} limit={effPx} side={side} last={bond.mid + 0.04} />
             <div className="mt-3 grid grid-cols-3 gap-3 text-[11px]">
               <Row k="vs mid" v={`${signed(throughMid, 1)}¢`} vClass={throughMid > 0 ? "text-amber-300" : "text-neutral-300"} />
-              <Row k={side === "Buy" ? "vs offer" : "vs bid"} v={`${signed((side === "Buy" ? effPx - ask : bid - effPx) * 100, 1)}¢`} />
+              <Row k={side === "Buy" ? "vs offer" : "vs bid"} v={`${signed(vsTouch, 1)}¢`} />
               <Row k="Fill probability" v={`${fillProb.toFixed(0)}%`} vClass={fillProb > 70 ? "text-emerald-300" : fillProb > 35 ? "text-amber-300" : "text-rose-300"} />
             </div>
           </Panel>
@@ -480,10 +320,7 @@ export default function FiBondTicket() {
                 </tr>
               </thead>
               <tbody>
-                {funds.map((f) => {
-                  const chg = (f.pct / 100) * face * (side === "Buy" ? 1 : -1);
-                  const after = f.pos + chg;
-                  const wt = ((chg * effPx) / 100 / f.aum) * 10_000;
+                {fundImpact.map(({ after, wtBp: wt, ...f }) => {
                   return (
                     <tr key={f.name} className={`border-b ${t.border}`}>
                       <td className="py-1.5 text-neutral-300">{f.name}</td>
@@ -498,11 +335,11 @@ export default function FiBondTicket() {
           </Panel>
 
           <Panel n={7} title="Risk impact" bodyClassName="p-3 text-[11px]">
-            <Row k="Portfolio DV01" v={`$${usd(184_300)} → $${usd(184_300 + (side === "Buy" ? dv01 : -dv01))}`} />
-            <Row k="Duration (IG CORE)" v={`6.42 → ${(6.42 + (side === "Buy" ? 1 : -1) * (dv01 / 184_300) * 0.9).toFixed(2)}`} />
-            <Row k={`${bond.sector} weight`} v={`${(12.4 + (side === "Buy" ? 1 : -1) * (face / 1e6) * 0.02).toFixed(2)}%`} />
-            <Row k={`${bond.rating} bucket`} v={`${(31.8 + (side === "Buy" ? 1 : -1) * (face / 1e6) * 0.015).toFixed(2)}%`} />
-            <Row k="Tracking error (ex-ante)" v={`${(38.2 + (side === "Buy" ? -0.4 : 0.6)).toFixed(1)} bp`} />
+            <Row k="Portfolio DV01" v={`$${usd(PORTFOLIO.dv01)} → $${usd(risk.dv01After)}`} />
+            <Row k="Duration (IG CORE)" v={`${PORTFOLIO.duration} → ${risk.durationAfter.toFixed(2)}`} />
+            <Row k={`${bond.sector} weight`} v={`${risk.sectorWt.toFixed(2)}%`} />
+            <Row k={`${bond.rating} bucket`} v={`${risk.ratingWt.toFixed(2)}%`} />
+            <Row k="Tracking error (ex-ante)" v={`${risk.te.toFixed(1)} bp`} />
           </Panel>
 
           <Panel n={8} title="Security" className="min-h-0 flex-1" bodyClassName="overflow-auto p-3 text-[11px]">
