@@ -6,6 +6,7 @@ import {
   Copy,
   Maximize2,
   Paperclip,
+  PanelRight,
   PictureInPicture2,
   RotateCcw,
   Sparkles,
@@ -26,18 +27,19 @@ import type { Chat } from "./useChat";
  * screen still gets the narrow layout.
  */
 
-export type ChatMode = "full" | "floating";
+export type ChatMode = "floating" | "docked" | "full";
 
 const greeting = () => {
   const h = new Date().getHours();
   return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
 };
 
-/* --- Mode toggle: Floating | Full screen --------------------------------------- */
+/* --- Mode toggle: Floating | Docked | Full screen --------------------------------------- */
 
 export function ModeToggle({ mode, onChange }: { mode: ChatMode; onChange: (m: ChatMode) => void }) {
   const opts: { id: ChatMode; label: string; icon: typeof Maximize2 }[] = [
     { id: "floating", label: "Floating", icon: PictureInPicture2 },
+    { id: "docked", label: "Docked", icon: PanelRight },
     { id: "full", label: "Full screen", icon: Maximize2 },
   ];
   return (

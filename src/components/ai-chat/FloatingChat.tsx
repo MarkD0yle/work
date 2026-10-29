@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { Maximize2, Minus, SquarePen, Sparkles, X } from "lucide-react";
 import { CLIENT } from "./data";
 import { IconButton, type OpenArtifact } from "./blocks";
@@ -79,31 +79,62 @@ export function FloatingWindow({
       aria-label="Assistant"
       className="ai-float-in fixed inset-0 z-[60] flex flex-col bg-white sm:inset-auto sm:right-6 sm:bottom-6 sm:h-[min(680px,calc(100vh-48px))] sm:w-[420px] sm:border sm:border-neutral-200 sm:shadow-2xl sm:shadow-neutral-900/20"
     >
-      <header className="flex h-14 shrink-0 items-center gap-2 border-b border-neutral-200 pr-2 pl-4">
-        <div className="grid h-7 w-7 shrink-0 place-items-center bg-neutral-900 text-white" aria-hidden>
-          <Sparkles size={14} />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-[13px] font-semibold text-neutral-900">{chat.messages.length ? chat.title : "Assistant"}</div>
-          <div className="flex items-center gap-1.5 truncate text-[11px] text-neutral-500">
-            <span className="h-1.5 w-1.5 shrink-0 bg-emerald-500" aria-hidden />
-            {CLIENT.name}
-          </div>
-        </div>
-        <IconButton label="New chat" onClick={chat.reset}>
-          <SquarePen size={15} />
-        </IconButton>
-        <IconButton label="Expand to full screen" onClick={onExpand}>
-          <Maximize2 size={15} />
-        </IconButton>
-        <IconButton label="Minimise" onClick={onMinimise}>
-          <Minus size={16} className="hidden sm:block" />
-          <X size={16} className="sm:hidden" />
-        </IconButton>
-      </header>
+      <WidgetHeader
+        chat={chat}
+        onExpand={onExpand}
+        closeLabel="Minimise"
+        closeIcon={
+          <>
+            <Minus size={16} className="hidden sm:block" />
+            <X size={16} className="sm:hidden" />
+          </>
+        }
+        onClose={onMinimise}
+      />
 
       <ThreadView chat={chat} compact onOpen={onOpen} onSources={onSources} />
       <Composer chat={chat} inputRef={inputRef} compact onContext={onContext} />
     </div>
+  );
+}
+
+/* Header shared by the floating window and the docked pane: what this chat is
+ * about, then New chat · Expand · close. Same order in both, so muscle memory
+ * carries over when the user switches layout. */
+export function WidgetHeader({
+  chat,
+  onExpand,
+  closeLabel,
+  closeIcon,
+  onClose,
+}: {
+  chat: Chat;
+  onExpand: () => void;
+  closeLabel: string;
+  closeIcon: ReactNode;
+  onClose: () => void;
+}) {
+  return (
+    <header className="flex h-14 shrink-0 items-center gap-2 border-b border-neutral-200 pr-2 pl-4">
+      <div className="grid h-7 w-7 shrink-0 place-items-center bg-neutral-900 text-white" aria-hidden>
+        <Sparkles size={14} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-[13px] font-semibold text-neutral-900">{chat.messages.length ? chat.title : "Assistant"}</div>
+        <div className="flex items-center gap-1.5 truncate text-[11px] text-neutral-500">
+          <span className="h-1.5 w-1.5 shrink-0 bg-emerald-500" aria-hidden />
+          {CLIENT.name}
+        </div>
+      </div>
+      <IconButton label="New chat" onClick={chat.reset}>
+        <SquarePen size={15} />
+      </IconButton>
+      <IconButton label="Expand to full screen" onClick={onExpand}>
+        <Maximize2 size={15} />
+      </IconButton>
+      <IconButton label={closeLabel} onClick={onClose}>
+        {closeIcon}
+      </IconButton>
+    </header>
   );
 }

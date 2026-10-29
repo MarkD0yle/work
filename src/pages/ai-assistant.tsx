@@ -5,6 +5,7 @@ import { IconButton, type OpenArtifact } from "../components/ai-chat/blocks";
 import { ContextPanel, type PanelTab } from "../components/ai-chat/ContextPanel";
 import { Composer, ModeToggle, ThreadView, type ChatMode } from "../components/ai-chat/Thread";
 import { FloatingLauncher, FloatingWindow } from "../components/ai-chat/FloatingChat";
+import { DockRail, DockedPane } from "../components/ai-chat/DockedChat";
 import { HostPage } from "../components/ai-chat/HostPage";
 import { useChat } from "../components/ai-chat/useChat";
 import { useLocalStorage } from "../hooks/useLocalStorage";
@@ -14,18 +15,20 @@ export const section = "patterns";
 export const fullWidth = true;
 
 /* AI Assistant — a chat interface for a wealth / asset-management desk, in
- * two layouts that share one conversation:
+ * three layouts that share one conversation:
  *
+ *   Floating    — a launcher button over the user's current screen that
+ *                 opens a 420px chat window. For a quick question.
+ *   Docked      — a resizable side pane that pushes the page over rather
+ *                 than covering it. For working alongside a dense screen.
  *   Full screen — history rail, thread, and a right panel (Context /
  *                 Workspace / Sources). For deep work on a question.
- *   Floating    — a launcher button over the user's current screen that
- *                 opens a 420px chat window. For a quick question without
- *                 leaving the page.
  *
- * A Floating | Full screen toggle switches between them, and the widget's
- * expand button does the same. Anything in the widget that needs the side
- * panel (open a chart large, sources, context) expands to full screen with
- * that tab open. The mode is remembered per browser.
+ * A Floating | Docked | Full screen toggle switches between them, and each
+ * widget's expand button goes to full screen. Anything in a widget that
+ * needs the side panel (open a chart large, sources, context) expands to
+ * full screen with that tab open. Mode and dock width are remembered per
+ * browser.
  *
  * Borrows the patterns that work in Claude and Microsoft Copilot:
  *   - Empty state is a prompt gallery, not a blank box (Copilot).
@@ -48,6 +51,8 @@ export default function AiAssistant() {
   const chat = useChat();
   const [mode, setMode] = useLocalStorage<ChatMode>("ai-assistant.mode", "full");
   const [floatOpen, setFloatOpen] = useState(false);
+  const [dockOpen, setDockOpen] = useState(true);
+  const [dockWidth, setDockWidth] = useLocalStorage("ai-assistant.dockWidth", 400);
   const [launcherFocus, setLauncherFocus] = useState(false);
   const [railOpen, setRailOpen] = useState(true);
   const [panelOpen, setPanelOpen] = useState(() => typeof window === "undefined" || window.innerWidth >= 1280);
@@ -56,11 +61,12 @@ export default function AiAssistant() {
   const [activeHistory, setActiveHistory] = useState<string | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Switching to floating from full screen keeps the chat in view: the window
-  // opens rather than collapsing to the launcher.
+  // Switching layout keeps the chat in view: the window or pane opens rather
+  // than collapsing to its launcher.
   const changeMode = (m: ChatMode) => {
     setMode(m);
     if (m === "floating") setFloatOpen(true);
+    if (m === "docked") setDockOpen(true);
   };
 
   const showPanel = (t: PanelTab) => {
@@ -81,6 +87,30 @@ export default function AiAssistant() {
     setTab("context");
     inputRef.current?.focus();
   };
+
+  if (mode === "docked") {
+    return (
+      <div className="flex h-full">
+        <div className="min-w-0 flex-1">
+          <HostPage toolbar={<ModeToggle mode={mode} onChange={changeMode} />} />
+        </div>
+        {dockOpen ? (
+          <DockedPane
+            chat={chat}
+            width={dockWidth}
+            onWidth={setDockWidth}
+            onClose={() => setDockOpen(false)}
+            onExpand={() => setMode("full")}
+            onContext={() => showPanel("context")}
+            onOpen={openArtifact}
+            onSources={() => showPanel("sources")}
+          />
+        ) : (
+          <DockRail onOpen={() => setDockOpen(true)} busy={chat.streaming} />
+        )}
+      </div>
+    );
+  }
 
   if (mode === "floating") {
     return (

@@ -39,7 +39,7 @@ function Card({ title, children }: { title: string; children: ReactNode }) {
 
 export function HostPage({ toolbar }: { toolbar: ReactNode }) {
   return (
-    <div className="h-full overflow-y-auto bg-neutral-50">
+    <div className="@container h-full overflow-y-auto bg-neutral-50">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-200 bg-white py-3 pr-6 pl-32">
         <div className="min-w-0">
           <div className="text-[11px] text-neutral-500">Clients / {CLIENT.name}</div>
@@ -49,7 +49,7 @@ export function HostPage({ toolbar }: { toolbar: ReactNode }) {
       </header>
 
       <div className="mx-auto max-w-6xl space-y-4 p-6 pb-28">
-        <div className="grid grid-cols-2 gap-px border border-neutral-200 bg-neutral-200 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-px border border-neutral-200 bg-neutral-200 @3xl:grid-cols-4">
           {KPIS.map(([k, v, d]) => (
             <div key={k} className="bg-white px-4 py-3">
               <div className="text-[12px] text-neutral-500">{k}</div>
@@ -59,7 +59,7 @@ export function HostPage({ toolbar }: { toolbar: ReactNode }) {
           ))}
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-[3fr_2fr]">
+        <div className="grid gap-4 @4xl:grid-cols-[3fr_2fr]">
           <Card title="Asset allocation">
             <ul className="space-y-3">
               {ALLOC.map(([k, v]) => (
@@ -93,10 +93,10 @@ export function HostPage({ toolbar }: { toolbar: ReactNode }) {
         <Card title="Recent activity">
           <ul className="divide-y divide-neutral-100 text-[13px]">
             {ACTIVITY.map(([d, t, n]) => (
-              <li key={t} className="grid grid-cols-[64px_1fr] gap-3 py-2.5 sm:grid-cols-[64px_220px_1fr]">
+              <li key={t} className="grid grid-cols-[64px_1fr] gap-3 py-2.5 @xl:grid-cols-[64px_220px_1fr]">
                 <span className="text-neutral-500 tabular-nums">{d}</span>
                 <span className="font-medium text-neutral-900">{t}</span>
-                <span className="col-start-2 text-neutral-500 sm:col-start-auto">{n}</span>
+                <span className="col-start-2 text-neutral-500 @xl:col-start-auto">{n}</span>
               </li>
             ))}
           </ul>
