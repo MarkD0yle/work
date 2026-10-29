@@ -450,6 +450,12 @@ export const GALLERY_META: Record<string, GalleryMeta> = {
     tags: ["patterns", "panel", "trading", "ui"],
     motif: "panel",
   },
+  "ai-assistant": {
+    description:
+      "AI chat for a wealth desk — guiding prompts, inline charts and tables, cited sources and a right-hand context panel.",
+    tags: ["patterns", "ai", "chat", "panel"],
+    motif: "panel",
+  },
   "order-config-patterns": {
     description:
       "One accordion, table and add-dropdown with a three-part form, shown four ways — modal on modal, side panel, inline row and drill-in.",
