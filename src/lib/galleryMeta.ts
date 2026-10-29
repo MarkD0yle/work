@@ -452,7 +452,7 @@ export const GALLERY_META: Record<string, GalleryMeta> = {
   },
   "ai-assistant": {
     description:
-      "AI chat for a wealth desk — guiding prompts, inline charts and tables, cited sources and a right-hand context panel.",
+      "AI chat for a wealth desk — full screen or floating chat bot, with guiding prompts, inline charts and tables, cited sources and a context panel.",
     tags: ["patterns", "ai", "chat", "panel"],
     motif: "panel",
   },

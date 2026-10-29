@@ -64,7 +64,7 @@ const TONE: Record<NonNullable<Kpi["tone"]>, string> = {
 export function KpiBlock({ items }: { items: Kpi[] }) {
   return (
     <div
-      className={`grid grid-cols-2 gap-px border border-neutral-200 bg-neutral-200 ${items.length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-4"}`}
+      className={`grid gap-px border border-neutral-200 bg-neutral-200 ${items.length === 3 ? "grid-cols-3" : "grid-cols-2 @xl:grid-cols-4"}`}
     >
       {items.map((k) => (
         <div key={k.label} className="bg-white px-3 py-2.5">
@@ -151,8 +151,18 @@ function chartOptions(spec: ChartSpec, height: number): Options {
   } as Options;
 }
 
-export function ChartBlock({ id, spec, onOpen, size = "inline" }: { id: string; spec: ChartSpec; onOpen?: OpenArtifact; size?: "inline" | "panel" }) {
-  const height = size === "panel" ? 360 : 240;
+export function ChartBlock({
+  id,
+  spec,
+  onOpen,
+  size = "inline",
+}: {
+  id: string;
+  spec: ChartSpec;
+  onOpen?: OpenArtifact;
+  size?: "compact" | "inline" | "panel";
+}) {
+  const height = size === "panel" ? 360 : size === "compact" ? 200 : 240;
   const options = useMemo(() => chartOptions(spec, height), [spec, height]);
   const csv = () =>
     [["", ...spec.series.map((s) => s.name)].join("\t"), ...spec.categories.map((c, i) => [c, ...spec.series.map((s) => s.data[i])].join("\t"))].join("\n");
@@ -243,14 +253,14 @@ export function CalloutBlock({ tone, text }: { tone: "info" | "warn"; text: stri
   );
 }
 
-export function BlockView({ block, onOpen }: { block: Block; onOpen: OpenArtifact }) {
+export function BlockView({ block, onOpen, compact = false }: { block: Block; onOpen: OpenArtifact; compact?: boolean }) {
   switch (block.type) {
     case "text":
       return <TextBlock md={block.md} />;
     case "kpis":
       return <KpiBlock items={block.items} />;
     case "chart":
-      return <ChartBlock id={block.id} spec={block.spec} onOpen={onOpen} />;
+      return <ChartBlock id={block.id} spec={block.spec} onOpen={onOpen} size={compact ? "compact" : "inline"} />;
     case "table":
       return <TableBlock id={block.id} spec={block.spec} onOpen={onOpen} />;
     case "callout":
