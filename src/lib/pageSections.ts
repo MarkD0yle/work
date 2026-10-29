@@ -54,10 +54,22 @@ export const SECTIONS: SectionDef[] = [
       "M3 3a1 1 0 0 0-1 1v12a2 2 0 0 0 2 2h13a1 1 0 1 0 0-2H4V4a1 1 0 0 0-1-1Zm11.71 3.29a1 1 0 0 1 0 1.42l-3.5 3.5a1 1 0 0 1-1.42 0L8 8.41l-2.29 2.3a1 1 0 1 1-1.42-1.42l3-3a1 1 0 0 1 1.42 0L10.5 8.09l2.79-2.8a1 1 0 0 1 1.42 0Z",
   },
   {
+    id: "dashboards",
+    label: "Dashboards",
+    iconPath:
+      "M2 4.25A2.25 2.25 0 0 1 4.25 2h2.5A2.25 2.25 0 0 1 9 4.25v2.5A2.25 2.25 0 0 1 6.75 9h-2.5A2.25 2.25 0 0 1 2 6.75v-2.5ZM2 13.25A2.25 2.25 0 0 1 4.25 11h2.5A2.25 2.25 0 0 1 9 13.25v2.5A2.25 2.25 0 0 1 6.75 18h-2.5A2.25 2.25 0 0 1 2 15.75v-2.5ZM11 4.25A2.25 2.25 0 0 1 13.25 2h2.5A2.25 2.25 0 0 1 18 4.25v2.5A2.25 2.25 0 0 1 15.75 9h-2.5A2.25 2.25 0 0 1 11 6.75v-2.5ZM11 13.25A2.25 2.25 0 0 1 13.25 11h2.5A2.25 2.25 0 0 1 18 13.25v2.5A2.25 2.25 0 0 1 15.75 18h-2.5A2.25 2.25 0 0 1 11 15.75v-2.5Z",
+  },
+  {
     id: "wealth",
     label: "Wealth & Clients",
     iconPath:
       "M10 9a3 3 0 100-6 3 3 0 000 6ZM6 8a2 2 0 11-4 0 2 2 0 014 0ZM1.49 15.326a.78.78 0 01-.358-.442 3 3 0 014.308-3.516 6.484 6.484 0 00-1.905 3.959c-.023.222-.014.442.025.654a4.97 4.97 0 01-2.07-.655ZM16.44 15.98a4.97 4.97 0 002.07-.654.78.78 0 00.357-.442 3 3 0 00-4.308-3.517 6.484 6.484 0 011.907 3.96 2.32 2.32 0 01-.026.654ZM18 8a2 2 0 11-4 0 2 2 0 014 0ZM5.304 16.19a.844.844 0 01-.277-.71 5 5 0 019.947 0 .843.843 0 01-.277.71A6.975 6.975 0 0110 18a6.974 6.974 0 01-4.696-1.81Z",
+  },
+  {
+    id: "library",
+    label: "Pattern Library",
+    iconPath:
+      "M3 4.5A1.5 1.5 0 0 1 4.5 3h3A1.5 1.5 0 0 1 9 4.5v3A1.5 1.5 0 0 1 7.5 9h-3A1.5 1.5 0 0 1 3 7.5v-3ZM11 4.5A1.5 1.5 0 0 1 12.5 3h3A1.5 1.5 0 0 1 17 4.5v3A1.5 1.5 0 0 1 15.5 9h-3A1.5 1.5 0 0 1 11 7.5v-3ZM3 12.5A1.5 1.5 0 0 1 4.5 11h11a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 3 15.5v-3Z",
   },
   {
     id: "patterns",
@@ -96,6 +108,7 @@ const SLUG_SECTION: Record<string, string> = {
   "fund-connect": "forms",
   "fund-connect-2": "forms",
   "sign-up": "forms",
+  "accordion-modal-forms": "forms",
   settings: "forms",
 
   // Risk & Exposure
@@ -138,10 +151,45 @@ const SLUG_SECTION: Record<string, string> = {
   // Patterns & Tools
   "pattern-gallery": "patterns",
   "right-panel-patterns": "patterns",
+  "ai-assistant": "patterns",
+  "order-config-patterns": "patterns",
   "github-cheatsheet": "patterns",
   "date-picker-business-day": "patterns",
   "date-picker-settlement": "patterns",
   "date-picker-range": "patterns",
+  "kpi-trend-patterns": "patterns",
+
+  // Dashboards — one per corner of financial services
+  "loan-book-health": "dashboards",
+  "aml-alert-operations": "dashboards",
+  "fraud-control-room": "dashboards",
+  "capital-adequacy": "dashboards",
+  "claims-reserving": "dashboards",
+  "fund-flows": "dashboards",
+  "private-markets": "dashboards",
+  "fixed-income-portfolio": "dashboards",
+  "climate-portfolio": "dashboards",
+  "var-backtesting": "dashboards",
+  "execution-analytics": "dashboards",
+  "banking-book-rate-risk": "dashboards",
+  "mortgage-pipeline": "dashboards",
+  "settlement-fails": "dashboards",
+  "pension-funding": "dashboards",
+  "clo-surveillance": "dashboards",
+  "bestx-exceptions": "dashboards",
+  "reports-inbox": "dashboards",
+
+  // Global Markets — trade lifecycle, one page per stage
+  "gm-rfq-inbox": "dashboards",
+  "gm-pretrade-checks": "dashboards",
+  "gm-execution-desk": "dashboards",
+  "gm-trade-capture": "dashboards",
+  "gm-confirmation-matching": "dashboards",
+  "gm-clearing-margin": "dashboards",
+  "gm-settlement-fails": "dashboards",
+  "gm-asset-servicing": "dashboards",
+  "gm-lifecycle-events": "dashboards",
+  "gm-maturity-roll": "dashboards",
 
   // Sales & Pitch
   "pitch-builder": "pitch",

@@ -80,7 +80,7 @@ interface Fill {
   broker: string;
 }
 
-interface OrderRow {
+export interface OrderRow {
   orderId: string;
   ticket: string;
   time: string;
@@ -344,7 +344,11 @@ function makeOrder(i: number): OrderRow {
   return base;
 }
 
-const INITIAL_ROWS: OrderRow[] = Array.from({ length: 140 }, (_, i) =>
+// Read by the AI Assistant's blotter scope so its answers quote the same
+// trades the grid shows. Exported from the page (not moved to lib/) to keep
+// this change to one line; fast refresh falls back to a full reload here.
+// eslint-disable-next-line react-refresh/only-export-components
+export const INITIAL_ROWS: OrderRow[] = Array.from({ length: 140 }, (_, i) =>
   makeOrder(i),
 );
 

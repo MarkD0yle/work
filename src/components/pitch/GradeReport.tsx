@@ -7,7 +7,7 @@ const BAND_STYLE: Record<GradeBand, string> = {
   "N/A": "bg-neutral-100 text-neutral-500 ring-1 ring-neutral-200",
 };
 
-/* Renders a PitchGrade the same way rubric/gates.md + composition-rubric.md
+/* Renders a PitchGrade the same way copilot/rubric/gates.md + composition-rubric.md
  * are meant to be read: gates first (a fail stops the run, no grade), then
  * dimensions with STRUCTURE always graded and GOAL only graded when an
  * objective was actually stated. Score is secondary — the log is the point. */

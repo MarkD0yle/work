@@ -35,8 +35,10 @@ export const SECTION_ACCENT: Record<string, Accent> = {
   forms: { from: "#8b5cf6", to: "#d946ef" }, // violet → fuchsia
   wealth: { from: "#f59e0b", to: "#059669" }, // amber → emerald
   patterns: { from: "#06b6d4", to: "#6366f1" }, // cyan → indigo
+  library: { from: "#171717", to: "#525252" }, // neutral
   processing: { from: "#0ea5e9", to: "#22d3ee" }, // sky → cyan
   pitch: { from: "#0ea5e9", to: "#22c55e" }, // sky → green
+  dashboards: { from: "#0f766e", to: "#4f46e5" }, // teal → indigo
   other: { from: "#64748b", to: "#475569" }, // slate
 };
 
@@ -52,8 +54,10 @@ const DEFAULT_MOTIF: Record<string, Motif> = {
   forms: "form",
   wealth: "panel",
   patterns: "panel",
+  library: "grid",
   processing: "flow",
   pitch: "flow",
+  dashboards: "chart",
   other: "panel",
 };
 
@@ -185,6 +189,18 @@ export const GALLERY_META: Record<string, GalleryMeta> = {
     tags: ["tca", "execution", "benchmarks"],
     motif: "chart",
   },
+  "bestx-exceptions": {
+    description:
+      "Visual uplift of the BestX exception reports — a scannable report list plus a KPI-led results view with one sign convention.",
+    tags: ["tca", "exceptions", "best-execution", "redesign"],
+    motif: "chart",
+  },
+  "reports-inbox": {
+    description:
+      "BestX reports as a mail-style inbox: each report definition is a thread of runs, with exceptions, post-trade uploads, regulatory packs and the processing jobs they depend on.",
+    tags: ["bestx", "reports", "inbox", "scheduling"],
+    motif: "panel",
+  },
   "liquidity-ladder": {
     description:
       "Liquidity ladder bucketed by maturity and currency, with cumulative gap.",
@@ -237,7 +253,7 @@ export const GALLERY_META: Record<string, GalleryMeta> = {
   },
   "fund-connect": {
     description:
-      "Fund instruction form with Excel import, a maker-checker state machine and a field-level audit trail.",
+      "Client onboarding form with Excel import, a maker-checker state machine and a field-level audit trail.",
     tags: ["import", "review", "audit", "forms"],
     motif: "form",
   },
@@ -246,6 +262,12 @@ export const GALLERY_META: Record<string, GalleryMeta> = {
       "Primary-market ETF register with the creation flow behind it: upload wizard, reject-with-comments loop, delta review, effective-date activation.",
     tags: ["grid", "import", "review", "workflow"],
     motif: "grid",
+  },
+  "accordion-modal-forms": {
+    description:
+      "Accordion form whose section opens a 50+ radio modal and saves it back as an inline entry — three treatments: grouped list, paged questionnaire, matrix. Plus four ways to avoid a modal on a modal: inline row editor, docked side panel, drill-in view, and a spreadsheet-import review with an attention queue and field × class matrix.",
+    tags: ["accordion", "modal", "radio", "forms", "side panel", "drill-in", "import"],
+    motif: "form",
   },
   "sign-up": {
     description: "Account sign-up flow with password rules and field validation.",
@@ -256,6 +278,132 @@ export const GALLERY_META: Record<string, GalleryMeta> = {
     description: "Application settings and preferences grouped into clear sections.",
     tags: ["settings", "preferences", "config"],
     motif: "form",
+  },
+
+  // FI Terminal — five linked, Bloomberg-style fixed income screens
+  "fi-credit-heatmap": {
+    description:
+      "Credit spread heat map: sector × tenor by OAS, 1D/1W/1M change or 3M z-score, with top movers and a bucket drill-down that hands any bond to the RFQ.",
+    tags: ["fixed income", "credit", "heatmap", "terminal"],
+    motif: "heatmap",
+  },
+  "fi-rfq-ticket": {
+    description:
+      "Multi-dealer RFQ: buy or sell a corporate bond in competition with up to five dealers, live quote stack against a countdown, lift/hit best, trade confirmation.",
+    tags: ["fixed income", "rfq", "execution", "terminal"],
+    motif: "panel",
+  },
+  "fi-bond-ticket": {
+    description:
+      "Bond order ticket with linked price ↔ yield ↔ spread, fund allocation, trade economics, blocking pre-trade checks and a two-step confirm.",
+    tags: ["fixed income", "order ticket", "pre-trade", "terminal"],
+    motif: "form",
+  },
+  "fi-bwic": {
+    description:
+      "BWIC list sale: 14 lines × 6 dealers bid grid shaded against mark, best/cover per line, reserve rule with PM override, dealer scorecard and award.",
+    tags: ["fixed income", "bwic", "list trading", "terminal"],
+    motif: "heatmap",
+  },
+  "fi-rates-rv": {
+    description:
+      "Treasury relative value: fitted curve with rich/cheap residuals, curve-spread heat matrix, butterflies, and a DV01-neutral switch builder.",
+    tags: ["fixed income", "rates", "relative value", "terminal"],
+    motif: "chart",
+  },
+
+  // FI Studio — the same five screens, friendly and plain-spoken (shared model)
+  "fi-studio-credit-map": {
+    description:
+      "Friendly credit heat map: a plain-English take on today's moves, sector × maturity spreads, a bucket that explains itself, and Buy / Sell / Order on every bond.",
+    tags: ["fixed income", "credit", "heatmap", "studio"],
+    motif: "heatmap",
+  },
+  "fi-studio-rfq": {
+    description:
+      "Get quotes in four steps: choose a bond, pick dealers, watch quotes slide in against a countdown ring with the best price called out, then trade.",
+    tags: ["fixed income", "rfq", "execution", "studio"],
+    motif: "panel",
+  },
+  "fi-studio-ticket": {
+    description:
+      "Order ticket that reads your order back as a sentence, links price, yield and spread side by side, and turns pre-trade checks into a checklist.",
+    tags: ["fixed income", "order ticket", "pre-trade", "studio"],
+    motif: "form",
+  },
+  "fi-studio-bwic": {
+    description:
+      "Sell a list: countdown and proceeds up front, every bid tinted against our mark with stars for the best, Sell / Keep switches and a dealer scorecard.",
+    tags: ["fixed income", "bwic", "list trading", "studio"],
+    motif: "heatmap",
+  },
+  "fi-studio-rv": {
+    description:
+      "Curve ideas: which Treasuries look cheap or rich, stretched curve spreads and butterflies, and a switch builder that keeps rate risk the same.",
+    tags: ["fixed income", "rates", "relative value", "studio"],
+    motif: "chart",
+  },
+
+  // Global Markets — trade lifecycle
+  "gm-rfq-inbox": {
+    description:
+      "Sales & origination — an RFQ inbox with client tiering and a live quote composer for the incoming enquiry.",
+    tags: ["rfq", "sales", "pre-trade", "lifecycle"],
+    motif: "panel",
+  },
+  "gm-pretrade-checks": {
+    description:
+      "Pre-trade controls — a gate rail of credit, limit and compliance checks that must clear before an order releases.",
+    tags: ["compliance", "limits", "pre-trade", "lifecycle"],
+    motif: "form",
+  },
+  "gm-execution-desk": {
+    description:
+      "Execution — a dark desk terminal with order ticket, market depth and a live prints tape.",
+    tags: ["execution", "depth", "orders", "lifecycle"],
+    motif: "grid",
+  },
+  "gm-trade-capture": {
+    description:
+      "Capture & booking — trades flowing across an enrichment pipeline board, with exceptions pulled out for repair.",
+    tags: ["booking", "enrichment", "exceptions", "lifecycle"],
+    motif: "flow",
+  },
+  "gm-confirmation-matching": {
+    description:
+      "Confirmation — a field-by-field match of our record against the counterparty's, mismatches called out for action.",
+    tags: ["confirmation", "matching", "affirmation", "lifecycle"],
+    motif: "grid",
+  },
+  "gm-clearing-margin": {
+    description:
+      "Clearing — CCP submission lanes with novation status and the margin calls each clearing house is asking for.",
+    tags: ["clearing", "ccp", "margin", "lifecycle"],
+    motif: "flow",
+  },
+  "gm-settlement-fails": {
+    description:
+      "Settlement — a fails workbench with ageing buckets, CSDR penalty accrual and a resolution rail per fail.",
+    tags: ["settlement", "fails", "csdr", "lifecycle"],
+    motif: "grid",
+  },
+  "gm-asset-servicing": {
+    description:
+      "Asset servicing — a fortnight schedule of coupons, dividends and rate resets across the book, with event detail.",
+    tags: ["coupons", "dividends", "resets", "lifecycle"],
+    motif: "calendar",
+  },
+  "gm-lifecycle-events": {
+    description:
+      "In-life events — a trade's amendments, novations and compression runs on one audit timeline with before/after deltas.",
+    tags: ["novation", "compression", "audit", "lifecycle"],
+    motif: "flow",
+  },
+  "gm-maturity-roll": {
+    description:
+      "Maturity — an expiry horizon board of positions rolling off, each with a roll, exercise or expire decision.",
+    tags: ["maturity", "expiry", "roll", "lifecycle"],
+    motif: "chart",
   },
 
   // Wealth & Clients
@@ -298,10 +446,10 @@ export const GALLERY_META: Record<string, GalleryMeta> = {
   },
 
   // Patterns & Tools
-  "app-home": {
+  "pattern-library": {
     description:
-      "Platform landing page — a launchpad grid of icon-and-title app tiles over a two-column release notes and key contacts block.",
-    tags: ["home", "launchpad", "navigation"],
+      "The shared pattern library: 22 patterns extracted from ~100 screens, each with rules, sources and a live demo.",
+    tags: ["patterns", "design system", "components"],
     motif: "grid",
   },
   "pattern-gallery": {
@@ -315,6 +463,18 @@ export const GALLERY_META: Record<string, GalleryMeta> = {
       "Ten contextual right panels from across global markets — ticket, tabs, triage, live depth, copilot and more.",
     tags: ["patterns", "panel", "trading", "ui"],
     motif: "panel",
+  },
+  "ai-assistant": {
+    description:
+      "AI chat for a wealth desk — floating, docked or full screen, with guiding prompts, inline charts and tables, cited sources and a context panel.",
+    tags: ["patterns", "ai", "chat", "panel"],
+    motif: "panel",
+  },
+  "order-config-patterns": {
+    description:
+      "One accordion, table and add-dropdown with a three-part form, shown four ways — modal on modal, side panel, inline row and drill-in.",
+    tags: ["patterns", "forms", "panel", "ui"],
+    motif: "form",
   },
   "github-cheatsheet": {
     description:
@@ -338,6 +498,110 @@ export const GALLERY_META: Record<string, GalleryMeta> = {
       "Range date picker with presets and a dual-month view for quick spans.",
     tags: ["date", "range", "component"],
     motif: "calendar",
+  },
+  "kpi-trend-patterns": {
+    description:
+      "Three ways to show a KPI's trend: sparklines with a usual range, target tracks, and a breakdown of what drove the change.",
+    tags: ["stats", "kpi", "trend", "component"],
+    motif: "chart",
+  },
+
+  // Dashboards
+  "loan-book-health": {
+    description:
+      "Retail lending book health: vintage delinquency curves, a roll-rate matrix and DPD buckets, filtered from a facet rail.",
+    tags: ["dashboard", "lending", "credit risk", "delinquency"],
+    motif: "chart",
+  },
+  "aml-alert-operations": {
+    description:
+      "Transaction-monitoring operations, from alert funnel to SAR, with backlog ageing, scenario productivity and a bulk-action investigator queue.",
+    tags: ["dashboard", "aml", "compliance", "queue"],
+    motif: "flow",
+  },
+  "fraud-control-room": {
+    description:
+      "Dark, live card-fraud wall: ticking counters, fraud bps against baseline, an hour-by-merchant heatmap and a streaming decision feed.",
+    tags: ["dashboard", "fraud", "payments", "live"],
+    motif: "heatmap",
+  },
+  "capital-adequacy": {
+    description:
+      "Regulatory capital report: ratios against the requirement stack, a CET1 bridge, RWA by business and leverage and liquidity trends.",
+    tags: ["dashboard", "capital", "regulatory", "basel"],
+    motif: "chart",
+  },
+  "claims-reserving": {
+    description:
+      "Insurance claims and reserving by line of business, around a chain-ladder loss triangle, combined ratio and a large-loss register.",
+    tags: ["dashboard", "insurance", "reserving", "claims"],
+    motif: "grid",
+  },
+  "fund-flows": {
+    description:
+      "Asset-manager distribution bento: net-flow hero, channel-to-asset-class sankey, flows by fund and the biggest client moves.",
+    tags: ["dashboard", "asset management", "flows", "distribution"],
+    motif: "flow",
+  },
+  "private-markets": {
+    description:
+      "LP commitments monitor: fund list to detail, J-curve cash flows, TVPI split into DPI and RVPI, and vintage quartile ranking.",
+    tags: ["dashboard", "private equity", "commitments", "irr"],
+    motif: "panel",
+  },
+  "fixed-income-portfolio": {
+    description:
+      "Bond portfolio against benchmark: yield curve with holdings, key-rate duration tilts and a cross-filtered holdings grid.",
+    tags: ["dashboard", "fixed income", "duration", "ag-grid"],
+    motif: "grid",
+  },
+  "climate-portfolio": {
+    description:
+      "Net-zero scorecard: implied temperature rise, decarbonisation pathway against target, financed-emissions treemap and an engagement tracker.",
+    tags: ["dashboard", "esg", "climate", "emissions"],
+    motif: "treemap",
+  },
+  "execution-analytics": {
+    description:
+      "Execution analytics platform redesign: rail and fixed-toolbar shell, light/dark tokens, shared table and chart panel, eight screens.",
+    tags: ["dashboard", "execution", "tca", "design system"],
+    motif: "panel",
+  },
+  "var-backtesting": {
+    description:
+      "VaR backtest over 250 days: P&L against VaR with exceptions, the Basel traffic light, desk small multiples and an exception log.",
+    tags: ["dashboard", "market risk", "var", "backtesting"],
+    motif: "chart",
+  },
+  "banking-book-rate-risk": {
+    description:
+      "IRRBB workbench: six Basel shocks against the 15% outlier test, gap ladder, NII vs base by month, ΔEVE waterfall, live behavioural sliders, hedges and limits.",
+    tags: ["dashboard", "irrbb", "alm", "treasury"],
+    motif: "chart",
+  },
+  "mortgage-pipeline": {
+    description:
+      "Mortgage origination stage board: six chevron stages against SLA, cohort funnel and heatmap, completions pacing, introducer league and an ageing case list.",
+    tags: ["dashboard", "mortgages", "origination", "pipeline"],
+    motif: "flow",
+  },
+  "settlement-fails": {
+    description:
+      "Intraday settlement fails console: fails by root cause, CSDR penalties by market, a counterparty × age heatmap that scopes an AG Grid blotter with bulk actions.",
+    tags: ["dashboard", "custody", "settlement", "ag-grid"],
+    motif: "grid",
+  },
+  "pension-funding": {
+    description:
+      "DB pension scheme funding: assets vs liabilities on three bases, the journey plan with a projection fan, LDI hedge gauges and a collateral stress table.",
+    tags: ["dashboard", "pensions", "ldi", "funding"],
+    motif: "chart",
+  },
+  "clo-surveillance": {
+    description:
+      "Six European CLOs: deal rail, capital stack, OC/IC bullets, quality tests, industry treemap, CCC trend and the next payment-date waterfall.",
+    tags: ["dashboard", "clo", "structured credit", "surveillance"],
+    motif: "panel",
   },
 
   // Sales & Pitch

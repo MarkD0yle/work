@@ -190,6 +190,19 @@
   }
 }
 
+/* Accordion + modal forms › alternatives — a short slide-and-fade used when
+ * a view is pushed into the parent dialog or a dependent field is revealed. */
+@keyframes drill-in {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 /* Slow drifting motion for the hero background blobs. Each blob uses a
  * different keyframe + duration so they never move in sync. */
 @keyframes blob-drift-a {
@@ -311,3 +324,25 @@
 .dx-blotter .dx-tabpanel .dx-tabs {
   background-color: transparent;
 }
+
+/* AI Assistant: answer blocks fade up as they stream in. */
+@keyframes ai-block-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+.ai-block-in { animation: ai-block-in 0.3s ease-out; }
+/* Floating window grows up out of the launcher's corner. */
+@keyframes ai-float-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+.ai-float-in { animation: ai-float-in 0.2s ease-out; transform-origin: bottom right; }
+@media (prefers-reduced-motion: reduce) {
+  .ai-block-in,
+  .ai-float-in { animation: none; }
+}
+
+/* AI Assistant host frame: pages written as full-screen (`h-screen`) fill the
+ * frame instead, so the blotter's status bar isn't pushed below the fold by
+ * the prototype bar above it. */
+.ai-host-frame .h-screen { height: 100%; }

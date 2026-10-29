@@ -46,11 +46,11 @@ import { SEED_RECORDS } from "../lib/fundConnect/seed";
 import { STATE_PILL } from "../lib/fundConnect/tone";
 import type { FundRecord, RecordState } from "../lib/fundConnect/types";
 
-export const title = "Fund Connect";
+export const title = "Audit Trail Client Onboarding";
 export const section = "forms";
 export const fullWidth = true;
 
-/* Fund Connect — modernized instruction form.
+/* Audit Trail Client Onboarding — modernized instruction form.
  *
  * The workflow this replaces was one long page of sectioned forms filled in
  * by retyping values out of Excel, with no draft, no review and no record
@@ -146,14 +146,6 @@ export default function FundConnectPage() {
     [record],
   );
 
-  const versions = useMemo(
-    () =>
-      records
-        .filter((r) => r.id === record.id)
-        .sort((a, b) => b.version - a.version),
-    [records, record.id],
-  );
-
   const edit = canEdit(record, user);
   const submit = canSubmit(record, user);
   const pickUp = canStartReview(record, user);
@@ -211,7 +203,7 @@ export default function FundConnectPage() {
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <span className="text-[11px] font-semibold tracking-[0.2em] text-neutral-400 uppercase">
-                Fund Connect
+                Audit Trail Client Onboarding
               </span>
               <span
                 className={`inline-flex rounded-full border px-2 py-[1px] text-[10px] font-medium tracking-wide uppercase ${STATE_PILL[record.state]}`}
@@ -580,14 +572,7 @@ export default function FundConnectPage() {
 
         {!inQueue && (
         <aside className="hidden w-80 shrink-0 xl:block">
-          <ActivityPanel
-            record={record}
-            versions={versions}
-            onOpenVersion={(versionId) => {
-              setActiveId(versionId);
-              setView("record");
-            }}
-          />
+          <ActivityPanel record={record} />
         </aside>
         )}
       </div>

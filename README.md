@@ -6,7 +6,7 @@ Live: https://absurdalpha.web.app
 
 ## What this is
 
-Think of it as a design/UX sandbox rather than a wired-up product. There's no backend or shared app state — every page under `src/pages/` renders independently with realistic mock data, so you can prototype, review, and iterate on individual screens without standing up services. There are currently **~70 pages** spanning operations dashboards, risk & exposure views, trading blotters, onboarding forms, wealth summaries, and reusable UI patterns.
+Think of it as a design/UX sandbox rather than a wired-up product. There's no backend or shared app state — every page under `src/pages/` renders independently with realistic mock data, so you can prototype, review, and iterate on individual screens without standing up services. There are currently **~90 pages** spanning operations dashboards, risk & exposure views, trading blotters, onboarding forms, wealth summaries, and reusable UI patterns.
 
 ## Tech stack
 
@@ -22,6 +22,8 @@ Think of it as a design/UX sandbox rather than a wired-up product. There's no ba
 | Lint | ESLint + typescript-eslint |
 
 > **Design rule:** all components use **0 border radius** (square corners), enforced via `--radius: 0rem` in [`src/index.css`](src/index.css). Don't reintroduce a non-zero `--radius`.
+
+> **Execution Analytics** (`src/pages/execution-analytics.tsx`) is a multi-screen product shell rather than a single page: its rail, toolbar, tokens, `DataTable` and `ChartPanel` live in [`src/components/exec-analytics/`](src/components/exec-analytics). Screen conventions are in its `BRIEF.md`; brand strings come only from `config/brand.ts`.
 
 ## Getting started
 
@@ -71,9 +73,10 @@ export default function MyScreen() {
 - **Operations** — ops overview, oversight, my queue, reconciliation, NAV sign-off, settlement timeline, …
 - **Risk & Exposure** — credit exposure, counterparty 360, limit monitor, stress scenarios, XVA desk, …
 - **Trading & Liquidity** — blotter, TCA, liquidity ladder, repo financing, collateral optimizer, heatmaps, …
-- **Forms & Flows** — client/counterparty onboarding, Fund Connect, sign-up, settings
+- **Forms & Flows** — client/counterparty onboarding, audit trail client onboarding, sign-up, settings
+- **Dashboards** — fifteen deliberately different dashboards across financial services: loan book health, AML alert operations, fraud control room, capital adequacy, claims & reserving, fund flows, private markets, fixed income portfolio, climate & transition, VaR backtesting, banking book rate risk (IRRBB), mortgage pipeline, settlement fails & CSDR penalties, pension scheme funding, CLO deal monitor
 - **Wealth & Clients** — client overview, portfolio performance, wealth summary, asset allocation, goals
-- **Patterns & Tools** — pattern gallery, date pickers, GitHub cheat sheet, Awesome Quant resource directory
+- **Patterns & Tools** — pattern gallery, date pickers, KPI trend patterns, GitHub cheat sheet, Awesome Quant resource directory
 - **Other** — catch-all for any page not yet mapped (so new files always show up)
 
 A page's section is resolved by `sectionForSlug(slug, explicitSection)`: an explicit `export const section` wins, otherwise the slug→section map is used, otherwise it falls into **Other**.
@@ -94,6 +97,7 @@ src/
   hooks/             # reusable hooks (localStorage, saved views, forensic sizing, …)
   lib/               # data + logic helpers (mock data, filters, section map, firebase, …)
 scripts/deploy.sh    # build + Firebase deploy helper
+copilot/             # Copilot handoffs (OneDS rebuild specs), rubric, grades, specs — see copilot/README.md
 firebase.json        # Hosting config (serves dist/, SPA rewrite to index.html)
 ```
 

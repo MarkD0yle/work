@@ -1,0 +1,24 @@
+/* AI Assistant rules from src/index.css (the rest of that file is unrelated
+ * to this screen). In the source they sit at the end of the global sheet. */
+
+/* AI Assistant: answer blocks fade up as they stream in. */
+@keyframes ai-block-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+.ai-block-in { animation: ai-block-in 0.3s ease-out; }
+/* Floating window grows up out of the launcher's corner. */
+@keyframes ai-float-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+.ai-float-in { animation: ai-float-in 0.2s ease-out; transform-origin: bottom right; }
+@media (prefers-reduced-motion: reduce) {
+  .ai-block-in,
+  .ai-float-in { animation: none; }
+}
+
+/* AI Assistant host frame: pages written as full-screen (`h-screen`) fill the
+ * frame instead, so the blotter's status bar isn't pushed below the fold by
+ * the prototype bar above it. */
+.ai-host-frame .h-screen { height: 100%; }
