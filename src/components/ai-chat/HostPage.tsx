@@ -37,15 +37,14 @@ function Card({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-export function HostPage({ toolbar }: { toolbar: ReactNode }) {
+export function HostPage() {
   return (
     <div className="@container h-full overflow-y-auto bg-neutral-50">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-200 bg-white py-3 pr-6 pl-32">
+      <header className="border-b border-neutral-200 bg-white px-6 py-3">
         <div className="min-w-0">
           <div className="text-[11px] text-neutral-500">Clients / {CLIENT.name}</div>
           <h1 className="truncate text-[18px] font-semibold text-neutral-950">Portfolio overview</h1>
         </div>
-        {toolbar}
       </header>
 
       <div className="mx-auto max-w-6xl space-y-4 p-6 pb-28">

@@ -1,21 +1,30 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { DEFAULT_CONTEXT, answerFor, type Answer, type Message } from "./data";
+import { CLIENT_SCOPE, type Answer, type Message, type Scope, type ScopeId } from "./data";
+import { BLOTTER_SCOPE } from "./blotterScope";
 import type { Artifact } from "./ContextPanel";
 
-/* One conversation, shared by both layouts.
+/* One conversation, shared by every layout.
  *
- * The full-screen and floating views are two presentations of the same chat,
- * so the state lives here, above both. Switching mode mid-answer keeps the
- * thread, the draft and the streaming answer exactly where they were — the
- * same promise Copilot makes when you pop its pane in and out.
+ * Floating, docked and full screen are presentations of the same chat, so the
+ * state lives here, above them. Switching mode mid-answer keeps the thread,
+ * the draft and the streaming answer exactly where they were — the same
+ * promise Copilot makes when you pop its pane in and out.
+ *
+ * The scope (client or blotter) also lives here. Changing it keeps the
+ * thread and drops a note into it, so earlier answers stay readable but it
+ * is clear the next one is about something else.
  */
+
+export const SCOPES: Record<ScopeId, Scope> = { client: CLIENT_SCOPE, blotter: BLOTTER_SCOPE };
 
 const now = () => new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 
-export function useChat() {
+export function useChat(initialScope: ScopeId = "client") {
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState("");
-  const [context, setContext] = useState(DEFAULT_CONTEXT);
+  const [scopeId, setScopeId] = useState<ScopeId>(initialScope);
+  const scope = SCOPES[scopeId];
+  const [context, setContext] = useState(scope.defaultContext);
   const idRef = useRef(0);
 
   const streaming = messages.some((m) => m.role === "assistant" && m.streaming);
@@ -54,7 +63,7 @@ export function useChat() {
   const send = (text: string) => {
     const q = text.trim();
     if (!q || streaming) return false;
-    const base = answerFor(q);
+    const base = scope.answer(q);
     const off = base.sources.filter((s) => !context.find((c) => c.id === s.id)?.enabled);
     const answer: Answer = off.length
       ? {
@@ -89,9 +98,35 @@ export function useChat() {
     setDraft("");
   };
 
+  const switchScope = (id: ScopeId) => {
+    if (id === scopeId) return;
+    stop();
+    setScopeId(id);
+    setContext(SCOPES[id].defaultContext);
+    if (messages.length) {
+      setMessages((ms) => [...ms, { id: `m${++idRef.current}`, role: "note", text: `Now looking at ${SCOPES[id].name}`, at: now() }]);
+    }
+  };
+
   const toggleSource = (id: string) => setContext((cs) => cs.map((c) => (c.id === id ? { ...c, enabled: !c.enabled } : c)));
 
-  return { messages, draft, setDraft, context, toggleSource, streaming, lastAnswer, title, artifacts, send, stop, regenerate, reset };
+  return {
+    messages,
+    draft,
+    setDraft,
+    scope,
+    switchScope,
+    context,
+    toggleSource,
+    streaming,
+    lastAnswer,
+    title,
+    artifacts,
+    send,
+    stop,
+    regenerate,
+    reset,
+  };
 }
 
 export type Chat = ReturnType<typeof useChat>;

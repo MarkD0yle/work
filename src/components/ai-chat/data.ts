@@ -23,7 +23,7 @@ export type ChartSpec = {
 
 export type TableSpec = {
   title: string;
-  columns: { key: string; label: string; align?: "left" | "right"; format?: "pct" | "spct" | "money" | "bps" }[];
+  columns: { key: string; label: string; align?: "left" | "right"; format?: "pct" | "spct" | "money" | "bps" | "num" }[];
   rows: Record<string, string | number>[];
 };
 
@@ -47,7 +47,9 @@ export type Answer = {
 
 export type Message =
   | { id: string; role: "user"; text: string; at: string }
-  | { id: string; role: "assistant"; answer: Answer; at: string; streaming?: boolean; shown: number };
+  | { id: string; role: "assistant"; answer: Answer; at: string; streaming?: boolean; shown: number }
+  /** Inline system note, e.g. "Now looking at: MM Order Blotter". */
+  | { id: string; role: "note"; text: string; at: string };
 
 /* --- Portfolio context ---------------------------------------------------------- */
 
@@ -364,6 +366,50 @@ export function answerFor(prompt: string): Answer {
   return RULES.find(([re]) => re.test(prompt))?.[1] ?? fallback;
 }
 
+/* --- Scope: what the assistant is looking at ------------------------------------ */
+
+/* The assistant answers about whatever the user is looking at — a client, or
+ * the page it is docked beside (Copilot's "page context"). A scope bundles
+ * everything that changes with it: the name on the chip, the facts in the
+ * Context tab, the guiding prompts, the data sources and the answers. */
+
+export type ScopeId = "client" | "blotter";
+
+export type Scope = {
+  id: ScopeId;
+  /** Label for the Context tab card: "Active client", "Current page". */
+  kind: string;
+  name: string;
+  /** Short @-mention for the composer chip. */
+  chip: string;
+  asOf: string;
+  /** One line under the greeting: what can I ask about? */
+  intro: string;
+  facts: [string, string][];
+  prompts: PromptCard[];
+  defaultContext: ContextSource[];
+  answer: (prompt: string) => Answer;
+};
+
+export const CLIENT_SCOPE: Scope = {
+  id: "client",
+  kind: "Active client",
+  name: CLIENT.name,
+  chip: "Harbour Point",
+  asOf: CLIENT.asOf,
+  intro: "I can pull performance, exposure, risk and client notes.",
+  facts: [
+    ["Mandate", CLIENT.mandate],
+    ["AUM", CLIENT.aum],
+    ["Benchmark", CLIENT.benchmark],
+    ["Risk profile", CLIENT.riskProfile],
+    ["Relationship manager", CLIENT.rm],
+  ],
+  prompts: PROMPT_CARDS,
+  defaultContext: DEFAULT_CONTEXT,
+  answer: answerFor,
+};
+
 /* --- Conversation history (left rail) ------------------------------------------ */
 
 export const HISTORY: { id: string; title: string; when: "Today" | "Yesterday" | "Last 7 days" }[] = [
@@ -387,6 +433,8 @@ export function fmt(v: string | number, format?: TableSpec["columns"][number]["f
       return `${sign(v)}${Math.abs(v)}`;
     case "money":
       return `${v < 0 ? "−" : ""}${Math.abs(v).toLocaleString("en-GB")}`;
+    case "num":
+      return v.toLocaleString("en-GB");
     default:
       return String(v);
   }

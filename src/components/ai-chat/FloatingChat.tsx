@@ -1,6 +1,5 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { Maximize2, Minus, SquarePen, Sparkles, X } from "lucide-react";
-import { CLIENT } from "./data";
 import { IconButton, type OpenArtifact } from "./blocks";
 import { Composer, ThreadView } from "./Thread";
 import type { Chat } from "./useChat";
@@ -123,7 +122,7 @@ export function WidgetHeader({
         <div className="truncate text-[13px] font-semibold text-neutral-900">{chat.messages.length ? chat.title : "Assistant"}</div>
         <div className="flex items-center gap-1.5 truncate text-[11px] text-neutral-500">
           <span className="h-1.5 w-1.5 shrink-0 bg-emerald-500" aria-hidden />
-          {CLIENT.name}
+          {chat.scope.name}
         </div>
       </div>
       <IconButton label="New chat" onClick={chat.reset}>

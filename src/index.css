@@ -341,3 +341,8 @@
   .ai-block-in,
   .ai-float-in { animation: none; }
 }
+
+/* AI Assistant host frame: pages written as full-screen (`h-screen`) fill the
+ * frame instead, so the blotter's status bar isn't pushed below the fold by
+ * the prototype bar above it. */
+.ai-host-frame .h-screen { height: 100%; }

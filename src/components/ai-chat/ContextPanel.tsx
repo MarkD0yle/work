@@ -1,5 +1,5 @@
 import { Database, FileText, PanelRightClose, ShieldCheck } from "lucide-react";
-import { CLIENT, type Block, type ContextSource, type Source } from "./data";
+import type { Block, ContextSource, Scope, Source } from "./data";
 import { ChartBlock, IconButton, TableBlock } from "./blocks";
 
 /* Right-hand context panel.
@@ -21,6 +21,7 @@ type Props = {
   tab: PanelTab;
   onTab: (t: PanelTab) => void;
   onClose: () => void;
+  scope: Scope;
   context: ContextSource[];
   onToggleSource: (id: string) => void;
   artifacts: Artifact[];
@@ -76,22 +77,16 @@ function Label({ children }: { children: React.ReactNode }) {
   return <div className="mb-2 text-[11px] font-semibold tracking-wide text-neutral-500 uppercase">{children}</div>;
 }
 
-function ContextTab({ context, onToggleSource }: Props) {
-  const rows: [string, string][] = [
-    ["Mandate", CLIENT.mandate],
-    ["AUM", CLIENT.aum],
-    ["Benchmark", CLIENT.benchmark],
-    ["Risk profile", CLIENT.riskProfile],
-    ["Relationship manager", CLIENT.rm],
-  ];
+function ContextTab({ scope, context, onToggleSource }: Props) {
+  const rows = scope.facts;
   return (
     <div className="space-y-6">
       <section>
-        <Label>Active client</Label>
+        <Label>{scope.kind}</Label>
         <div className="border border-neutral-200">
           <div className="border-b border-neutral-200 bg-neutral-50 px-3 py-2.5">
-            <div className="text-[14px] font-semibold text-neutral-950">{CLIENT.name}</div>
-            <div className="text-[11px] text-neutral-500">Data as of {CLIENT.asOf}</div>
+            <div className="text-[14px] font-semibold text-neutral-950">{scope.name}</div>
+            <div className="text-[11px] text-neutral-500">Data as of {scope.asOf}</div>
           </div>
           <dl className="divide-y divide-neutral-100">
             {rows.map(([k, v]) => (

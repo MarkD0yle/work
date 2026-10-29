@@ -14,7 +14,7 @@ import {
   ThumbsDown,
   ThumbsUp,
 } from "lucide-react";
-import { CLIENT, PROMPT_CARDS, type Block, type Message } from "./data";
+import type { Block, Message, Scope } from "./data";
 import { BlockView, IconButton, type OpenArtifact } from "./blocks";
 import type { Chat } from "./useChat";
 
@@ -89,11 +89,17 @@ export function ThreadView({
     <div ref={scrollRef} className="@container min-h-0 flex-1 overflow-y-auto">
       <div className={`mx-auto w-full max-w-3xl ${compact ? "px-4 py-4" : "px-4 py-6"}`}>
         {messages.length === 0 ? (
-          <EmptyState onPick={chat.send} compact={compact} />
+          <EmptyState scope={chat.scope} onPick={chat.send} compact={compact} />
         ) : (
           <ol className={compact ? "space-y-6" : "space-y-8"} aria-live="polite">
             {messages.map((m) =>
-              m.role === "user" ? (
+              m.role === "note" ? (
+                <li key={m.id} className="flex items-center gap-3 text-[11px] text-neutral-500" role="status">
+                  <span className="h-px flex-1 bg-neutral-200" aria-hidden />
+                  {m.text}
+                  <span className="h-px flex-1 bg-neutral-200" aria-hidden />
+                </li>
+              ) : m.role === "user" ? (
                 <li key={m.id} className="flex justify-end">
                   <div className="max-w-[85%] bg-neutral-100 px-4 py-2.5 text-[14px] leading-relaxed text-neutral-900">{m.text}</div>
                 </li>
@@ -119,18 +125,18 @@ export function ThreadView({
 
 /* --- Empty state: greeting + guiding prompts ----------------------------------- */
 
-function EmptyState({ onPick, compact }: { onPick: (p: string) => void; compact: boolean }) {
+function EmptyState({ scope, onPick, compact }: { scope: Scope; onPick: (p: string) => void; compact: boolean }) {
   if (compact) {
     // Widget: fewer, shorter prompts as a list — a 400px panel can't hold a grid.
     return (
       <div className="pt-2">
         <h2 className="text-[18px] font-semibold tracking-tight text-neutral-950">{greeting()}, James</h2>
         <p className="mt-1 text-[13px] text-neutral-500">
-          Ask about <span className="text-neutral-800">{CLIENT.name}</span>.
+          Ask about <span className="text-neutral-800">{scope.name}</span>.
         </p>
         <div className="mt-5 text-[11px] font-medium tracking-wide text-neutral-500 uppercase">Try asking</div>
         <ul className="mt-2 divide-y divide-neutral-100 border border-neutral-200">
-          {PROMPT_CARDS.slice(0, 4).map((c) => (
+          {scope.prompts.slice(0, 4).map((c) => (
             <li key={c.id}>
               <button
                 type="button"
@@ -153,10 +159,10 @@ function EmptyState({ onPick, compact }: { onPick: (p: string) => void; compact:
       </div>
       <h2 className="mt-4 text-[24px] font-semibold tracking-tight text-neutral-950">{greeting()}, James</h2>
       <p className="mt-1 text-[15px] text-neutral-500">
-        Ask about <span className="text-neutral-800">{CLIENT.name}</span>. I can pull performance, exposure, risk and client notes.
+        Ask about <span className="text-neutral-800">{scope.name}</span>. {scope.intro}
       </p>
       <div className="mt-8 grid grid-cols-1 gap-3 @lg:grid-cols-2 @3xl:grid-cols-3">
-        {PROMPT_CARDS.map((c) => (
+        {scope.prompts.map((c) => (
           <button
             key={c.id}
             type="button"
@@ -368,7 +374,7 @@ export function Composer({
                 className="flex min-w-0 items-center gap-1.5 border border-neutral-200 px-2 py-1 text-[12px] text-neutral-600 hover:border-neutral-400 hover:text-neutral-900"
               >
                 <span className="h-1.5 w-1.5 shrink-0 bg-emerald-500" aria-hidden />
-                <span className="truncate">@{CLIENT.name.split(" ").slice(0, 2).join(" ")}</span>
+                <span className="truncate">@{chat.scope.chip}</span>
               </button>
             </div>
             {streaming ? (

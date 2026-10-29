@@ -1,12 +1,13 @@
 import { useRef, useState } from "react";
 import { PanelLeftClose, PanelLeftOpen, PanelRightOpen, Plus, Search, Sparkles } from "lucide-react";
-import { CLIENT, HISTORY } from "../components/ai-chat/data";
+import { HISTORY } from "../components/ai-chat/data";
 import { IconButton, type OpenArtifact } from "../components/ai-chat/blocks";
 import { ContextPanel, type PanelTab } from "../components/ai-chat/ContextPanel";
 import { Composer, ModeToggle, ThreadView, type ChatMode } from "../components/ai-chat/Thread";
 import { FloatingLauncher, FloatingWindow } from "../components/ai-chat/FloatingChat";
 import { DockRail, DockedPane } from "../components/ai-chat/DockedChat";
 import { HostPage } from "../components/ai-chat/HostPage";
+import Blotter from "./blotter";
 import { useChat } from "../components/ai-chat/useChat";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 
@@ -48,7 +49,8 @@ export const fullWidth = true;
  */
 
 export default function AiAssistant() {
-  const chat = useChat();
+  const [host, setHost] = useLocalStorage<Host>("ai-assistant.host", "client");
+  const chat = useChat(host);
   const [mode, setMode] = useLocalStorage<ChatMode>("ai-assistant.mode", "full");
   const [floatOpen, setFloatOpen] = useState(false);
   const [dockOpen, setDockOpen] = useState(true);
@@ -68,6 +70,18 @@ export default function AiAssistant() {
     if (m === "floating") setFloatOpen(true);
     if (m === "docked") setDockOpen(true);
   };
+
+  // The assistant follows the page it sits on: changing host changes scope.
+  const changeHost = (h: Host) => {
+    setHost(h);
+    chat.switchScope(h);
+  };
+
+  const frame = (
+    <HostFrame host={host} onHost={changeHost} controls={<ModeToggle mode={mode} onChange={changeMode} />}>
+      {host === "blotter" ? <Blotter /> : <HostPage />}
+    </HostFrame>
+  );
 
   const showPanel = (t: PanelTab) => {
     setTab(t);
@@ -91,9 +105,7 @@ export default function AiAssistant() {
   if (mode === "docked") {
     return (
       <div className="flex h-full">
-        <div className="min-w-0 flex-1">
-          <HostPage toolbar={<ModeToggle mode={mode} onChange={changeMode} />} />
-        </div>
+        <div className="min-w-0 flex-1">{frame}</div>
         {dockOpen ? (
           <DockedPane
             chat={chat}
@@ -115,7 +127,7 @@ export default function AiAssistant() {
   if (mode === "floating") {
     return (
       <>
-        <HostPage toolbar={<ModeToggle mode={mode} onChange={changeMode} />} />
+        {frame}
         {floatOpen ? (
           <FloatingWindow
             chat={chat}
@@ -206,7 +218,7 @@ export default function AiAssistant() {
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <span className="hidden items-center gap-1.5 border border-neutral-200 px-2 py-1 text-[12px] text-neutral-600 lg:flex">
-              <span className="h-1.5 w-1.5 bg-emerald-500" aria-hidden /> {CLIENT.name}
+              <span className="h-1.5 w-1.5 bg-emerald-500" aria-hidden /> {chat.scope.name}
             </span>
             <ModeToggle mode={mode} onChange={changeMode} />
             {!panelOpen && (
@@ -228,6 +240,7 @@ export default function AiAssistant() {
             tab={tab}
             onTab={setTab}
             onClose={() => setPanelOpen(false)}
+            scope={chat.scope}
             context={chat.context}
             onToggleSource={chat.toggleSource}
             artifacts={chat.artifacts}
@@ -237,6 +250,59 @@ export default function AiAssistant() {
           />
         </div>
       )}
+    </div>
+  );
+}
+
+/* --- Host frame ---------------------------------------------------------------- */
+
+type Host = "client" | "blotter";
+
+const HOSTS: { id: Host; label: string }[] = [
+  { id: "client", label: "Client overview" },
+  { id: "blotter", label: "Order blotter" },
+];
+
+/* The page the floating window or docked pane sits on, under a thin bar of
+ * prototype controls (host page + layout). The bar is prototype chrome, not
+ * product, so it is styled apart from both.
+ *
+ * The frame sets a transform, which makes it the containing block for any
+ * `position: fixed` inside the host. The blotter's own new-order drawer is
+ * fixed to the right edge; without this it would open over the docked
+ * assistant instead of inside the blotter's column. */
+function HostFrame({
+  host,
+  onHost,
+  controls,
+  children,
+}: {
+  host: Host;
+  onHost: (h: Host) => void;
+  controls: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex h-full flex-col">
+      <div className="flex h-12 shrink-0 items-center justify-end gap-3 border-b border-neutral-800 bg-neutral-900 pr-3 pl-32 text-white">
+        <span className="hidden text-[11px] font-medium tracking-wide text-neutral-400 uppercase md:inline">Prototype</span>
+        <label className="flex items-center gap-2 text-[12px] text-neutral-300">
+          <span className="hidden sm:inline">Host page</span>
+          <select
+            value={host}
+            onChange={(e) => onHost(e.target.value as Host)}
+            className="h-7 border border-neutral-700 bg-neutral-800 px-2 text-[12px] text-white focus-visible:outline-2 focus-visible:outline-white"
+          >
+            {HOSTS.map((h) => (
+              <option key={h.id} value={h.id}>
+                {h.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        {controls}
+      </div>
+      <div className="ai-host-frame relative min-h-0 flex-1 overflow-hidden [transform:translateZ(0)]">{children}</div>
     </div>
   );
 }
