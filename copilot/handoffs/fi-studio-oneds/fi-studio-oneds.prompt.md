@@ -10,7 +10,7 @@ You are porting existing screens, not designing new ones. The spec is
 this prompt and the spec disagree, the spec wins.
 
 **Setup (once):** copy this whole `fi-studio-oneds/` folder into the target
-repo (for example `docs/handoffs/fi-studio-oneds/`). Answer the three open
+repo (for example `copilot/handoffs/fi-studio-oneds/`). Answer the three open
 decisions in README §10 at the top of your first PR.
 
 Run **one** of the prompts below per session, in order. Do not start the next

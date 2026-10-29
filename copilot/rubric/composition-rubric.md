@@ -44,7 +44,7 @@ Is the spacing consistent across the screen?
 2. Is the gap between regions consistent?
 3. Is padding inside regions consistent?
 
-Anchor → anchors/rhythm/{low,mid,high}.png
+Anchor → copilot/anchors/rhythm/{low,mid,high}.png
 
 ---
 
@@ -55,7 +55,7 @@ Does everything sit on a shared grid?
 2. Do regions share consistent margins?
 3. Are there zero half-pixel / off-grid elements?
 
-Anchor → anchors/alignment/{low,mid,high}.png
+Anchor → copilot/anchors/alignment/{low,mid,high}.png
 
 ---
 
@@ -66,7 +66,7 @@ Does it read as one screen, not bolted-together parts?
 2. Is one spacing scale used throughout?
 3. Do regions feel related, not stitched?
 
-Anchor → anchors/cohesion/{low,mid,high}.png
+Anchor → copilot/anchors/cohesion/{low,mid,high}.png
 
 ---
 
@@ -77,7 +77,7 @@ Is anything said twice?
 2. Is each metric shown once, not in two places?
 3. Are labels free of duplicate wording?
 
-Anchor → anchors/redundancy/{low,mid,high}.png
+Anchor → copilot/anchors/redundancy/{low,mid,high}.png
 
 ---
 
@@ -89,7 +89,7 @@ Anchor → anchors/redundancy/{low,mid,high}.png
 2. Does emphasis match the stated priority order?
 3. Are non-primary elements visually equal to each other?
 
-Anchor → anchors/hierarchy/{low,mid,high}.png
+Anchor → copilot/anchors/hierarchy/{low,mid,high}.png
 
 ---
 
@@ -102,7 +102,7 @@ Anchor → anchors/hierarchy/{low,mid,high}.png
 2. Does the flow match the stated order?
 3. Is the stated last item actually last?
 
-Anchor → anchors/order/{low,mid,high}.png
+Anchor → copilot/anchors/order/{low,mid,high}.png
 
 ---
 
@@ -115,13 +115,13 @@ Anchor → anchors/order/{low,mid,high}.png
 2. Breakdown question → is it a bar/stacked chart?
 3. Does each chart show the metric its label claims?
 
-Anchor → anchors/chartfit/{low,mid,high}.png
+Anchor → copilot/anchors/chartfit/{low,mid,high}.png
 
 ---
 
 ## STEP 3 — OUTPUT  (what the grader writes)
 
-Saved to `grades/<screen>-<NNN>.md`. See `grades/finance-overview-001.md`
+Saved to `copilot/grades/<screen>-<NNN>.md`. See `copilot/grades/finance-overview-001.md`
 for a worked example. Lead with the failures. The score is secondary.
 
 ---

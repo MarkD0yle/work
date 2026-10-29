@@ -58,7 +58,7 @@ The source is a React 19 + TypeScript 6 + Vite 8 + Tailwind v4 prototype gallery
 - Styling: Tailwind v4 utility classes everywhere, plus tokens in `src/index.css`.
 - UI libraries to replace: `ag-grid-*`, `devextreme*`, `highcharts`, `framer-motion`, `lucide-react`, `clsx` (only if OneDS has its own class helper).
 
-`docs/handoffs/right-panels-oneds/README.md` in the source repo is a worked example of the same conversion for 11 panels. Read it first and follow its mappings.
+`copilot/handoffs/right-panels-oneds/README.md` in the source repo is a worked example of the same conversion for 11 panels. Read it first and follow its mappings.
 
 ---
 

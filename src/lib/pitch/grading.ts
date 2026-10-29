@@ -2,8 +2,8 @@ import type { GradeBand, GradeDimension, Pitch, PitchGrade } from "./types";
 import { SECTION_DEFS } from "./sections";
 import { getChecks } from "./review";
 
-/* Whole-pitch grading — same two-stage shape as rubric/gates.md +
- * rubric/composition-rubric.md: binary gates run first and any failure
+/* Whole-pitch grading — same two-stage shape as copilot/rubric/gates.md +
+ * copilot/rubric/composition-rubric.md: binary gates run first and any failure
  * stops the run (no grade happens on a pitch that isn't fit to send).
  * Only a pitch that clears every gate gets graded, and grading is split
  * into STRUCTURE dimensions (always graded) and a GOAL dimension that only

@@ -107,7 +107,7 @@ These were split across screens. The library picks one of each.
 | Table header | Sentence case, `font-medium neutral-500` | Uppercase 10px headers were hard to scan. |
 | Status pill | Rounded-full, soft fill, sentence case, `text-[11px]` | Square uppercase chips read as buttons. |
 | Card heading level | `h2` for cards, `h1` for the page only | Pages mixed h2 and h3. |
-| Inline styles | None in any pattern | Bars and sparklines use SVG attributes instead. This meets the per-save gate in `rubric/gates.md`. |
+| Inline styles | None in any pattern | Bars and sparklines use SVG attributes instead. This meets the per-save gate in `copilot/rubric/gates.md`. |
 
 ---
 

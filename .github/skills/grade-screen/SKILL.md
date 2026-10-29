@@ -13,7 +13,7 @@ Never grades a component — only how components sit together.
 
 - `gates.md` — the binary checks
 - `composition-rubric.md` — dimensions, checks, bands
-- `anchors/<dimension>/{low,mid,high}` — reference examples
+- `copilot/anchors/<dimension>/{low,mid,high}` — reference examples
 
 Do not restate or regenerate these. Read them and apply.
 
@@ -41,7 +41,7 @@ Per dimension: 3 yes → High/5 · 2 yes → Mid/3 · 0–1 yes → Low/1.
 Score = mean of graded dimensions. Skipped ones excluded.
 
 ### Step 5 — Write the grade file
-Save to `grades/<screen>-<NNN>.md`.
+Save to `copilot/grades/<screen>-<NNN>.md`.
 Lead with the failures and why. The score is secondary.
 
 ### Step 6 — Log and promote
@@ -60,4 +60,4 @@ Same failure 3× across runs → flag for the knowledge file.
 ## Trigger example
 
 User: "Grade the finance overview dashboard"
-→ run Steps 1–6, write `grades/finance-overview-001.md`.
+→ run Steps 1–6, write `copilot/grades/finance-overview-001.md`.

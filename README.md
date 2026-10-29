@@ -97,6 +97,7 @@ src/
   hooks/             # reusable hooks (localStorage, saved views, forensic sizing, …)
   lib/               # data + logic helpers (mock data, filters, section map, firebase, …)
 scripts/deploy.sh    # build + Firebase deploy helper
+copilot/             # Copilot handoffs (OneDS rebuild specs), rubric, grades, specs — see copilot/README.md
 firebase.json        # Hosting config (serves dist/, SPA rewrite to index.html)
 ```
 
