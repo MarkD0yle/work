@@ -4,7 +4,7 @@ import { fmtMoney, fmtPct } from "./data";
 /* The "AI reviewer" — a deterministic, rule-based critique engine standing
  * in for an LLM call (this app has no backend / model access). It grades
  * each section against three concrete checks, exactly like the arrangement
- * rubric this repo already uses for screens (rubric/composition-rubric.md):
+ * rubric this repo already uses for screens (copilot/rubric/composition-rubric.md):
  * 3/3 → High·5, 2/3 → Mid·3, 0-1 → Low·1. Every check is a yes/no fact about
  * the text, not a vibe — so "Improve with AI" can close the gap precisely. */
 

@@ -23,7 +23,7 @@ export const fullWidth = true;
  *      reviewer" (see lib/pitch/review.ts) that scores it against a 3-check
  *      rubric and can auto-improve the draft to close the gaps.
  *   3. Compile into a report and grade the whole pitch (lib/pitch/grading.ts)
- *      — gates first, then dimensions, mirroring rubric/gates.md.
+ *      — gates first, then dimensions, mirroring copilot/rubric/gates.md.
  *   4. Save to the library (localStorage), as a draft or final. */
 
 type Stage = "pick" | "build" | "report";
