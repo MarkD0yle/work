@@ -54,11 +54,16 @@ type ExampleItem = {
 
 // Filtered before mapping — this file's own eager self-import (via the glob
 // below) leaves its own module bindings (title/section/fullWidth) in the
-// temporal dead zone, so its entry must never be read. gallery.tsx is
-// excluded too since it's the app's separate landing-page catalogue.
+// temporal dead zone, so its entry must never be read. gallery.tsx and
+// pattern-atlas.tsx are excluded too: they are the app's other catalogue
+// pages and sit in the same import cycle, so their bindings may also still
+// be uninitialised while this module evaluates.
 const ALL_ITEMS: ExampleItem[] = Object.entries(pageModules)
   .filter(
-    ([path]) => !path.endsWith("/uxf.tsx") && !path.endsWith("/gallery.tsx"),
+    ([path]) =>
+      !path.endsWith("/uxf.tsx") &&
+      !path.endsWith("/gallery.tsx") &&
+      !path.endsWith("/pattern-atlas.tsx"),
   )
   .map(([path, mod]) => {
     const slug = path.replace(/^\.\//, "").replace(/\.tsx$/, "");

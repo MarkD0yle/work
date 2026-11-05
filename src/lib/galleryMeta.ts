@@ -458,6 +458,12 @@ export const GALLERY_META: Record<string, GalleryMeta> = {
     tags: ["patterns", "components", "ui"],
     motif: "panel",
   },
+  "pattern-atlas": {
+    description:
+      "Explore every pattern three ways — Pinterest-style masonry, section boards and a keyboard-friendly list, with search, sort, tag facets and a recently-added rail.",
+    tags: ["explorer", "gallery", "navigation"],
+    motif: "treemap",
+  },
   "right-panel-patterns": {
     description:
       "Ten contextual right panels from across global markets — ticket, tabs, triage, live depth, copilot and more.",
