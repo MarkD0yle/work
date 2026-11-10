@@ -42,7 +42,7 @@ function usePages() {
       if (!alive) return;
       setPages(
         all
-          .filter((p) => p.slug !== "home-diorama")
+          .filter((p) => p.slug !== "home-diorama" && p.slug !== "home")
           .sort((a, b) => a.title.localeCompare(b.title)),
       );
     });
