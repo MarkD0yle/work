@@ -7,9 +7,26 @@
 
 const NAV_EVENT = "app:navigate";
 
-export function navigateToPage(slug: string) {
+/** Optional hand-off for the destination page, e.g. a search query. */
+export type NavParams = Record<string, string>;
+
+let pending: { slug: string; params: NavParams } | null = null;
+
+export function navigateToPage(slug: string, params?: NavParams) {
   if (typeof window === "undefined") return;
+  pending = params ? { slug, params } : null;
   window.dispatchEvent(new CustomEvent<string>(NAV_EVENT, { detail: slug }));
+}
+
+/** Read the params handed to `slug` by the last navigation, if any.
+ * Pure, so it is safe in a useState initialiser (StrictMode runs those
+ * twice). Call `clearNavParams` from an effect once they are consumed. */
+export function peekNavParams(slug: string): NavParams {
+  return pending?.slug === slug ? pending.params : {};
+}
+
+export function clearNavParams() {
+  pending = null;
 }
 
 /** Subscribe to navigation requests. Returns an unsubscribe function. */

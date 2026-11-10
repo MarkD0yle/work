@@ -458,6 +458,36 @@ export const GALLERY_META: Record<string, GalleryMeta> = {
     tags: ["patterns", "components", "ui"],
     motif: "panel",
   },
+  "brief-builder": {
+    description:
+      "Pick a base screen, patterns and house rules, and copy one prompt your AI assistant can follow.",
+    tags: ["tool", "ai", "prompt"],
+    motif: "form",
+  },
+  "drift-radar": {
+    description:
+      "Which screens have drifted from the design rules: rounded corners, hex colours and inline styles, with a fix prompt for each.",
+    tags: ["tool", "ai", "design system"],
+    motif: "grid",
+  },
+  "demo-reel": {
+    description:
+      "Queue up screens and play them full screen for a stakeholder walk-through.",
+    tags: ["tool", "demo", "presentation"],
+    motif: "flow",
+  },
+  "side-by-side": {
+    description:
+      "Two screens next to each other at the same scale, for comparing variants.",
+    tags: ["tool", "compare", "review"],
+    motif: "panel",
+  },
+  "whats-new": {
+    description:
+      "Every feature note and new screen, newest first, with a guided tour of the latest.",
+    tags: ["tool", "changelog", "tour"],
+    motif: "calendar",
+  },
   "pattern-atlas": {
     description:
       "Explore every pattern three ways — Pinterest-style masonry, section boards and a keyboard-friendly list, with search, sort, tag facets and a recently-added rail.",
