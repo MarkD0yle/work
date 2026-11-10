@@ -1,0 +1,40 @@
+.ca-compare {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--gap-sm);
+}
+.ca-compare__card {
+  padding: var(--gap-md);
+  border: var(--border-width) solid var(--color-accent);
+  background: var(--color-surface-2);
+}
+.ca-compare__card header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--gap-sm);
+  margin-bottom: var(--gap-sm);
+}
+.ca-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: var(--gap-md);
+}
+.ca-breach {
+  margin: var(--gap-sm) 0 0;
+  padding: var(--gap-sm) var(--gap-md);
+  border: var(--border-width) solid var(--color-critical);
+  color: var(--color-critical);
+}
+.ca-ok {
+  margin: var(--gap-sm) 0 0;
+  color: var(--color-positive);
+}
+.ca-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--target-min);
+  min-height: var(--target-min);
+  cursor: pointer;
+}

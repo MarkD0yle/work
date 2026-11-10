@@ -3,7 +3,10 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "scripts": { "dev": "vite", "build": "vite build" },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
   "dependencies": {
     "@harbor/agent": "workspace:*",
     "@harbor/agent-client": "workspace:*",
@@ -14,6 +17,8 @@
     "dockview": "^4.9.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
-    "zustand": "^5.0.8"
+    "zustand": "^5.0.8",
+    "@harbor/app-kit": "workspace:*",
+    "@harbor/mock-data": "workspace:*"
   }
 }

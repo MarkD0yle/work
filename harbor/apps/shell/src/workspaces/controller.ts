@@ -1,7 +1,7 @@
 import type { DockviewApi, DockviewGroupPanel, SerializedDockview } from 'dockview'
 import { canLaunch, type DirectoryRecord, type PanelRecord, type UserInfo, type WorkspaceFile } from '@harbor/schemas'
 import { toast } from '@harbor/ui'
-import { shell } from '../state.ts'
+import { audit, shell } from '../state.ts'
 import { BackedWorkspaceStore, IndexedDbBackend, parseWorkspaceJson, type WorkspaceStore } from './store.ts'
 import { TEMPLATES, isTemplateId, materialise, templateForRole } from './templates.ts'
 
@@ -9,6 +9,7 @@ export const workspaceStore: WorkspaceStore = new BackedWorkspaceStore(new Index
 
 const AUTOSAVE_MS = 500
 const PANEL_COMPONENT = 'panel'
+const TILE_GROUP = 'tile-group'
 
 let api: DockviewApi | null = null
 let current: WorkspaceFile | null = null
@@ -29,6 +30,10 @@ const lastActiveKey = (userId: string) => `harbor.activeWorkspace.${userId}`
 const record = (appId: string): DirectoryRecord | undefined => shell.get().directory.find((r) => r.appId === appId)
 const panelKind = (r: DirectoryRecord): PanelRecord['kind'] => (r.kind === 'app' ? 'app' : r.kind === 'widget' ? 'widget' : 'tileGroup')
 const titleFor = (appId: string) => record(appId)?.title ?? appId
+const canLaunchId = (appId: string, user: UserInfo) => {
+  const r = record(appId)
+  return r !== undefined && canLaunch(user, r)
+}
 const requireUser = (): UserInfo => {
   const user = shell.get().user
   if (!user) throw new Error('No user is signed in')
@@ -63,6 +68,7 @@ async function refreshSaved(): Promise<WorkspaceFile[]> {
 
 export async function startSession(user: UserInfo): Promise<void> {
   shell.set({ user, saved: [], panels: {}, activeId: null })
+  audit.record('session.start', user.displayName, null, { role: user.role })
   const saved = await refreshSaved()
   const template = templateForRole(user.role)
   const lastId = localStorage.getItem(lastActiveKey(user.id))
@@ -73,7 +79,8 @@ export async function startSession(user: UserInfo): Promise<void> {
 export async function endSession(): Promise<void> {
   await saveNow()
   current = null
-  shell.set({ user: null, saved: [], panels: {}, activeId: null, libraryOpen: false, logOpen: false })
+  audit.record('session.end', shell.get().user?.displayName ?? '', { role: shell.get().user?.role }, null)
+  shell.set({ user: null, saved: [], panels: {}, activeId: null, libraryOpen: false, logOpen: false, alertsOpen: false, alertSeverity: null })
 }
 
 /* ---------- layout engine binding ---------- */
@@ -101,9 +108,13 @@ export function attachLayout(dockview: DockviewApi): () => void {
   }
 }
 
-function addDockPanel(panel: PanelRecord, position?: { referencePanel?: string; referenceGroup?: DockviewGroupPanel; direction: 'right' | 'below' | 'within' | 'left' | 'above' }): void {
+function addDockPanel(
+  panel: PanelRecord,
+  position?: { referencePanel?: string; referenceGroup?: DockviewGroupPanel; direction: 'right' | 'below' | 'within' | 'left' | 'above' },
+  initialHeight?: number,
+): void {
   if (!api) return
-  api.addPanel({ id: panel.panelId, component: PANEL_COMPONENT, title: titleFor(panel.appId), ...(position ? { position } : {}) })
+  api.addPanel({ id: panel.panelId, component: PANEL_COMPONENT, title: titleFor(panel.appId), ...(position ? { position } : {}), ...(initialHeight ? { initialHeight } : {}) })
 }
 
 /** "Best free slot": split the largest group along its longer side. */
@@ -133,7 +144,7 @@ function applyLayout(file: WorkspaceFile): void {
       for (const panel of file.panels) {
         const place = template?.panels.find((p) => p.panelId === panel.panelId)?.place
         const anchored = place && api.getPanel(place.ref)
-        addDockPanel(panel, anchored ? { referencePanel: place.ref, direction: place.direction } : bestSlot())
+        addDockPanel(panel, anchored ? { referencePanel: place.ref, direction: place.direction } : bestSlot(), place?.height)
       }
     }
     // Reconcile: every record gets a panel, every panel has a record.
@@ -144,11 +155,39 @@ function applyLayout(file: WorkspaceFile): void {
     void recoverFromCorruptLayout(file, error)
     return
   }
+  // Panel contents are drawn in overlays that only move when a panel's size
+  // changes. After rebuilding a layout in place they can be left at their old
+  // positions, so nudge the size once the new grid exists to make them re-measure.
+  requestAnimationFrame(() => {
+    if (!api) return
+    const { width, height } = api
+    api.layout(width, height - 1, true)
+    api.layout(width, height, true)
+    wakeBackgroundPanels()
+  })
   // The engine settles sizes asynchronously; only then is the baseline stable.
   setTimeout(() => {
     lastSnapshot = snapshot()
     applying = false
   }, 150)
+}
+
+/**
+ * The layout engine does not render a tab's content until it is first shown.
+ * Apps marked `runsInBackground` must keep up with their channel while hidden,
+ * so show each one for an instant, then put the user's tab and focus back.
+ */
+function wakeBackgroundPanels(): void {
+  if (!api) return
+  const focused = api.activePanel
+  for (const group of api.groups) {
+    const shown = group.activePanel
+    const sleepers = group.panels.filter((p) => p !== shown && record(shell.get().panels[p.id]?.appId ?? '')?.runsInBackground)
+    if (sleepers.length === 0) continue
+    for (const panel of sleepers) panel.api.setActive()
+    shown?.api.setActive()
+  }
+  focused?.api.setActive()
 }
 
 /** A layout the engine cannot load: keep the bad file for export and fall back to the role template. */
@@ -242,6 +281,7 @@ export async function saveNow(): Promise<void> {
   shell.set({ activeId: file.id, activeTemplateOf: file.templateOf, saveStatus: 'saved' })
   localStorage.setItem(lastActiveKey(file.ownerId), file.id)
   await refreshSaved()
+  if (forking) audit.record('workspace.fork', file.name, { templateOf: file.templateOf }, { id: file.id, panels: file.panels.length })
   if (forking) toast({ tone: 'info', title: `Saved your own copy of "${file.name}"`, body: 'Role defaults are read-only. "Reset to default" restores the original.' })
 }
 
@@ -251,6 +291,7 @@ async function saveCopy(name: string, source: WorkspaceFile | null): Promise<voi
   if (!source) return
   const { templateOf: _templateOf, ...rest } = source
   const copy: WorkspaceFile = { ...rest, id: crypto.randomUUID(), name, updatedAt: new Date().toISOString() }
+  audit.record('workspace.copy', name, { from: source.name }, { id: copy.id, panels: copy.panels.length })
   await workspaceStore.save(copy)
   await refreshSaved()
   setCurrent(copy)
@@ -272,12 +313,14 @@ export async function newWorkspace(name: string): Promise<void> {
   await saveNow()
   const user = requireUser()
   const file: WorkspaceFile = { schemaVersion: 1, id: crypto.randomUUID(), name, ownerId: user.id, updatedAt: new Date().toISOString(), layout: null, panels: [] }
+  audit.record('workspace.create', name, null, { id: file.id })
   await workspaceStore.save(file)
   await refreshSaved()
   setCurrent(file)
 }
 
 export async function renameWorkspace(name: string): Promise<void> {
+  audit.record('workspace.rename', shell.get().activeId ?? '', { name: shell.get().activeName }, { name })
   shell.set({ activeName: name })
   await saveNow()
 }
@@ -287,6 +330,7 @@ export async function deleteWorkspace(): Promise<void> {
   const { activeId } = shell.get()
   if (!activeId || isTemplateId(activeId)) return
   clearTimeout(saveTimer)
+  audit.record('workspace.delete', shell.get().activeName, { id: activeId, panels: Object.keys(shell.get().panels).length }, null)
   await workspaceStore.delete(user.id, activeId)
   localStorage.removeItem(lastActiveKey(user.id))
   current = null
@@ -307,6 +351,7 @@ export async function resetToDefault(): Promise<void> {
   if (!activeId || !template) return
   clearTimeout(saveTimer)
   const file: WorkspaceFile = { ...materialise(template, user.id), id: activeId, name: activeName, templateOf: template.id, updatedAt: new Date().toISOString() }
+  audit.record('workspace.reset', activeName, { panels: Object.keys(shell.get().panels).length }, { panels: file.panels.length, template: template.id })
   await workspaceStore.save(file)
   setCurrent(file)
   // Persist the rebuilt layout once the engine has settled.
@@ -361,6 +406,7 @@ export async function importWorkspace(json: string): Promise<void> {
     toast({ tone: 'critical', title: 'Import failed', body: result.error })
     return
   }
+  audit.record('workspace.import', result.value.name, null, { id: result.value.id, panels: result.value.panels.length })
   await refreshSaved()
   setCurrent(result.value)
   toast({ tone: 'positive', title: `Imported "${result.value.name}"` })
@@ -375,7 +421,9 @@ const patchPanel = (panelId: string, patch: Partial<PanelRecord>) => {
 }
 
 export function setPanelChannel(panelId: string, channelId: string | null): void {
-  if (shell.get().panels[panelId]?.channelId === channelId) return
+  const existing = shell.get().panels[panelId]
+  if (!existing || existing.channelId === channelId) return
+  audit.record('panel.channel', `${existing.appId} (${panelId})`, { channelId: existing.channelId }, { channelId })
   patchPanel(panelId, { channelId })
   scheduleSave()
 }
@@ -390,15 +438,34 @@ export interface AddPanelOptions {
 export function addPanel(appId: string, options: AddPanelOptions = {}): string | null {
   const app = record(appId)
   const user = shell.get().user
-  if (!api || !app || !user || !canLaunch(user, app)) {
+  // A tile group is only usable if the group widget itself is too.
+  if (!api || !app || !user || !canLaunch(user, app) || (app.kind === 'tile' && !canLaunchId(TILE_GROUP, user))) {
     toast({ tone: 'warning', title: 'That app is not available' })
     return null
   }
+  if (app.kind === 'tile') return addTile(app.appId, options)
   const panelId = `${appId}-${crypto.randomUUID().slice(0, 8)}`
   const panel: PanelRecord = { panelId, kind: panelKind(app), appId, channelId: options.channelId ?? null, config: options.config ?? {} }
+  audit.record('panel.add', `${appId} (${panelId})`, null, { channelId: panel.channelId })
   shell.set({ panels: { ...shell.get().panels, [panelId]: panel } })
   addDockPanel(panel, options.position ?? bestSlot())
   return panelId
+}
+
+/** A tile joins the workspace's tile group. If there is none, a group is created for it. */
+function addTile(tileId: string, options: AddPanelOptions): string | null {
+  const group = Object.values(shell.get().panels).find((p) => p.appId === TILE_GROUP && api?.getPanel(p.panelId))
+  if (group) {
+    const tiles = Array.isArray(group.config.tiles) ? (group.config.tiles as unknown[]) : []
+    if (tiles.includes(tileId)) toast({ tone: 'info', title: 'That tile is already in this workspace' })
+    else setPanelConfig(group.panelId, { ...group.config, tiles: [...tiles, tileId] })
+    focusPanel(group.panelId)
+    return group.panelId
+  }
+  if (!record(TILE_GROUP)) return null
+  // New groups share the active panel's channel so their tiles see the same context.
+  const channelId = shell.get().panels[api?.activePanel?.id ?? '']?.channelId ?? null
+  return addPanel(TILE_GROUP, { ...options, channelId, config: { tiles: [tileId] } })
 }
 
 /** Focus a running instance of the app, or open one. Returns the panel (instance) id. */
@@ -415,7 +482,20 @@ export function focusOrOpen(appId: string, newInstance = false): string {
   return panelId
 }
 
+export function focusPanel(panelId: string): void {
+  api?.getPanel(panelId)?.api.setActive()
+}
+
+/** Save new per-placement settings for a panel (e.g. a rearranged tile grid). */
+export function setPanelConfig(panelId: string, config: Record<string, unknown>): void {
+  audit.record('panel.config', panelId, shell.get().panels[panelId]?.config, config)
+  patchPanel(panelId, { config })
+  scheduleSave()
+}
+
 export function closePanel(panelId: string): void {
+  const closing = shell.get().panels[panelId]
+  if (closing) audit.record('panel.close', `${closing.appId} (${panelId})`, { channelId: closing.channelId }, null)
   api?.getPanel(panelId)?.api.close()
   const { [panelId]: _removed, ...rest } = shell.get().panels
   shell.set({ panels: rest })

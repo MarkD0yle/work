@@ -1,5 +1,9 @@
 import {
   PROTOCOL,
+  type AlertInput,
+  type AlertSummary,
+  type Severity,
+  type ShellShortcut,
   type AppIdentifier,
   type AppIntent,
   type Appearance,
@@ -57,6 +61,20 @@ export interface HarborClient {
   getOrCreateChannel(channelId: string): Promise<Channel>
   /** Harbor extra: the shell changed this panel's channel link. */
   onChannelChanged(handler: (channelId: string | null) => void): () => void
+  /** Harbor extra: raise an alert in the shell. Resolves to the alert's id. */
+  publishAlert(alert: AlertInput): Promise<string>
+  /** Harbor extra: open alerts per severity, and changes to them. */
+  getAlertSummary(): Promise<AlertSummary>
+  onAlertSummaryChanged(handler: (summary: AlertSummary) => void): () => void
+  /** Harbor extra: open the shell's alert drawer, optionally filtered to one severity. */
+  showAlerts(severity?: Severity): Promise<void>
+  /** Harbor extra: pass a shell keyboard shortcut up to the shell. */
+  shortcut(name: ShellShortcut): Promise<void>
+  /** Harbor extra: the shell's mock market connection. */
+  getConnection(): Promise<boolean>
+  onConnectionChanged(handler: (connected: boolean) => void): () => void
+  /** Harbor extra: this app's panel was shown or hidden. */
+  onVisibilityChanged(handler: (visible: boolean) => void): () => void
   /** Harbor extra: theme or density changed in the shell. */
   onAppearanceChanged(handler: (appearance: Appearance) => void): () => void
   close(): void
@@ -73,6 +91,9 @@ export function createClient(transport: ClientTransport, options: { requestTimeo
   const intentHandlers = new Map<string, IntentHandler>()
   const channelHandlers = new Set<(channelId: string | null) => void>()
   const appearanceHandlers = new Set<(appearance: Appearance) => void>()
+  const connectionHandlers = new Set<(connected: boolean) => void>()
+  const alertHandlers = new Set<(summary: AlertSummary) => void>()
+  const visibilityHandlers = new Set<(visible: boolean) => void>()
   let closed = false
 
   transport.onMessage((message: ResponseMessage | EventMessage) => {
@@ -97,6 +118,15 @@ export function createClient(transport: ClientTransport, options: { requestTimeo
         break
       case 'appearance':
         for (const h of appearanceHandlers) h(message.appearance)
+        break
+      case 'connection':
+        for (const h of connectionHandlers) h(message.connected)
+        break
+      case 'visibility':
+        for (const h of visibilityHandlers) h(message.visible)
+        break
+      case 'alertSummary':
+        for (const h of alertHandlers) h(message.summary)
         break
     }
   })
@@ -172,6 +202,23 @@ export function createClient(transport: ClientTransport, options: { requestTimeo
     onChannelChanged: (handler) => {
       channelHandlers.add(handler)
       return () => void channelHandlers.delete(handler)
+    },
+    publishAlert: async (alert) => (await request('publishAlert', { alert })).id,
+    getAlertSummary: () => request('getAlertSummary', {}),
+    onAlertSummaryChanged: (handler) => {
+      alertHandlers.add(handler)
+      return () => void alertHandlers.delete(handler)
+    },
+    showAlerts: async (severity) => void (await request('showAlerts', severity ? { severity } : {})),
+    shortcut: async (name) => void (await request('shortcut', { name })),
+    getConnection: async () => (await request('getConnection', {})).connected,
+    onConnectionChanged: (handler) => {
+      connectionHandlers.add(handler)
+      return () => void connectionHandlers.delete(handler)
+    },
+    onVisibilityChanged: (handler) => {
+      visibilityHandlers.add(handler)
+      return () => void visibilityHandlers.delete(handler)
     },
     onAppearanceChanged: (handler) => {
       appearanceHandlers.add(handler)

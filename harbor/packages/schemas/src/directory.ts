@@ -29,6 +29,12 @@ export const DirectoryRecordSchema = z.object({
   allowedOrigins: z.array(z.string()).default([]),
   requiredEntitlement: z.string().min(1),
   defaultSize: z.object({ width: z.number().positive(), height: z.number().positive() }).optional(),
+  /**
+   * Load this app even while its panel is behind another tab. By default an
+   * iframe is not loaded until its panel is first shown. Set this for apps that
+   * must keep up with channel context while hidden (e.g. a trade tracker).
+   */
+  runsInBackground: z.boolean().default(false),
   /** Short glyph (1–2 letters) used when no icon image is supplied. */
   glyph: z.string().max(2).optional(),
 })

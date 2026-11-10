@@ -10,6 +10,7 @@ const PATHS = {
   lock: 'M7 11V8a5 5 0 0 1 10 0v3M5 11h14v9H5z',
   warning: 'M12 4 2 20h20L12 4Zm0 6v5m0 3h.01',
   info: 'M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18Zm0 8v5m0-8h.01',
+  critical: 'M8 3h8l5 5v8l-5 5H8l-5-5V8l5-5Zm4 5v5m0 3h.01',
   check: 'M5 12l5 5 9-10',
   reload: 'M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5',
   menu: 'M4 6h16M4 12h16M4 18h16',

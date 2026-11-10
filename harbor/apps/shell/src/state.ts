@@ -1,6 +1,7 @@
 import { create } from 'zustand'
+import { AuditTrail } from './audit.ts'
 import type { ResolveRequest } from '@harbor/agent'
-import type { Density, DirectoryRecord, PanelRecord, Theme, UserInfo, WorkspaceFile } from '@harbor/schemas'
+import type { Density, DirectoryRecord, PanelRecord, Severity, Theme, UserInfo, WorkspaceFile } from '@harbor/schemas'
 
 export type DevPanelState = 'loading' | 'empty' | 'error'
 export type SaveStatus = 'saved' | 'unsaved' | 'saving' | 'template'
@@ -31,7 +32,12 @@ export interface ShellState {
   devState: Record<string, DevPanelState | undefined>
   saveStatus: SaveStatus
   libraryOpen: boolean
+  paletteOpen: boolean
+  shortcutsOpen: boolean
   logOpen: boolean
+  alertsOpen: boolean
+  /** Which alerts the drawer shows. `null` = all. */
+  alertSeverity: Severity | null
   railExpanded: boolean
   /** True while a Library card is being dragged, so iframes stop eating drag events. */
   dragging: boolean
@@ -61,7 +67,11 @@ export const useShell = create<ShellState>(() => ({
   devState: {},
   saveStatus: 'saved',
   libraryOpen: false,
+  paletteOpen: false,
+  shortcutsOpen: false,
   logOpen: false,
+  alertsOpen: false,
+  alertSeverity: null,
   railExpanded: false,
   dragging: false,
   resolver: null,
@@ -73,15 +83,21 @@ export const shell = {
 }
 
 export function setTheme(theme: Theme): void {
+  audit.record('preference.theme', 'shell', shell.get().theme, theme)
   localStorage.setItem('harbor.theme', theme)
   shell.set({ theme })
 }
 
 export function setDensity(density: Density): void {
+  audit.record('preference.density', 'shell', shell.get().density, density)
   localStorage.setItem('harbor.density', density)
   shell.set({ density })
 }
 
 export function setConnected(connected: boolean): void {
+  audit.record('connection.simulate', 'market connection', { connected: shell.get().connected }, { connected })
   shell.set(connected ? { connected, lastUpdated: new Date().toISOString() } : { connected })
 }
+
+/** Every state-changing action the shell performs is recorded here. */
+export const audit = new AuditTrail(() => shell.get().user?.id ?? 'signed-out')

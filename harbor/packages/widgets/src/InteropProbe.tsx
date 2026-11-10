@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { HarborError, type HarborClient } from '@harbor/agent-client'
 import { findUserChannel, type Context, type FxOrderContext, type ImplementationMetadata, type UserInfo } from '@harbor/schemas'
+import { createDataset, seedFromSearch } from '@harbor/mock-data'
 import { Badge, Button, ChannelDot, EmptyState } from '@harbor/ui'
 
 interface Received {
@@ -48,6 +49,11 @@ export function InteropProbe({ client }: { client: HarborClient }) {
   const [channelId, setChannelId] = useState<string | null>(null)
   const [received, setReceived] = useState<Received[]>([])
   const [status, setStatus] = useState('')
+  // Every app builds the mock data itself from the seed; equal fingerprints mean they all hold the same data.
+  const [mock] = useState(() => {
+    const seed = seedFromSearch(window.location.search)
+    return { seed, fingerprint: createDataset(seed).fingerprint }
+  })
   const lastOrder = useRef<FxOrderContext | null>(null)
   const seq = useRef(0)
 
@@ -100,6 +106,9 @@ export function InteropProbe({ client }: { client: HarborClient }) {
           <strong>{info?.appMetadata.title ?? 'Connecting…'}</strong>
           <span className="hw-probe__meta">
             {user ? `${user.displayName} · ${user.role}` : ''} {info ? `· agent ${info.providerVersion}` : ''}
+          </span>
+          <span className="hw-probe__meta" data-testid="probe-data">
+            seed {mock.seed} · data {mock.fingerprint}
           </span>
         </div>
         <span className="hw-probe__channel" data-testid="probe-channel">

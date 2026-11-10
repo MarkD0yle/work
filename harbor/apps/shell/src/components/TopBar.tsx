@@ -1,5 +1,6 @@
-import { useRef, useState } from 'react'
-import { Button, Dialog, Icon, IconButton, Input, Kbd, Menu, toast, type MenuItem } from '@harbor/ui'
+import { useRef, useState, useSyncExternalStore } from 'react'
+import { Button, Dialog, Icon, Input, Kbd, IconButton, Menu, toast, type MenuItem } from '@harbor/ui'
+import { alerts } from '../alerts/center.ts'
 import { auth } from '../auth.ts'
 import { download } from '../download.ts'
 import { setDensity, setTheme, shell, useShell } from '../state.ts'
@@ -106,6 +107,10 @@ export function TopBar() {
   const [nameAction, setNameAction] = useState<NameAction | null>(null)
   const [preview, setPreview] = useState<ImportPreview | null>(null)
   const fileInput = useRef<HTMLInputElement>(null)
+  const unread = useSyncExternalStore(
+    (listener) => alerts.subscribe(listener),
+    () => alerts.unreadCount(),
+  )
   if (!user) return null
 
   const isTemplate = activeId !== null && isTemplateId(activeId)
@@ -147,6 +152,7 @@ export function TopBar() {
           separated: i === 0,
           onSelect: () => {
             if (u.id === user.id) return
+            alerts.clear()
             void endSession().then(() => startSession(auth.signIn(u.id)))
           },
         }))
@@ -157,6 +163,7 @@ export function TopBar() {
       separated: true,
       onSelect: () => {
         auth.signOut()
+        alerts.clear()
         void endSession()
       },
     },
@@ -181,15 +188,28 @@ export function TopBar() {
       />
       <IconButton icon="plus" label="New workspace" onClick={() => setNameAction({ title: 'New workspace', initial: 'Untitled workspace', confirm: 'Create', run: newWorkspace })} />
       <span className="hs-topbar__spacer" />
-      <button type="button" className="hs-search" onClick={() => shell.set({ libraryOpen: true })}>
+      <button type="button" className="hs-search" onClick={() => shell.set({ paletteOpen: true })}>
         <Icon name="search" size={14} />
-        <span>Search apps and workspaces</span>
+        <span>Search apps, orders and actions</span>
         <Kbd>⌘K</Kbd>
       </button>
       <span className="hs-topbar__spacer" />
-      <IconButton icon="bell" label="Alerts (0 unread)" onClick={() => toast({ title: 'No alerts', body: 'The alert centre arrives in Phase 7.' })} />
+      {/* Named by its own text, so the visible count is part of the name a speech user would say. */}
+      <button type="button" className={`hs-bell${unread > 0 ? ' has-unread' : ''}`} title="Alerts" data-testid="alert-bell" onClick={() => shell.set({ alertsOpen: true, alertSeverity: null })}>
+        <Icon name="bell" />
+        <span className="hb-sr-only">Alerts, </span>
+        {unread > 0 ? (
+          <span className="hs-bell__count" data-testid="alert-unread">
+            {unread > 99 ? '99+' : unread}
+          </span>
+        ) : (
+          <span className="hb-sr-only">0</span>
+        )}
+        <span className="hb-sr-only"> unread</span>
+      </button>
       <Menu
-        label={`Profile: ${user.displayName}`}
+        label="Profile menu"
+        namedByContent
         align="end"
         triggerClassName="hs-profile"
         trigger={
@@ -199,6 +219,7 @@ export function TopBar() {
               <strong data-testid="user-name">{user.displayName}</strong>
               <span data-testid="user-role">{user.role}</span>
             </span>
+            <span className="hb-sr-only"> profile menu</span>
           </>
         }
         items={profileItems}

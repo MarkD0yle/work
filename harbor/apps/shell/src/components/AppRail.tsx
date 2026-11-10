@@ -12,39 +12,37 @@ export function AppRail() {
   const libraryOpen = useShell((s) => s.libraryOpen)
   if (!user) return null
   // Entitlement filter first: an app the user cannot launch is simply not here.
-  const pinned = directory.filter((r) => r.kind === 'app' && canLaunch(user, r))
+  // Developer tools stay in the library; the rail is for the apps people work in.
+  const pinned = directory.filter((r) => r.kind === 'app' && r.category !== 'Developer' && canLaunch(user, r))
   const running = new Set(Object.values(panels).map((p) => p.appId))
 
   return (
     <nav className={`hs-rail${expanded ? ' is-expanded' : ''}`} aria-label="Apps" data-region="rail">
-      <button type="button" className="hs-rail__item" aria-expanded={expanded} aria-label={expanded ? 'Collapse app rail' : 'Expand app rail'} title={expanded ? 'Collapse' : 'Expand'} onClick={() => shell.set({ railExpanded: !expanded })}>
-        <span className="hs-glyph">
+      <button type="button" className="hs-rail__item" aria-expanded={expanded} title={expanded ? 'Collapse' : 'Expand'} onClick={() => shell.set({ railExpanded: !expanded })}>
+        <span className="hs-glyph" aria-hidden="true">
           <Icon name="menu" />
         </span>
-        {expanded && <span className="hs-rail__label">Apps</span>}
+        <span className={expanded ? 'hs-rail__label' : 'hb-sr-only'}>{expanded ? 'Collapse app rail' : 'Expand app rail'}</span>
       </button>
       <ul>
         {pinned.map((app) => (
           <li key={app.appId}>
-            <button
-              type="button"
-              className="hs-rail__item"
-              data-app={app.appId}
-              aria-label={`${app.title}${running.has(app.appId) ? ' (running)' : ''}`}
-              title={`${app.title} — click to focus or open, Shift-click for a new panel`}
-              onClick={(e) => void focusOrOpen(app.appId, e.shiftKey)}
-            >
+            <button type="button" className="hs-rail__item" data-app={app.appId} title={`${app.title} — click to focus or open, Shift-click for a new panel`} onClick={(e) => void focusOrOpen(app.appId, e.shiftKey)}>
               <AppGlyph app={app} running={running.has(app.appId)} />
-              {expanded && <span className="hs-rail__label">{app.title}</span>}
+              {/* The name is real text: visible when the rail is expanded, screen-reader-only when collapsed. */}
+              <span className={expanded ? 'hs-rail__label' : 'hb-sr-only'}>
+                {app.title}
+                {running.has(app.appId) && <span className="hb-sr-only"> (running)</span>}
+              </span>
             </button>
           </li>
         ))}
       </ul>
-      <button type="button" className={`hs-rail__item${libraryOpen ? ' is-active' : ''}`} aria-label="All apps" title="All apps (Widget Library)" onClick={() => shell.set({ libraryOpen: !libraryOpen })}>
-        <span className="hs-glyph">
+      <button type="button" className={`hs-rail__item${libraryOpen ? ' is-active' : ''}`} title="All apps (Widget Library)" aria-pressed={libraryOpen} onClick={() => shell.set({ libraryOpen: !libraryOpen })}>
+        <span className="hs-glyph" aria-hidden="true">
           <Icon name="grid" />
         </span>
-        {expanded && <span className="hs-rail__label">All apps</span>}
+        <span className={expanded ? 'hs-rail__label' : 'hb-sr-only'}>All apps</span>
       </button>
     </nav>
   )

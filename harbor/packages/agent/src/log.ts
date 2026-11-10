@@ -1,4 +1,4 @@
-export type InteropLogKind = 'broadcast' | 'intent' | 'open' | 'channel' | 'dropped' | 'denied' | 'error'
+export type InteropLogKind = 'broadcast' | 'intent' | 'open' | 'channel' | 'alert' | 'dropped' | 'denied' | 'error'
 
 export interface InteropLogEntry {
   seq: number

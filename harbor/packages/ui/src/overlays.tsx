@@ -77,9 +77,11 @@ export interface MenuProps {
   triggerClassName?: string
   align?: 'start' | 'end'
   header?: ReactNode
+  /** The trigger's visible content already names it, so do not override that with `label` (which still names the menu). */
+  namedByContent?: boolean
 }
 
-export function Menu({ label, trigger, items, triggerClassName = 'hb-icon-button', align = 'start', header }: MenuProps) {
+export function Menu({ label, trigger, items, triggerClassName = 'hb-icon-button', align = 'start', header, namedByContent = false }: MenuProps) {
   const [open, setOpen] = useState(false)
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null)
   // The trigger is held in state (not a ref) because the portal target is derived from it.
@@ -127,8 +129,8 @@ export function Menu({ label, trigger, items, triggerClassName = 'hb-icon-button
         ref={setTrigger}
         type="button"
         className={triggerClassName}
-        aria-label={label}
-        title={label}
+        aria-label={namedByContent ? undefined : label}
+        title={namedByContent ? undefined : label}
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={(e) => {
@@ -200,6 +202,10 @@ export interface ToastItem {
   tone: ToastTone
   title: string
   body?: string
+  /** One button on the toast, e.g. an alert's action. */
+  action?: { label: string; onSelect: () => void }
+  /** Called when the user closes the toast (not when it times out or is replaced). */
+  onDismiss?: () => void
 }
 
 const MAX_TOASTS = 3
@@ -212,13 +218,21 @@ const publish = (next: ToastItem[]) => {
 }
 
 export function dismissToast(id: number): void {
-  publish(toasts.filter((t) => t.id !== id))
+  if (toasts.some((t) => t.id === id)) publish(toasts.filter((t) => t.id !== id))
 }
 
-/** Show a toast. Critical toasts stay until dismissed; others leave after 5s. */
+/**
+ * Show a toast. At most three are on screen. Critical toasts stay until
+ * dismissed and are the last to make way; others leave after five seconds.
+ */
 export function toast(input: Omit<ToastItem, 'id' | 'tone'> & { tone?: ToastTone }): number {
   const item: ToastItem = { tone: 'info', ...input, id: ++toastSeq }
-  publish([...toasts, item].slice(-MAX_TOASTS))
+  const next = [...toasts, item]
+  while (next.length > MAX_TOASTS) {
+    const evict = next.findIndex((t) => t.tone !== 'critical' && t !== item)
+    next.splice(evict >= 0 ? evict : 0, 1)
+  }
+  publish(next)
   if (item.tone !== 'critical') setTimeout(() => dismissToast(item.id), 5000)
   return item.id
 }
@@ -234,14 +248,33 @@ export function ToastViewport() {
     <div className="hb-toasts" role="region" aria-label="Notifications" aria-live="polite">
       {items.map((t) => (
         <div key={t.id} className={`hb-toast hb-toast--${t.tone}`} role={t.tone === 'critical' ? 'alert' : 'status'}>
-          <Icon name={t.tone === 'positive' ? 'check' : t.tone === 'info' ? 'info' : 'warning'} />
+          <Icon name={t.tone === 'positive' ? 'check' : t.tone === 'info' ? 'info' : t.tone === 'critical' ? 'critical' : 'warning'} />
           <div className="hb-toast__text">
             <strong>
               <span className="hb-toast__tone">{TONE_LABEL[t.tone]}:</span> {t.title}
             </strong>
             {t.body && <span>{t.body}</span>}
           </div>
-          <IconButton icon="close" label="Dismiss" onClick={() => dismissToast(t.id)} />
+          {t.action && (
+            <button
+              type="button"
+              className="hb-button hb-button--secondary"
+              onClick={() => {
+                dismissToast(t.id)
+                t.action?.onSelect()
+              }}
+            >
+              {t.action.label}
+            </button>
+          )}
+          <IconButton
+            icon="close"
+            label="Dismiss"
+            onClick={() => {
+              dismissToast(t.id)
+              t.onDismiss?.()
+            }}
+          />
         </div>
       ))}
     </div>

@@ -423,6 +423,23 @@ describe('lifecycle and robustness', () => {
     expect(kit.agent.appearance()).toEqual(kit.appearance)
   })
 
+  it('reports the connection state and pushes changes to every instance', async () => {
+    const kit = makeKit()
+    const a = kit.connect('blotter', 'a')
+    expect(await a.getConnection()).toBe(true)
+    kit.agent['options'].hooks.isConnected = () => false
+    expect(await a.getConnection()).toBe(false)
+    const seen = vi.fn()
+    const off = a.onConnectionChanged(seen)
+    kit.agent.broadcastConnection(false)
+    await settle()
+    expect(seen).toHaveBeenCalledWith(false)
+    off()
+    kit.agent.broadcastConnection(true)
+    await settle()
+    expect(seen).toHaveBeenCalledTimes(1)
+  })
+
   it('keeps an append-only, exportable log with stable snapshots', async () => {
     const kit = makeKit()
     const a = kit.connect('blotter', 'a', BLUE)
@@ -439,5 +456,140 @@ describe('lifecycle and robustness', () => {
     off()
     await a.broadcast(ORDER)
     expect(notified).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('alerts', () => {
+  const mismatch = { severity: 'critical' as const, title: 'Trade T-1 mismatched', body: 'Rate differs', context: ORDER, action: { label: 'Resolve', intent: 'harbor.ExecuteOrder' }, key: 'T-1' }
+
+  it('hands a valid alert to the host with its source app, and logs it', async () => {
+    const kit = makeKit()
+    const published: [string, unknown][] = []
+    kit.agent['options'].hooks.publishAlert = (appId, alert) => {
+      published.push([appId, alert])
+      return 'a-1'
+    }
+    const app = kit.connect('pretrade', 'p1')
+    expect(await app.publishAlert(mismatch)).toBe('a-1')
+    expect(published).toEqual([['pretrade', mismatch]])
+    expect(kit.agent.log.entries().at(-1)).toMatchObject({ kind: 'alert', from: 'pretrade#p1', type: 'critical', id: '10432', detail: 'Trade T-1 mismatched' })
+    expect(await app.publishAlert({ severity: 'info', title: 'No context needed' })).toBe('a-1')
+  })
+
+  it('refuses malformed alerts, bad contexts, and hosts with no alert centre', async () => {
+    const kit = makeKit()
+    const app = kit.connect('pretrade', 'p1')
+    expect(await code(app.publishAlert(mismatch))).toBe('MalformedMessage')
+    kit.agent['options'].hooks.publishAlert = () => 'a-1'
+    expect(await code(app.publishAlert({ ...mismatch, title: 'x'.repeat(61) }))).toBe('MalformedMessage')
+    expect(await code(app.publishAlert({ ...mismatch, body: 'x'.repeat(141) }))).toBe('MalformedMessage')
+    expect(await code(app.publishAlert({ ...mismatch, severity: 'fatal' as never }))).toBe('MalformedMessage')
+    expect(await code(app.publishAlert({ severity: 'info', title: 'Action without context', action: { label: 'Go', intent: 'X' } }))).toBe('MalformedMessage')
+    expect(await code(app.publishAlert({ ...mismatch, context: { ...ORDER, amount: -1 } }))).toBe('MalformedContext')
+    expect(await code(app.publishAlert(undefined as never))).toBe('MalformedMessage')
+    expect(kit.agent.log.entries().filter((e) => e.kind === 'alert')).toHaveLength(0)
+  })
+
+  it('serves the alert summary, pushes changes, and asks the host to show alerts', async () => {
+    const kit = makeKit()
+    const app = kit.connect('blotter', 'b1')
+    expect(await app.getAlertSummary()).toEqual({ info: 0, warning: 0, critical: 0 })
+    kit.agent['options'].hooks.getAlertSummary = () => ({ info: 1, warning: 0, critical: 2 })
+    expect(await app.getAlertSummary()).toEqual({ info: 1, warning: 0, critical: 2 })
+    const seen = vi.fn()
+    const off = app.onAlertSummaryChanged(seen)
+    kit.agent.broadcastAlertSummary({ info: 0, warning: 0, critical: 3 })
+    await settle()
+    expect(seen).toHaveBeenCalledWith({ info: 0, warning: 0, critical: 3 })
+    off()
+
+    const shown: unknown[] = []
+    await app.showAlerts('critical')
+    kit.agent['options'].hooks.showAlerts = (filter) => shown.push(filter)
+    await app.showAlerts('critical')
+    await app.showAlerts()
+    await app.showAlerts('bogus' as never)
+    expect(shown).toEqual([{ severity: 'critical' }, {}, {}])
+  })
+})
+
+describe('shell shortcuts', () => {
+  it('passes a known shortcut from an app to the host and refuses anything else', async () => {
+    const kit = makeKit()
+    const seen: [string, string][] = []
+    const app = kit.connect('pretrade', 'p1')
+    await app.shortcut('commandPalette')
+    kit.agent['options'].hooks.onShortcut = (name, instanceId) => seen.push([name, instanceId])
+    await app.shortcut('commandPalette')
+    await app.shortcut('nextPanel')
+    expect(seen).toEqual([['commandPalette', 'p1'], ['nextPanel', 'p1']])
+    expect(await code(app.shortcut('formatDisk' as never))).toBe('MalformedMessage')
+  })
+})
+
+describe('visibility and leaks', () => {
+  it('tells one instance when its panel is shown or hidden', async () => {
+    const kit = makeKit()
+    const a = kit.connect('pretrade', 'a')
+    const b = kit.connect('research', 'b')
+    const seenA = vi.fn()
+    const seenB = vi.fn()
+    const off = a.onVisibilityChanged(seenA)
+    b.onVisibilityChanged(seenB)
+    kit.agent.setInstanceVisible('a', false)
+    kit.agent.setInstanceVisible('missing', false)
+    await settle()
+    expect(seenA).toHaveBeenCalledWith(false)
+    expect(seenB).not.toHaveBeenCalled()
+    off()
+    kit.agent.setInstanceVisible('a', true)
+    await settle()
+    expect(seenA).toHaveBeenCalledTimes(1)
+  })
+
+  it('returns to empty tables after many instances come and go', async () => {
+    const kit = makeKit({ deliveryTimeoutMs: 20 })
+    const empty = { instances: 0, contextListeners: 0, intentListeners: 0, pendingIntents: 0, pendingContexts: 0 }
+    expect(kit.agent.stats()).toEqual(empty)
+    for (let i = 0; i < 200; i++) {
+      const client = kit.connect('fx-exec', `p-${i}`, BLUE)
+      await client.addContextListener(null, () => {})
+      await client.addIntentListener('harbor.ExecuteOrder', () => {})
+      const listener = await client.addContextListener('harbor.fxOrder', () => {})
+      if (i % 2) await listener.unsubscribe()
+      if (i === 0) expect(kit.agent.stats()).toMatchObject({ instances: 1, contextListeners: 2, intentListeners: 1 })
+      kit.agent.unregisterInstance(`p-${i}`)
+    }
+    expect(kit.agent.stats()).toEqual(empty)
+  })
+
+  it('does not keep intents or contexts queued for an app that never listens', async () => {
+    const kit = makeKit({ deliveryTimeoutMs: 20 })
+    const blotter = kit.connect('blotter', 'b1')
+    void blotter.raiseIntent('harbor.ExecuteOrder', ORDER).catch(() => {})
+    await blotter.open({ appId: 'pretrade' }, ORDER)
+    await settle()
+    expect(kit.agent.stats()).toMatchObject({ pendingIntents: 1, pendingContexts: 1 })
+    await new Promise((resolve) => setTimeout(resolve, 60))
+    expect(kit.agent.stats()).toMatchObject({ pendingIntents: 0, pendingContexts: 0 })
+    expect(kit.agent['pendingIntents'].size).toBe(0)
+    expect(kit.agent['pendingContexts'].size).toBe(0)
+  })
+
+  it('clears a queue once its intent or context has been delivered', async () => {
+    const kit = makeKit({ deliveryTimeoutMs: 500 })
+    const blotter = kit.connect('blotter', 'b1')
+    kit.autoConnect.onLaunch = (appId, instanceId) => {
+      setTimeout(() => {
+        const client = kit.connect(appId, instanceId)
+        void client.addIntentListener('harbor.ExecuteOrder', () => {})
+        void client.addContextListener(null, () => {})
+      }, 10)
+    }
+    await blotter.raiseIntent('harbor.ExecuteOrder', ORDER)
+    await blotter.open({ appId: 'pretrade' }, ORDER)
+    await new Promise((resolve) => setTimeout(resolve, 40))
+    expect(kit.agent['pendingIntents'].size).toBe(0)
+    expect(kit.agent['pendingContexts'].size).toBe(0)
   })
 })

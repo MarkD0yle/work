@@ -1,0 +1,12 @@
+{
+  "name": "@harbor/partner-news",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": { "dev": "vite", "build": "vite build" },
+  "dependencies": {
+    "@harbor/agent-client": "workspace:*",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6"
+  }
+}

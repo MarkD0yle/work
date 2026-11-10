@@ -6,7 +6,15 @@ import { shell } from './state.ts'
  * the launcher, library, resolver, entitlement checks, origin checks and the
  * frame-src policy are all derived from it.
  */
-export async function loadDirectory(): Promise<void> {
+let loading: Promise<void> | null = null
+
+/** Load the directory once per page; repeat calls share the same load. */
+export function loadDirectory(): Promise<void> {
+  loading ??= fetchDirectory()
+  return loading
+}
+
+async function fetchDirectory(): Promise<void> {
   try {
     const response = await fetch('/directory.json', { cache: 'no-store' })
     if (!response.ok) throw new Error(`HTTP ${response.status}`)

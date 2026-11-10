@@ -11,6 +11,8 @@
     "@harbor/tokens": "workspace:*",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
-    "@harbor/schemas": "workspace:*"
+    "@harbor/schemas": "workspace:*",
+    "ag-grid-community": "^35.3.0",
+    "ag-grid-react": "^35.3.0"
   }
 }

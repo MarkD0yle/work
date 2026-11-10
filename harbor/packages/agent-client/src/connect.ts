@@ -1,6 +1,8 @@
 import {
   PROTOCOL,
   isProtocolMessage,
+  isTypingTarget,
+  shellShortcutFor,
   type Appearance,
   type ClientTransport,
   type EventMessage,
@@ -67,6 +69,14 @@ export function connect(options: { timeoutMs?: number } = {}): Promise<HarborCli
       }
       const client = createClient(transport)
       client.onAppearanceChanged((appearance) => applyAppearance(appearance))
+      // Key presses inside an iframe never reach the host, so shell shortcuts
+      // (command palette, region and panel navigation) are passed up to it.
+      window.addEventListener('keydown', (e) => {
+        const shortcut = shellShortcutFor(e, isTypingTarget(e.target))
+        if (!shortcut) return
+        e.preventDefault()
+        void client.shortcut(shortcut).catch(() => {})
+      })
       resolve(client)
     }
     window.addEventListener('message', onHandshake)

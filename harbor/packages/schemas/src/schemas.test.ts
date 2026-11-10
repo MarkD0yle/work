@@ -9,6 +9,9 @@ import {
   isProtocolMessage,
   migrateWorkspace,
   parseDirectory,
+  parseAlertInput,
+  isTypingTarget,
+  shellShortcutFor,
   parseDirectoryRecord,
   validateContext,
   PROTOCOL,
@@ -47,6 +50,9 @@ describe('validateContext', () => {
     const good = [
       order,
       { ...order, benchmark: 'TWAP' },
+      { ...order, execution: { method: 'RFQ', estimate: { type: 'harbor.preTradeEstimate', id: { orderId: '1' }, expectedCostBps: 1, recommendedMethod: 'RFQ', suggestedCounterparties: ['LP-01'], liquidityScore: 5 } } },
+      { type: 'harbor.orderFilter', name: 'Awaiting execution', statuses: ['NEW'] },
+      { type: 'harbor.devCommand', command: 'forceMismatch' },
       trade,
       { type: 'harbor.preTradeEstimate', id: { orderId: '1' }, expectedCostBps: 1.2, recommendedMethod: 'RFQ', suggestedCounterparties: ['LP-1'], liquidityScore: 4 },
       { type: 'harbor.settlement', id: { tradeId: 'T1' }, matchStatus: 'MISMATCHED', exceptionReason: 'rate' },
@@ -67,6 +73,8 @@ describe('validateContext', () => {
       [{ ...order, pair: 'EUR/USD' }, /pair/],
       [{ ...order, valueDate: '12/11/2026' }, /valueDate/],
       [{ ...order, side: 'HOLD' }, /side/],
+      [{ ...order, execution: { method: 'VOICE' } }, /execution/],
+      [{ type: 'harbor.orderFilter', statuses: ['OPEN'] }, /statuses/],
       [{ ...trade, executedAt: 'yesterday' }, /executedAt/],
       [{ type: 'harbor.preTradeEstimate', id: { orderId: '1' }, expectedCostBps: 1, recommendedMethod: 'RFQ', suggestedCounterparties: [], liquidityScore: 6 }, /liquidityScore/],
       [{ type: 'harbor.settlement', id: { tradeId: 'T1' }, matchStatus: 'LOST' }, /matchStatus/],
@@ -209,5 +217,47 @@ describe('protocol', () => {
     expect(isProtocolMessage({ protocol: PROTOCOL })).toBe(false)
     expect(isProtocolMessage(null)).toBe(false)
     expect(isProtocolMessage('hello')).toBe(false)
+  })
+})
+
+describe('alerts', () => {
+  it('accepts a well-formed alert and enforces the length limits', () => {
+    expect(parseAlertInput({ severity: 'critical', title: 'Trade mismatched', body: 'Rate differs', context: order, action: { label: 'Resolve', intent: 'harbor.ViewSettlement' }, key: 'T-1' }).ok).toBe(true)
+    expect(parseAlertInput({ severity: 'info', title: 'Cut-off in 10 minutes' }).ok).toBe(true)
+    const bad: [unknown, RegExp][] = [
+      [{ severity: 'info', title: '' }, /title/],
+      [{ severity: 'info', title: 'x'.repeat(61) }, /title/],
+      [{ severity: 'info', title: 'ok', body: 'x'.repeat(141) }, /body/],
+      [{ severity: 'urgent', title: 'ok' }, /severity/],
+      [{ severity: 'info', title: 'ok', action: { label: 'Go', intent: 'X' } }, /needs a context/],
+      [{ severity: 'info', title: 'ok', context: order, action: { label: 'x'.repeat(25), intent: 'X' } }, /label/],
+      [null, /root/],
+    ]
+    for (const [input, reason] of bad) {
+      const result = parseAlertInput(input)
+      expect(result.ok, JSON.stringify(input)).toBe(false)
+      if (!result.ok) expect(result.error).toMatch(reason)
+    }
+  })
+})
+
+describe('shell shortcuts', () => {
+  const key = (k: string, mods: Partial<{ ctrlKey: boolean; metaKey: boolean; altKey: boolean; shiftKey: boolean }> = {}) => ({ key: k, ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, ...mods })
+  it('recognises the shell shortcuts and nothing else', () => {
+    expect(shellShortcutFor(key('k', { ctrlKey: true }))).toBe('commandPalette')
+    expect(shellShortcutFor(key('K', { metaKey: true }))).toBe('commandPalette')
+    expect(shellShortcutFor(key('F6'))).toBe('nextRegion')
+    expect(shellShortcutFor(key('F6', { shiftKey: true }))).toBe('previousRegion')
+    expect(shellShortcutFor(key('ArrowRight', { ctrlKey: true, altKey: true }))).toBe('nextPanel')
+    expect(shellShortcutFor(key('ArrowDown', { ctrlKey: true, altKey: true }))).toBe('nextPanel')
+    expect(shellShortcutFor(key('ArrowLeft', { ctrlKey: true, altKey: true }))).toBe('previousPanel')
+    expect(shellShortcutFor(key('ArrowUp', { ctrlKey: true, altKey: true }))).toBe('previousPanel')
+    expect(shellShortcutFor(key('?', { shiftKey: true }))).toBe('help')
+    expect(shellShortcutFor(key('?', { shiftKey: true }), true)).toBeNull()
+    expect(isTypingTarget({ tagName: 'INPUT' })).toBe(true)
+    expect(isTypingTarget({ tagName: 'DIV', isContentEditable: true })).toBe(true)
+    expect(isTypingTarget({ tagName: 'BUTTON' })).toBe(false)
+    expect(isTypingTarget(null)).toBe(false)
+    for (const other of [key('k'), key('k', { ctrlKey: true, altKey: true }), key('ArrowRight', { ctrlKey: true }), key('Enter'), key('F5')]) expect(shellShortcutFor(other)).toBeNull()
   })
 })

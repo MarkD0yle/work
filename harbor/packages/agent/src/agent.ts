@@ -6,11 +6,17 @@ import {
   canRaise,
   contextIdLabel,
   findUserChannel,
+  SHELL_SHORTCUTS,
   handlesIntent,
+  parseAlertInput,
   validateContext,
   type AgentErrorCode,
   type AgentEvent,
   type AgentTransport,
+  type AlertInput,
+  type AlertSummary,
+  type Severity,
+  type ShellShortcut,
   type AppIdentifier,
   type AppIntent,
   type Appearance,
@@ -47,6 +53,14 @@ export interface ResolveRequest {
 export interface AgentHooks {
   getUser(): UserInfo
   getAppearance(): Appearance
+  /** Mock market connection state; defaults to connected. */
+  isConnected?(): boolean
+  /** The host's alert centre. Without these hooks, publishing an alert is refused. */
+  publishAlert?(sourceAppId: string, alert: AlertInput): string
+  getAlertSummary?(): AlertSummary
+  showAlerts?(filter: { severity?: Severity }): void
+  /** A shell shortcut was pressed inside an app. */
+  onShortcut?(name: ShellShortcut, instanceId: string): void
   /** Focus a running instance of the app or open a new one. Returns its instance id. */
   ensureInstance(appId: string, options: { newInstance: boolean }): Promise<string>
   /** Ask the user to pick between two or more handlers. `null` = cancelled. */
@@ -157,6 +171,34 @@ export class Agent {
     for (const instance of this.instances.values()) this.emit(instance, { event: 'appearance', appearance })
   }
 
+  /** Tell an instance its panel was shown or hidden, so it can pause work nobody can see. */
+  setInstanceVisible(instanceId: string, visible: boolean): void {
+    const instance = this.instances.get(instanceId)
+    if (instance) this.emit(instance, { event: 'visibility', visible })
+  }
+
+  /** Sizes of the agent's internal tables. Used by leak tests: closing everything must bring these back to zero. */
+  stats(): { instances: number; contextListeners: number; intentListeners: number; pendingIntents: number; pendingContexts: number } {
+    const all = [...this.instances.values()]
+    return {
+      instances: all.length,
+      contextListeners: all.reduce((n, i) => n + i.contextListeners.size, 0),
+      intentListeners: all.reduce((n, i) => n + i.intentListeners.size, 0),
+      pendingIntents: [...this.pendingIntents.values()].reduce((n, q) => n + q.length, 0),
+      pendingContexts: [...this.pendingContexts.values()].reduce((n, q) => n + q.length, 0),
+    }
+  }
+
+  /** Tell every instance the (mock) market connection went down or came back. */
+  broadcastConnection(connected: boolean): void {
+    for (const instance of this.instances.values()) this.emit(instance, { event: 'connection', connected })
+  }
+
+  /** Push fresh alert counts to every instance (the alerts tile listens for these). */
+  broadcastAlertSummary(summary: AlertSummary): void {
+    for (const instance of this.instances.values()) this.emit(instance, { event: 'alertSummary', summary })
+  }
+
   /** Raise an intent as the shell itself (alert actions, command palette). */
   raiseIntentFromHost(intent: string, context: Context): Promise<IntentResolution> {
     return this.raiseIntent({ appId: 'shell', instanceId: 'shell' }, { intent, context })
@@ -192,6 +234,19 @@ export class Agent {
   } = {
     getInfo: (instance) => this.getInfo(instance),
     getUserInfo: () => structuredClone(this.options.hooks.getUser()),
+    getConnection: () => ({ connected: this.options.hooks.isConnected?.() ?? true }),
+    shortcut: (instance, params) => {
+      if (!SHELL_SHORTCUTS.includes(params?.name)) throw new AgentFault(AgentError.MalformedMessage, 'Unknown shortcut')
+      this.options.hooks.onShortcut?.(params.name, instance.instanceId)
+      return null
+    },
+    publishAlert: (instance, params) => this.publishAlert(instance, params?.alert),
+    getAlertSummary: () => this.options.hooks.getAlertSummary?.() ?? { info: 0, warning: 0, critical: 0 },
+    showAlerts: (_instance, params) => {
+      const severity = params?.severity
+      this.options.hooks.showAlerts?.(severity === 'info' || severity === 'warning' || severity === 'critical' ? { severity } : {})
+      return null
+    },
     getUserChannels: () => USER_CHANNELS.map((c) => ({ ...c, displayMetadata: { ...c.displayMetadata } })),
     getCurrentChannel: (instance) => instance.channelId,
     joinUserChannel: (instance, { channelId }) => {
@@ -252,6 +307,24 @@ export class Agent {
       optionalFeatures: { OriginatingAppMetadata: true, UserChannelMembershipAPIs: true },
       appMetadata: { appId: instance.appId, instanceId: instance.instanceId, title: record?.title ?? instance.appId, listensFor },
     }
+  }
+
+  /* ---------- alerts ---------- */
+
+  private publishAlert(instance: Instance, raw: unknown): { id: string } {
+    const source = this.identify(instance)
+    const parsed = parseAlertInput(raw)
+    const publish = this.options.hooks.publishAlert
+    if (!parsed.ok || !publish) {
+      const detail = parsed.ok ? 'this host has no alert centre' : parsed.error
+      this.log.append({ kind: 'error', from: label(source), to: 'alerts', type: 'alert', id: '', detail })
+      throw new AgentFault(AgentError.MalformedMessage, detail)
+    }
+    // The context will later be handed to an intent, so it must be a valid context now.
+    const context = parsed.value.context === undefined ? undefined : this.checkContext(parsed.value.context, source)
+    const id = publish(instance.appId, { ...parsed.value, ...(context ? { context } : {}) })
+    this.log.append({ kind: 'alert', from: label(source), to: 'alerts', type: parsed.value.severity, id: context ? contextIdLabel(context) : '', detail: parsed.value.title, userId: this.options.hooks.getUser().id })
+    return { id }
   }
 
   /* ---------- channels and context ---------- */
@@ -423,6 +496,7 @@ export class Agent {
         fail: reject,
         timer: setTimeout(() => {
           queue.splice(queue.indexOf(pending), 1)
+          if (queue.length === 0) this.pendingIntents.delete(instanceId)
           this.log.append({ kind: 'error', from: label(source), to: instanceId, type: intent, id: contextIdLabel(context), detail: 'target never listened' })
           reject(new AgentFault(AgentError.IntentDeliveryFailed, `The app did not accept ${intent} in time`))
         }, this.options.deliveryTimeoutMs ?? 10_000),
@@ -442,6 +516,7 @@ export class Agent {
       this.emit(instance, { event: 'intent', listenerId, intent: pending.intent, context: pending.context, source: pending.source })
       pending.done()
     }
+    if (queue.length === 0) this.pendingIntents.delete(instance.instanceId)
   }
 
   private flushPendingContexts(instance: Instance): void {
@@ -455,6 +530,7 @@ export class Agent {
       queue.splice(queue.indexOf(item), 1)
       this.emit(instance, { event: 'context', listenerId, context: item.context, source: item.source })
     }
+    if (queue.length === 0) this.pendingContexts.delete(instance.instanceId)
   }
 
   private async open(source: AppIdentifier, params: Methods['open']['params']): Promise<AppIdentifier> {
@@ -480,7 +556,14 @@ export class Agent {
     if (context) {
       const queue = this.pendingContexts.get(instanceId) ?? []
       this.pendingContexts.set(instanceId, queue)
-      queue.push({ context, source })
+      const item = { context, source }
+      queue.push(item)
+      // A context nobody ever listens for must not sit in memory for good.
+      setTimeout(() => {
+        const at = queue.indexOf(item)
+        if (at >= 0) queue.splice(at, 1)
+        if (queue.length === 0 && this.pendingContexts.get(instanceId) === queue) this.pendingContexts.delete(instanceId)
+      }, this.options.deliveryTimeoutMs ?? 10_000)
       const instance = this.instances.get(instanceId)
       if (instance) this.flushPendingContexts(instance)
     }

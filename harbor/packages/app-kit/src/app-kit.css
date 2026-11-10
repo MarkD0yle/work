@@ -1,0 +1,116 @@
+/* Layout shared by every Harbor app. Semantic and component tokens only. */
+#root {
+  height: 100%;
+}
+.ha-app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--color-surface-1);
+  font-size: var(--text-small);
+}
+.ha-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gap-sm);
+  padding: var(--gap-sm) var(--gap-md);
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+.ha-toolbar__title {
+  margin: 0 var(--gap-sm) 0 0;
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+}
+.ha-toolbar__spacer {
+  flex: 1;
+}
+.ha-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--gap-md);
+}
+.ha-fill {
+  flex: 1;
+  min-height: 0;
+}
+.ha-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-md);
+}
+.ha-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gap-sm);
+}
+.ha-muted {
+  color: var(--color-text-muted);
+}
+.ha-num {
+  text-align: right;
+  font-variant-numeric: var(--font-numeric);
+}
+.ha-stat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-hair);
+}
+.ha-stat__label {
+  color: var(--color-text-muted);
+  font-size: var(--text-caption);
+}
+.ha-stat__value {
+  font-size: var(--text-display);
+  font-weight: var(--weight-bold);
+  line-height: 1.1;
+  font-variant-numeric: var(--font-numeric);
+}
+.ha-stat__unit {
+  font-size: var(--text-body);
+  font-weight: var(--weight-regular);
+  color: var(--color-text-secondary);
+}
+.ha-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.ha-table caption {
+  padding-bottom: var(--gap-xs);
+  color: var(--color-text-muted);
+  font-size: var(--text-caption);
+  text-align: left;
+}
+.ha-table th,
+.ha-table td {
+  height: var(--grid-row-height);
+  padding: 0 var(--gap-sm);
+  border-bottom: var(--border-width) solid var(--color-border);
+  font-weight: var(--weight-regular);
+  text-align: left;
+  white-space: nowrap;
+}
+.ha-table thead th {
+  color: var(--color-text-muted);
+  font-size: var(--text-caption);
+}
+.ha-table .ha-num {
+  text-align: right;
+}
+.ha-table tr.is-best td {
+  background: color-mix(in srgb, var(--color-accent) 18%, transparent);
+}
+.ha-table tr.is-selected td {
+  background: color-mix(in srgb, var(--color-accent) 22%, transparent);
+}
+.ha-table tr.is-differs td {
+  color: var(--color-critical);
+  font-weight: var(--weight-bold);
+}
+.hb-toasts {
+  bottom: var(--gap-md);
+  right: var(--gap-md);
+}

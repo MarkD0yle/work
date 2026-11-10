@@ -1,0 +1,17 @@
+.py-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: var(--gap-md);
+}
+.py-fx {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gap-md);
+  margin-top: var(--gap-sm);
+}
+.py-rule {
+  color: var(--color-warning);
+  font-size: var(--text-caption);
+  white-space: normal;
+}

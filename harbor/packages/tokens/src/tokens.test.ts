@@ -26,7 +26,8 @@ describe('tokens', () => {
   it('no hard-coded colours outside tokens.css', () => {
     const offenders: string[] = []
     for (const file of [...walk(join(root, 'packages')), ...walk(join(root, 'apps'))]) {
-      if (file.endsWith('tokens.css')) continue
+      // Partner News plays a third-party app and is deliberately outside the design system.
+      if (file.endsWith('tokens.css') || file.includes('/apps/partner-news/')) continue
       const text = readFileSync(file, 'utf8')
       const hits = text.match(/#[0-9a-fA-F]{3,8}\b(?![\w-])|\brgba?\(|\bhsla?\(/g)
       // `#` followed by hex can also be an id selector or URL fragment; only flag CSS colour positions.

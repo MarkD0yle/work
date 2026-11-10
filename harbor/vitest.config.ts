@@ -6,7 +6,7 @@ export default defineConfig({
     environment: 'node',
     coverage: {
       provider: 'v8',
-      include: ['packages/agent/src/**', 'packages/schemas/src/**'],
+      include: ['packages/agent/src/**', 'packages/schemas/src/**', 'packages/mock-data/src/**'],
       exclude: ['**/*.test.ts', '**/index.ts', '**/testkit.ts'],
       thresholds: { lines: 90 },
     },

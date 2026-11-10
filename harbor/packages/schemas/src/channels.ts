@@ -2,14 +2,14 @@
 export interface UserChannel {
   id: string
   type: 'user'
-  displayMetadata: { name: string; color: string; glyph: string }
+  displayMetadata: { name: string; color: string; textColor: string; glyph: string }
 }
 
 const def = (n: number, name: string, glyph: string): UserChannel => ({
   id: `fdc3.channel.${n}`,
   type: 'user',
   // `color` is a token reference so no component hard-codes a hue.
-  displayMetadata: { name, color: `var(--color-channel-${name.toLowerCase()})`, glyph },
+  displayMetadata: { name, color: `var(--color-channel-${name.toLowerCase()})`, textColor: `var(--color-on-channel-${name.toLowerCase()})`, glyph },
 })
 
 export const USER_CHANNELS: readonly UserChannel[] = [

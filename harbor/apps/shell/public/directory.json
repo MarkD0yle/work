@@ -1,17 +1,180 @@
 {
   "applications": [
     {
+      "appId": "order-blotter",
+      "title": "Order Blotter",
+      "description": "Open orders. Select one to share it; analyse or execute it without re-keying.",
+      "publisher": "First-party",
+      "category": "Trading",
+      "type": "web",
+      "details": {
+        "url": "widget:order-blotter"
+      },
+      "kind": "widget",
+      "requiredEntitlement": "app.blotter",
+      "glyph": "OB",
+      "interop": {
+        "userChannels": {
+          "broadcasts": [
+            "harbor.fxOrder"
+          ],
+          "listensFor": [
+            "harbor.fxTrade"
+          ]
+        }
+      }
+    },
+    {
+      "appId": "tile-group",
+      "title": "Tiles",
+      "description": "A panel of glanceable tiles.",
+      "publisher": "First-party",
+      "category": "Monitoring",
+      "type": "web",
+      "details": {
+        "url": "widget:tile-group"
+      },
+      "kind": "widget",
+      "requiredEntitlement": "app.tiles",
+      "glyph": "TL"
+    },
+    {
+      "appId": "tile-orders-awaiting",
+      "title": "Orders awaiting execution",
+      "description": "Count of new orders and their notional by currency. Click to filter the blotter.",
+      "publisher": "First-party",
+      "category": "Trading",
+      "type": "web",
+      "details": {
+        "url": "widget:tile-orders-awaiting"
+      },
+      "kind": "tile",
+      "requiredEntitlement": "app.blotter",
+      "glyph": "OA"
+    },
+    {
+      "appId": "tile-alerts",
+      "title": "Alerts",
+      "description": "Open alerts by severity. Click a count to see them.",
+      "publisher": "First-party",
+      "category": "Monitoring",
+      "type": "web",
+      "details": {
+        "url": "widget:tile-alerts"
+      },
+      "kind": "tile",
+      "requiredEntitlement": "app.tiles",
+      "glyph": "AL"
+    },
+    {
+      "appId": "tile-rates",
+      "title": "Rates",
+      "description": "Live mid, day change and a sparkline for up to six pairs. Click a pair to share it.",
+      "publisher": "First-party",
+      "category": "Trading",
+      "type": "web",
+      "details": {
+        "url": "widget:tile-rates"
+      },
+      "kind": "tile",
+      "requiredEntitlement": "app.tiles",
+      "glyph": "RT"
+    },
+    {
+      "appId": "tile-unmatched",
+      "title": "Unmatched trades",
+      "description": "Trades not yet matched, and how long the oldest has waited.",
+      "publisher": "First-party",
+      "category": "Operations",
+      "type": "web",
+      "details": {
+        "url": "widget:tile-unmatched"
+      },
+      "kind": "tile",
+      "requiredEntitlement": "app.post-trade",
+      "glyph": "UM"
+    },
+    {
+      "appId": "tile-day-cost",
+      "title": "Day cost",
+      "description": "Today's average slippage against the 30-day average.",
+      "publisher": "First-party",
+      "category": "Analytics",
+      "type": "web",
+      "details": {
+        "url": "widget:tile-day-cost"
+      },
+      "kind": "tile",
+      "requiredEntitlement": "app.tca",
+      "glyph": "DC"
+    },
+    {
+      "appId": "tile-cutoffs",
+      "title": "Cut-offs",
+      "description": "The next three fund cut-offs, with a countdown.",
+      "publisher": "First-party",
+      "category": "Treasury",
+      "type": "web",
+      "details": {
+        "url": "widget:tile-cutoffs"
+      },
+      "kind": "tile",
+      "requiredEntitlement": "app.cash",
+      "glyph": "CO"
+    },
+    {
       "appId": "context-inspector",
       "title": "Context Inspector",
       "description": "Developer tool: watch a channel, broadcast sample context and raise intents.",
       "publisher": "First-party",
       "category": "Developer",
       "type": "web",
-      "details": { "url": "widget:context-inspector" },
+      "details": {
+        "url": "widget:context-inspector"
+      },
       "kind": "widget",
       "requiredEntitlement": "dev.tools",
       "glyph": "CI",
-      "interop": { "userChannels": { "broadcasts": ["harbor.fxOrder", "fdc3.instrument"], "listensFor": ["harbor.fxOrder", "fdc3.instrument"] } }
+      "interop": {
+        "userChannels": {
+          "broadcasts": [
+            "harbor.fxOrder",
+            "fdc3.instrument"
+          ],
+          "listensFor": [
+            "harbor.fxOrder",
+            "fdc3.instrument"
+          ]
+        }
+      }
+    },
+    {
+      "appId": "mock-data",
+      "title": "Mock Data",
+      "description": "Developer tool: the seeded dataset, its fingerprint and the live mock price stream.",
+      "publisher": "First-party",
+      "category": "Developer",
+      "type": "web",
+      "details": {
+        "url": "widget:mock-data"
+      },
+      "kind": "widget",
+      "requiredEntitlement": "dev.tools",
+      "glyph": "MD"
+    },
+    {
+      "appId": "ui-gallery",
+      "title": "Component Gallery",
+      "description": "Developer tool: every shared component on one page, in its main states.",
+      "publisher": "First-party",
+      "category": "Developer",
+      "type": "web",
+      "details": {
+        "url": "widget:ui-gallery"
+      },
+      "kind": "widget",
+      "requiredEntitlement": "dev.tools",
+      "glyph": "UI"
     },
     {
       "appId": "pretrade",
@@ -20,12 +183,27 @@
       "publisher": "First-party",
       "category": "Trading",
       "type": "web",
-      "details": { "url": "http://localhost:5174/?app=pretrade" },
+      "details": {
+        "url": "http://localhost:5176/"
+      },
       "kind": "app",
-      "allowedOrigins": ["http://localhost:5174"],
+      "allowedOrigins": [
+        "http://localhost:5176"
+      ],
       "requiredEntitlement": "app.pretrade",
       "glyph": "PT",
-      "interop": { "intents": { "listensFor": { "harbor.AnalyseOrder": { "displayName": "Analyse order", "contexts": ["harbor.fxOrder"] } } } }
+      "interop": {
+        "intents": {
+          "listensFor": {
+            "harbor.AnalyseOrder": {
+              "displayName": "Analyse order",
+              "contexts": [
+                "harbor.fxOrder"
+              ]
+            }
+          }
+        }
+      }
     },
     {
       "appId": "fx-exec",
@@ -34,12 +212,27 @@
       "publisher": "First-party",
       "category": "Trading",
       "type": "web",
-      "details": { "url": "http://localhost:5174/?app=fx-exec" },
+      "details": {
+        "url": "http://localhost:5177/"
+      },
       "kind": "app",
-      "allowedOrigins": ["http://localhost:5174"],
+      "allowedOrigins": [
+        "http://localhost:5177"
+      ],
       "requiredEntitlement": "app.fx-exec",
       "glyph": "FX",
-      "interop": { "intents": { "listensFor": { "harbor.ExecuteOrder": { "displayName": "Execute order", "contexts": ["harbor.fxOrder"] } } } }
+      "interop": {
+        "intents": {
+          "listensFor": {
+            "harbor.ExecuteOrder": {
+              "displayName": "Execute order",
+              "contexts": [
+                "harbor.fxOrder"
+              ]
+            }
+          }
+        }
+      }
     },
     {
       "appId": "post-trade",
@@ -48,12 +241,34 @@
       "publisher": "First-party",
       "category": "Operations",
       "type": "web",
-      "details": { "url": "http://localhost:5174/?app=post-trade" },
+      "details": {
+        "url": "http://localhost:5178/"
+      },
       "kind": "app",
-      "allowedOrigins": ["http://localhost:5174"],
+      "allowedOrigins": [
+        "http://localhost:5178"
+      ],
       "requiredEntitlement": "app.post-trade",
       "glyph": "ST",
-      "interop": { "intents": { "listensFor": { "harbor.ViewSettlement": { "displayName": "View settlement", "contexts": ["harbor.fxTrade"] } } } }
+      "interop": {
+        "intents": {
+          "listensFor": {
+            "harbor.ViewSettlement": {
+              "displayName": "View settlement",
+              "contexts": [
+                "harbor.fxTrade"
+              ]
+            },
+            "harbor.dev.ForceMismatch": {
+              "displayName": "Force a mismatch (dev)",
+              "contexts": [
+                "harbor.devCommand"
+              ]
+            }
+          }
+        }
+      },
+      "runsInBackground": true
     },
     {
       "appId": "tca",
@@ -62,12 +277,29 @@
       "publisher": "First-party",
       "category": "Analytics",
       "type": "web",
-      "details": { "url": "http://localhost:5174/?app=tca" },
+      "details": {
+        "url": "http://localhost:5179/"
+      },
       "kind": "app",
-      "allowedOrigins": ["http://localhost:5174"],
+      "allowedOrigins": [
+        "http://localhost:5179"
+      ],
       "requiredEntitlement": "app.tca",
       "glyph": "TC",
-      "interop": { "intents": { "listensFor": { "ViewAnalysis": { "displayName": "View analysis", "contexts": ["harbor.fxTrade", "fdc3.instrument"] } } } }
+      "interop": {
+        "intents": {
+          "listensFor": {
+            "ViewAnalysis": {
+              "displayName": "View analysis",
+              "contexts": [
+                "harbor.fxTrade",
+                "fdc3.instrument"
+              ]
+            }
+          }
+        }
+      },
+      "runsInBackground": true
     },
     {
       "appId": "cash",
@@ -76,12 +308,27 @@
       "publisher": "First-party",
       "category": "Treasury",
       "type": "web",
-      "details": { "url": "http://localhost:5174/?app=cash" },
+      "details": {
+        "url": "http://localhost:5182/"
+      },
       "kind": "app",
-      "allowedOrigins": ["http://localhost:5174"],
+      "allowedOrigins": [
+        "http://localhost:5182"
+      ],
       "requiredEntitlement": "app.cash",
       "glyph": "CA",
-      "interop": { "intents": { "listensFor": { "harbor.PlaceCash": { "displayName": "Place cash", "contexts": ["fdc3.portfolio"] } } } }
+      "interop": {
+        "intents": {
+          "listensFor": {
+            "harbor.PlaceCash": {
+              "displayName": "Place cash",
+              "contexts": [
+                "fdc3.portfolio"
+              ]
+            }
+          }
+        }
+      }
     },
     {
       "appId": "payments",
@@ -90,12 +337,27 @@
       "publisher": "First-party",
       "category": "Treasury",
       "type": "web",
-      "details": { "url": "http://localhost:5174/?app=payments" },
+      "details": {
+        "url": "http://localhost:5183/"
+      },
       "kind": "app",
-      "allowedOrigins": ["http://localhost:5174"],
+      "allowedOrigins": [
+        "http://localhost:5183"
+      ],
       "requiredEntitlement": "app.payments",
       "glyph": "PY",
-      "interop": { "intents": { "listensFor": { "harbor.SendPayment": { "displayName": "Send payment", "contexts": ["fdc3.organization"] } } } }
+      "interop": {
+        "intents": {
+          "listensFor": {
+            "harbor.SendPayment": {
+              "displayName": "Send payment",
+              "contexts": [
+                "fdc3.organization"
+              ]
+            }
+          }
+        }
+      }
     },
     {
       "appId": "research",
@@ -104,26 +366,90 @@
       "publisher": "First-party",
       "category": "Research",
       "type": "web",
-      "details": { "url": "http://localhost:5174/?app=research" },
+      "details": {
+        "url": "http://localhost:5184/"
+      },
       "kind": "app",
-      "allowedOrigins": ["http://localhost:5174"],
+      "allowedOrigins": [
+        "http://localhost:5184"
+      ],
       "requiredEntitlement": "app.research",
       "glyph": "RS",
-      "interop": { "intents": { "listensFor": { "ViewNews": { "displayName": "View news", "contexts": ["fdc3.instrument"] } } } }
+      "interop": {
+        "intents": {
+          "listensFor": {
+            "ViewNews": {
+              "displayName": "View news",
+              "contexts": [
+                "fdc3.instrument"
+              ]
+            }
+          }
+        }
+      }
     },
     {
       "appId": "partner-news",
       "title": "Partner News",
-      "description": "Third-party newswire, hosted from the partner's own origin.",
+      "description": "Wirefeed, a third-party newswire, hosted from the partner's own origin with its own look.",
       "publisher": "Partner",
       "category": "Research",
       "type": "web",
-      "details": { "url": "http://localhost:5175/?app=partner-news&skin=partner" },
+      "details": {
+        "url": "http://localhost:5175/"
+      },
       "kind": "app",
-      "allowedOrigins": ["http://localhost:5175"],
+      "allowedOrigins": [
+        "http://localhost:5175"
+      ],
       "requiredEntitlement": "app.partner-news",
       "glyph": "PN",
-      "interop": { "intents": { "listensFor": { "ViewNews": { "displayName": "View news", "contexts": ["fdc3.instrument"] } } } }
+      "interop": {
+        "intents": {
+          "listensFor": {
+            "ViewNews": {
+              "displayName": "View news",
+              "contexts": [
+                "fdc3.instrument"
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "appId": "probe-a",
+      "title": "Interop Probe A",
+      "description": "Developer tool: an interop test surface hosted as an ordinary iframe app.",
+      "publisher": "First-party",
+      "category": "Developer",
+      "type": "web",
+      "details": {
+        "url": "http://localhost:5174/?app=probe-a"
+      },
+      "kind": "app",
+      "allowedOrigins": [
+        "http://localhost:5174"
+      ],
+      "requiredEntitlement": "dev.tools",
+      "glyph": "A·"
+    },
+    {
+      "appId": "probe-b",
+      "title": "Interop Probe B",
+      "description": "Developer tool: an interop test surface hosted as an ordinary iframe app.",
+      "publisher": "First-party",
+      "category": "Developer",
+      "type": "web",
+      "details": {
+        "url": "http://localhost:5181/?app=probe-b"
+      },
+      "kind": "app",
+      "allowedOrigins": [
+        "http://localhost:5181"
+      ],
+      "requiredEntitlement": "dev.tools",
+      "glyph": "B·"
     }
   ]
 }

@@ -10,6 +10,7 @@
   --gray-200: #d5dbe2;
   --gray-300: #b3bcc7;
   --gray-400: #8590a0;
+  --gray-450: #6f7b8c;
   --gray-500: #5f6b7b;
   --gray-600: #434d5b;
   --gray-700: #2c3440;
@@ -20,9 +21,9 @@
   --blue-500: #2f6fe0;
   --blue-600: #1f58bd;
   --teal-300: #4fd1c5;
-  --teal-600: #0b7a70;
+  --teal-600: #0a6e65;
   --orange-300: #ffab5e;
-  --orange-600: #b45309;
+  --orange-600: #a34a07;
   --red-300: #ff8a80;
   --red-600: #c62828;
   --amber-300: #f5c451;
@@ -36,7 +37,7 @@
   --hue-green: #30a46c;
   --hue-cyan: #00a2c7;
   --hue-blue: #3e7bfa;
-  --hue-magenta: #d6409f;
+  --hue-magenta: #c2298a;
   --hue-purple: #8e4ec6;
 
   --space-0: 0px;
@@ -105,7 +106,15 @@
   --color-channel-blue: var(--hue-blue);
   --color-channel-magenta: var(--hue-magenta);
   --color-channel-purple: var(--hue-purple);
-  --color-on-channel: var(--gray-0);
+  /* Text on a channel colour: whichever of dark or light reaches 4.5:1 on that hue. */
+  --color-on-channel-red: var(--gray-900);
+  --color-on-channel-orange: var(--gray-900);
+  --color-on-channel-yellow: var(--gray-900);
+  --color-on-channel-green: var(--gray-900);
+  --color-on-channel-cyan: var(--gray-900);
+  --color-on-channel-blue: var(--gray-900);
+  --color-on-channel-magenta: var(--gray-0);
+  --color-on-channel-purple: var(--gray-0);
 }
 
 /* ---------- semantic: dark theme (default) ---------- */
@@ -118,7 +127,7 @@
   --color-surface-3: var(--gray-700);
   --color-surface-hover: var(--gray-700);
   --color-border: var(--gray-700);
-  --color-border-strong: var(--gray-500);
+  --color-border-strong: var(--gray-450);
   --color-text-primary: var(--gray-50);
   --color-text-secondary: var(--gray-300);
   --color-text-muted: var(--gray-400);
@@ -135,6 +144,7 @@
   --color-positive: var(--green-300);
   --color-warning: var(--amber-300);
   --color-critical: var(--red-300);
+  --color-on-critical: var(--gray-900);
   --color-info: var(--blue-300);
   --color-mock-bg: var(--amber-300);
   --color-mock-text: var(--gray-900);
@@ -148,7 +158,7 @@
   --color-surface-3: var(--gray-100);
   --color-surface-hover: var(--gray-100);
   --color-border: var(--gray-200);
-  --color-border-strong: var(--gray-400);
+  --color-border-strong: var(--gray-450);
   --color-text-primary: var(--gray-900);
   --color-text-secondary: var(--gray-600);
   --color-text-muted: var(--gray-500);
@@ -164,6 +174,7 @@
   --color-positive: var(--green-600);
   --color-warning: var(--amber-600);
   --color-critical: var(--red-600);
+  --color-on-critical: var(--gray-0);
   --color-info: var(--blue-600);
   --color-mock-bg: var(--amber-300);
   --color-mock-text: var(--gray-900);

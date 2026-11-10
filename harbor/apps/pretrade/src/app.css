@@ -1,0 +1,27 @@
+.pt-stats {
+  display: grid;
+  grid-template-columns: max-content max-content 1fr;
+  gap: var(--gap-xl);
+  padding: var(--gap-md);
+  border: var(--border-width) solid var(--color-border);
+  background: var(--color-surface-2);
+}
+.pt-stats__method .ha-stat__value {
+  color: var(--color-accent-text);
+}
+.pt-meter {
+  display: inline-flex;
+  gap: var(--gap-hair);
+}
+.pt-meter span {
+  width: var(--gap-md);
+  height: var(--gap-xs);
+  background: var(--color-surface-3);
+}
+.pt-meter span.is-on {
+  background: var(--color-positive);
+}
+.pt-actions {
+  border-top: var(--border-width) solid var(--color-border);
+  border-bottom: 0;
+}

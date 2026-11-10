@@ -1,12 +1,12 @@
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import { Badge, Button, Drawer, EmptyState, Switch } from '@harbor/ui'
-import { agent } from '../interop.ts'
-import { setConnected, useShell, shell } from '../state.ts'
+import { agent, forceMismatch } from '../interop.ts'
+import { audit, setConnected, useShell, shell } from '../state.ts'
 import { workspaceStore } from '../workspaces/controller.ts'
 import type { QuarantinedFile } from '../workspaces/store.ts'
 import { download } from '../download.ts'
 
-const TONE = { broadcast: 'neutral', intent: 'positive', open: 'accent', channel: 'neutral', dropped: 'critical', denied: 'critical', error: 'warning' } as const
+const TONE = { broadcast: 'neutral', intent: 'positive', open: 'accent', channel: 'neutral', alert: 'warning', dropped: 'critical', denied: 'critical', error: 'warning' } as const
 
 /** The dev panel: the interop log (which doubles as an audit trail) plus test switches. */
 export function InteropLogDrawer() {
@@ -34,6 +34,9 @@ export function InteropLogDrawer() {
               Export {quarantined.length} damaged workspace{quarantined.length === 1 ? '' : 's'}
             </Button>
           )}
+          <Button icon="download" onClick={() => download('harbor-audit-trail.json', audit.exportJson())}>
+            Export audit trail
+          </Button>
           <Button icon="download" onClick={() => download('harbor-interop-log.json', agent.log.exportJson())}>
             Export JSON
           </Button>
@@ -42,6 +45,16 @@ export function InteropLogDrawer() {
     >
       <div className="hs-log__tools">
         <Switch label="Simulate disconnect" checked={!connected} onChange={(off) => setConnected(!off)} />
+        {import.meta.env.DEV && (
+          <Button
+            onClick={() => {
+              shell.set({ logOpen: false })
+              void forceMismatch()
+            }}
+          >
+            Force a mismatch
+          </Button>
+        )}
         <span>{entries.length} entries · append-only</span>
       </div>
       {entries.length === 0 ? (
@@ -57,6 +70,7 @@ export function InteropLogDrawer() {
               <th>Type</th>
               <th>Id</th>
               <th>Detail</th>
+              <th>User</th>
             </tr>
           </thead>
           <tbody>
@@ -71,6 +85,7 @@ export function InteropLogDrawer() {
                 <td>{e.type}</td>
                 <td>{e.id}</td>
                 <td>{e.detail ?? ''}</td>
+                <td>{e.userId ?? ''}</td>
               </tr>
             ))}
           </tbody>

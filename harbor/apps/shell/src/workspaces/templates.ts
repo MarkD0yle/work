@@ -2,7 +2,7 @@ import type { PanelRecord, Role, WorkspaceFile } from '@harbor/schemas'
 
 export interface TemplatePanel extends PanelRecord {
   /** Where to put this panel when the template is first laid out. */
-  place?: { ref: string; direction: 'right' | 'below' | 'within' }
+  place?: { ref: string; direction: 'right' | 'below' | 'within' | 'above' | 'left'; height?: number }
 }
 
 /** A read-only role default. Editing one forks it into a saved workspace. */
@@ -15,28 +15,29 @@ export interface TemplateDef {
 
 const BLUE = 'fdc3.channel.6'
 const GREEN = 'fdc3.channel.4'
-const app = (panelId: string, appId: string, channelId: string | null, place?: TemplatePanel['place']): TemplatePanel => ({
+const WIDGETS = ['context-inspector', 'order-blotter', 'mock-data', 'ui-gallery']
+const app = (panelId: string, appId: string, channelId: string | null, place?: TemplatePanel['place'], config: Record<string, unknown> = {}): TemplatePanel => ({
   panelId,
-  kind: appId === 'context-inspector' ? 'widget' : 'app',
+  kind: appId === 'tile-group' ? 'tileGroup' : WIDGETS.includes(appId) ? 'widget' : 'app',
   appId,
   channelId,
-  config: {},
+  config,
   place,
 })
 
-/* Until Phase 6 ships the real blotter and tiles, the Context Inspector
- * stands in for them so each template still has a context source. */
 export const TEMPLATES: TemplateDef[] = [
   {
+    // The core loop on one screen: tiles and blotter, decide, execute, then settle and measure.
     id: 'tpl:fx-trading',
     name: 'FX Trading',
     role: 'Trader',
     panels: [
-      app('orders', 'context-inspector', BLUE),
+      app('orders', 'order-blotter', BLUE),
       app('pretrade', 'pretrade', BLUE, { ref: 'orders', direction: 'right' }),
       app('fx-exec', 'fx-exec', BLUE, { ref: 'orders', direction: 'below' }),
       app('post-trade', 'post-trade', BLUE, { ref: 'pretrade', direction: 'below' }),
       app('tca', 'tca', BLUE, { ref: 'post-trade', direction: 'within' }),
+      app('tiles', 'tile-group', BLUE, { ref: 'orders', direction: 'above', height: 150 }, { tiles: ['tile-orders-awaiting', 'tile-alerts', 'tile-unmatched', 'tile-day-cost', 'tile-rates'] }),
     ],
   },
   {
@@ -44,9 +45,10 @@ export const TEMPLATES: TemplateDef[] = [
     name: 'Overview',
     role: 'Portfolio Manager',
     panels: [
-      app('inspector', 'context-inspector', BLUE),
-      app('tca', 'tca', BLUE, { ref: 'inspector', direction: 'right' }),
-      app('research', 'research', BLUE, { ref: 'tca', direction: 'below' }),
+      app('orders', 'order-blotter', BLUE),
+      app('pretrade', 'pretrade', BLUE, { ref: 'orders', direction: 'right' }),
+      app('tca', 'tca', BLUE, { ref: 'orders', direction: 'below' }),
+      app('research', 'research', BLUE, { ref: 'pretrade', direction: 'below' }),
     ],
   },
   {
@@ -57,22 +59,28 @@ export const TEMPLATES: TemplateDef[] = [
       app('post-trade', 'post-trade', GREEN),
       app('tca', 'tca', GREEN, { ref: 'post-trade', direction: 'right' }),
       app('inspector', 'context-inspector', GREEN, { ref: 'tca', direction: 'below' }),
+      app('tiles', 'tile-group', GREEN, { ref: 'post-trade', direction: 'above', height: 150 }, { tiles: ['tile-alerts', 'tile-unmatched', 'tile-day-cost'] }),
     ],
   },
   {
     id: 'tpl:cash-payments',
     name: 'Cash & Payments',
     role: 'Treasury',
-    panels: [app('cash', 'cash', null), app('payments', 'payments', null, { ref: 'cash', direction: 'right' })],
+    panels: [
+      app('cash', 'cash', null),
+      app('payments', 'payments', null, { ref: 'cash', direction: 'right' }),
+      app('tiles', 'tile-group', null, { ref: 'cash', direction: 'above', height: 170 }, { tiles: ['tile-cutoffs', 'tile-alerts'] }),
+    ],
   },
   {
+    // The interop bench: the in-process inspector plus the probe app on two origins.
     id: 'tpl:admin',
     name: 'Admin',
     role: 'Admin',
     panels: [
       app('inspector', 'context-inspector', BLUE),
-      app('research', 'research', BLUE, { ref: 'inspector', direction: 'right' }),
-      app('partner-news', 'partner-news', BLUE, { ref: 'research', direction: 'below' }),
+      app('probe-a', 'probe-a', BLUE, { ref: 'inspector', direction: 'right' }),
+      app('probe-b', 'probe-b', BLUE, { ref: 'probe-a', direction: 'below' }),
     ],
   },
 ]

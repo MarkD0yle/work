@@ -1,4 +1,4 @@
-import { Component, useEffect, useRef, useState, type ErrorInfo, type ReactNode } from 'react'
+import { Component, useCallback, useEffect, useRef, useState, type ErrorInfo, type ReactNode } from 'react'
 import { DockviewReact, type DockviewApi, type DockviewReadyEvent, type IDockviewPanelHeaderProps, type IDockviewPanelProps } from 'dockview'
 import { createDirectPair } from '@harbor/agent'
 import { createClient, type HarborClient } from '@harbor/agent-client'
@@ -7,11 +7,21 @@ import { ChannelPicker, EmptyState, ErrorState, Icon, Menu, Skeleton, type MenuI
 import { WIDGETS } from '@harbor/widgets'
 import { agent, bridge } from '../interop.ts'
 import { shell, useShell, type DevPanelState } from '../state.ts'
-import { addPanel, attachLayout, closePanel, duplicatePanel, movePanelToWorkspace, reloadPanel, setPanelChannel } from '../workspaces/controller.ts'
+import { addPanel, attachLayout, closePanel, duplicatePanel, movePanelToWorkspace, reloadPanel, setPanelChannel, setPanelConfig } from '../workspaces/controller.ts'
 import { AppGlyph } from './AppGlyph.tsx'
 import { DRAG_TYPE } from './Library.tsx'
 
 const CONNECT_TIMEOUT_MS = 8000
+const EMPTY_CONFIG: Record<string, unknown> = {}
+
+/** Apps are seeded from their own `?seed=`; hand them the shell's so every panel shows the same mock data. */
+function withSeed(url: string): string {
+  const seed = new URLSearchParams(window.location.search).get('seed')
+  if (!seed) return url
+  const next = new URL(url)
+  next.searchParams.set('seed', seed)
+  return next.toString()
+}
 const HARBOR_THEME = { name: 'harbor', className: 'dockview-theme-harbor' }
 let layoutApi: DockviewApi | null = null
 
@@ -43,7 +53,7 @@ class PanelBoundary extends Component<{ children: ReactNode; onReload: () => voi
 
 /* ---------- iframe apps ---------- */
 
-function AppFrame({ panelId, app, location }: { panelId: string; app: DirectoryRecord; location: number }) {
+function AppFrame({ panelId, app, location, isVisible }: { panelId: string; app: DirectoryRecord; location: number; isVisible: () => boolean }) {
   const frameRef = useRef<HTMLIFrameElement>(null)
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
 
@@ -55,7 +65,11 @@ function AppFrame({ panelId, app, location }: { panelId: string; app: DirectoryR
       appId: app.appId,
       getWindow: () => frame.contentWindow,
       getChannelId: () => shell.get().panels[panelId]?.channelId ?? null,
-      onConnected: () => setStatus('ready'),
+      onConnected: () => {
+        setStatus('ready')
+        // A freshly connected app assumes it is visible; correct it if it loaded behind another tab.
+        agent.setInstanceVisible(panelId, isVisible())
+      },
     })
     // Only this frame's own window may speak for it; the bridge then checks the origin.
     const onMessage = (event: MessageEvent) => {
@@ -82,7 +96,7 @@ function AppFrame({ panelId, app, location }: { panelId: string; app: DirectoryR
       host?.removeEventListener('message', onMessage)
       detach()
     }
-  }, [panelId, app.appId, location])
+  }, [panelId, app.appId, location, isVisible])
 
   return (
     <div className="hs-frame">
@@ -91,7 +105,7 @@ function AppFrame({ panelId, app, location }: { panelId: string; app: DirectoryR
       <iframe
         ref={frameRef}
         title={app.title}
-        src={app.details.url}
+        src={withSeed(app.details.url)}
         sandbox="allow-scripts allow-same-origin allow-forms"
         className={status === 'ready' ? '' : 'is-hidden'}
         data-testid={`frame-${app.appId}`}
@@ -106,6 +120,16 @@ function WidgetHost({ panelId, app }: { panelId: string; app: DirectoryRecord })
   const [client, setClient] = useState<HarborClient | null>(null)
   const config = useShell((s) => s.panels[panelId]?.config)
   const Widget = WIDGETS[app.appId]
+  const user = useShell((s) => s.user)
+  const directory = useShell((s) => s.directory)
+  const saveConfig = useCallback((next: Record<string, unknown>) => setPanelConfig(panelId, next), [panelId])
+  const canUse = useCallback(
+    (appId: string) => {
+      const entry = directory.find((r) => r.appId === appId)
+      return Boolean(user && entry && canLaunch(user, entry))
+    },
+    [directory, user],
+  )
 
   useEffect(() => {
     // Same client API as iframe apps, over the direct transport.
@@ -123,7 +147,7 @@ function WidgetHost({ panelId, app }: { panelId: string; app: DirectoryRecord })
 
   if (!Widget) return <ErrorState title={`${app.title} is not installed`} body="The directory lists this widget but this build does not include it." />
   if (!client) return <Skeleton label={`Loading ${app.title}`} />
-  return <Widget client={client} config={config ?? {}} />
+  return <Widget client={client} config={config ?? EMPTY_CONFIG} onConfigChange={saveConfig} canUse={canUse} />
 }
 
 /* ---------- panel body ---------- */
@@ -145,6 +169,24 @@ function PanelHost({ api }: IDockviewPanelProps) {
     return () => subscription.dispose()
   }, [api])
 
+  // Shown or hidden (its tab selected or covered). Apps pause their streams while hidden, and an
+  // iframe is not loaded at all until its panel is first shown, unless the app must run in the background.
+  const [visible, setVisible] = useState(api.isVisible)
+  const [everVisible, setEverVisible] = useState(api.isVisible)
+  const visibleRef = useRef(visible)
+  const isVisible = useCallback(() => visibleRef.current, [])
+  useEffect(() => {
+    const apply = (next: boolean) => {
+      visibleRef.current = next
+      setVisible(next)
+      if (next) setEverVisible(true)
+      agent.setInstanceVisible(panelId, next)
+    }
+    apply(api.isVisible)
+    const subscription = api.onDidVisibilityChange((event) => apply(event.isVisible))
+    return () => subscription.dispose()
+  }, [api, panelId])
+
   // The panel chrome owns the channel link; keep the agent in step with it.
   useEffect(() => {
     agent.setInstanceChannel(panelId, channelId)
@@ -160,11 +202,11 @@ function PanelHost({ api }: IDockviewPanelProps) {
   else if (dev === 'loading') body = <Skeleton />
   else if (dev === 'empty') body = <EmptyState title="Nothing to show" body="This panel has no data for the current selection." />
   else if (dev === 'error') body = <ErrorState body="A simulated error." onReload={reload} />
-  else if (panel.kind === 'app') body = <AppFrame key={nonce} panelId={panelId} app={app} location={location} />
+  else if (panel.kind === 'app') body = everVisible || app.runsInBackground ? <AppFrame key={nonce} panelId={panelId} app={app} location={location} isVisible={isVisible} /> : null
   else body = <WidgetHost key={nonce} panelId={panelId} app={app} />
 
   return (
-    <section className="hs-panel" aria-label={app?.title ?? panel.appId} tabIndex={-1} data-panel={panelId} data-app={panel.appId}>
+    <section className="hs-panel" aria-label={app?.title ?? panel.appId} tabIndex={-1} data-panel={panelId} data-app={panel.appId} data-visible={visible}>
       {!connected && (
         <div className="hs-stale" role="status">
           <Icon name="warning" size={14} /> Disconnected — data may be stale. Last updated {new Date(lastUpdated).toLocaleTimeString('en-GB')}.
@@ -246,7 +288,7 @@ function Watermark() {
     <EmptyState
       icon="grid"
       title="This workspace is empty"
-      body="Open an app from the rail, or press Cmd/Ctrl-K to browse the Widget Library."
+      body="Open an app from the rail, or press Cmd/Ctrl-K to search for one."
     />
   )
 }

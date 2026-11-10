@@ -18,6 +18,16 @@ const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'expected ISO date (YYYY
 const pair = z.string().regex(/^[A-Z]{6}$/, 'expected a six-letter currency pair')
 const ccy = z.string().regex(/^[A-Z]{3}$/, 'expected a three-letter currency code')
 
+export const PreTradeEstimateContextSchema = z.object({
+  type: z.literal('harbor.preTradeEstimate'),
+  id: z.object({ orderId: z.string().min(1) }),
+  expectedCostBps: z.number(),
+  recommendedMethod: z.enum(['RFQ', 'ALGO']),
+  suggestedCounterparties: z.array(z.string()),
+  liquidityScore: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]),
+})
+export type PreTradeEstimateContext = z.infer<typeof PreTradeEstimateContextSchema>
+
 export const FxOrderContextSchema = z.object({
   type: z.literal('harbor.fxOrder'),
   id: z.object({ orderId: z.string().min(1) }),
@@ -30,6 +40,12 @@ export const FxOrderContextSchema = z.object({
   account: z.string().min(1),
   status: z.enum(['NEW', 'WORKING', 'PARTIAL', 'FILLED', 'CANCELLED']),
   benchmark: z.enum(['ARRIVAL', 'WMR_4PM', 'TWAP']).optional(),
+  /**
+   * Harbor addition: how the sender wants the order worked. Pre-Trade sets it
+   * when raising `harbor.ExecuteOrder`, so the chosen method and the estimate
+   * travel with the order instead of being re-keyed.
+   */
+  execution: z.object({ method: z.enum(['RFQ', 'ALGO']), estimate: PreTradeEstimateContextSchema.optional() }).optional(),
 })
 export type FxOrderContext = z.infer<typeof FxOrderContextSchema>
 
@@ -49,16 +65,6 @@ export const FxTradeContextSchema = z.object({
 })
 export type FxTradeContext = z.infer<typeof FxTradeContextSchema>
 
-export const PreTradeEstimateContextSchema = z.object({
-  type: z.literal('harbor.preTradeEstimate'),
-  id: z.object({ orderId: z.string().min(1) }),
-  expectedCostBps: z.number(),
-  recommendedMethod: z.enum(['RFQ', 'ALGO']),
-  suggestedCounterparties: z.array(z.string()),
-  liquidityScore: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]),
-})
-export type PreTradeEstimateContext = z.infer<typeof PreTradeEstimateContextSchema>
-
 export const SettlementContextSchema = z.object({
   type: z.literal('harbor.settlement'),
   id: z.object({ tradeId: z.string().min(1) }),
@@ -66,6 +72,26 @@ export const SettlementContextSchema = z.object({
   exceptionReason: z.string().optional(),
 })
 export type SettlementContext = z.infer<typeof SettlementContextSchema>
+
+export const ORDER_STATUSES = ['NEW', 'WORKING', 'PARTIAL', 'FILLED', 'CANCELLED'] as const
+
+/** Harbor addition: asks an order list to show a subset. Sent on the `harbor.orders` app channel. */
+export const OrderFilterContextSchema = z.object({
+  type: z.literal('harbor.orderFilter'),
+  name: z.string().optional(),
+  statuses: z.array(z.enum(ORDER_STATUSES)).optional(),
+  pair: z.string().optional(),
+})
+export type OrderFilterContext = z.infer<typeof OrderFilterContextSchema>
+
+/** Harbor addition, dev builds only: a test instruction from the shell's dev panel to an app. */
+export const DevCommandContextSchema = z.object({
+  type: z.literal('harbor.devCommand'),
+  command: z.literal('forceMismatch'),
+  /** The trade to break; omitted = the app picks its most recent healthy trade. */
+  tradeId: z.string().optional(),
+})
+export type DevCommandContext = z.infer<typeof DevCommandContextSchema>
 
 /* Standard FDC3 types used by Harbor. Kept loose (passthrough) because the
  * standard allows extra fields; only the fields Harbor reads are checked. */
@@ -114,6 +140,8 @@ const KNOWN: Record<string, z.ZodTypeAny> = {
   'harbor.fxTrade': FxTradeContextSchema,
   'harbor.preTradeEstimate': PreTradeEstimateContextSchema,
   'harbor.settlement': SettlementContextSchema,
+  'harbor.orderFilter': OrderFilterContextSchema,
+  'harbor.devCommand': DevCommandContextSchema,
   'fdc3.instrument': InstrumentContextSchema,
   'fdc3.portfolio': PortfolioContextSchema,
   'fdc3.organization': OrganizationContextSchema,

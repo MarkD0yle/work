@@ -5,7 +5,7 @@ import { Menu } from './overlays.tsx'
 export function ChannelDot({ channelId }: { channelId: string | null }) {
   const channel = findUserChannel(channelId)
   return (
-    <span className={`hb-channel-dot${channel ? '' : ' is-none'}`} style={channel ? { background: channel.displayMetadata.color } : undefined} aria-hidden="true">
+    <span className={`hb-channel-dot${channel ? '' : ' is-none'}`} style={channel ? { background: channel.displayMetadata.color, color: channel.displayMetadata.textColor } : undefined} aria-hidden="true">
       {channel?.displayMetadata.glyph ?? '–'}
     </span>
   )

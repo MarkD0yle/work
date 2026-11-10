@@ -1,6 +1,7 @@
 import type { Context } from './context.ts'
 import type { UserChannel } from './channels.ts'
 import type { UserInfo } from './user.ts'
+import type { AlertInput, AlertSummary, Severity } from './alert.ts'
 
 /* Wire protocol between @harbor/agent-client and @harbor/agent. The same
  * messages travel over both transports (iframe postMessage and in-process). */
@@ -37,10 +38,40 @@ export interface Appearance {
   density: Density
 }
 
+/** Shell-level keyboard shortcuts. Apps forward these because key presses inside an iframe never reach the shell. */
+export const SHELL_SHORTCUTS = ['commandPalette', 'nextRegion', 'previousRegion', 'nextPanel', 'previousPanel', 'help'] as const
+export type ShellShortcut = (typeof SHELL_SHORTCUTS)[number]
+
+/** Is the key press aimed at a text field? Single-character shortcuts must not fire while typing. */
+export function isTypingTarget(target: unknown): boolean {
+  const el = target as { tagName?: string; isContentEditable?: boolean } | null
+  return el?.isContentEditable === true || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el?.tagName ?? '')
+}
+
+/** Which shell shortcut, if any, a key press is. `typing` = focus is in a text field. */
+export function shellShortcutFor(event: { key: string; ctrlKey: boolean; metaKey: boolean; altKey: boolean; shiftKey: boolean }, typing = false): ShellShortcut | null {
+  if (event.key === '?' && !typing && !event.ctrlKey && !event.metaKey && !event.altKey) return 'help'
+  if ((event.metaKey || event.ctrlKey) && !event.altKey && event.key.toLowerCase() === 'k') return 'commandPalette'
+  if (event.key === 'F6') return event.shiftKey ? 'previousRegion' : 'nextRegion'
+  if (event.ctrlKey && event.altKey && (event.key === 'ArrowRight' || event.key === 'ArrowDown')) return 'nextPanel'
+  if (event.ctrlKey && event.altKey && (event.key === 'ArrowLeft' || event.key === 'ArrowUp')) return 'previousPanel'
+  return null
+}
+
 /** Request methods and their params/results. */
 export interface Methods {
   getInfo: { params: Record<string, never>; result: ImplementationMetadata }
   getUserInfo: { params: Record<string, never>; result: UserInfo }
+  /** Harbor extra: is the shell's (mock) market connection up? */
+  getConnection: { params: Record<string, never>; result: { connected: boolean } }
+  /** Harbor extra: raise an alert in the shell's alert centre. */
+  publishAlert: { params: { alert: AlertInput }; result: { id: string } }
+  /** Harbor extra: open alerts per severity. */
+  getAlertSummary: { params: Record<string, never>; result: AlertSummary }
+  /** Harbor extra: open the alert drawer, optionally filtered. */
+  showAlerts: { params: { severity?: Severity }; result: null }
+  /** Harbor extra: a shell keyboard shortcut was pressed while focus was inside the app. */
+  shortcut: { params: { name: ShellShortcut }; result: null }
   getUserChannels: { params: Record<string, never>; result: UserChannel[] }
   getCurrentChannel: { params: Record<string, never>; result: string | null }
   joinUserChannel: { params: { channelId: string }; result: null }
@@ -81,6 +112,10 @@ export type AgentEvent =
   | { event: 'intent'; listenerId: string; intent: string; context: Context; source?: AppIdentifier }
   | { event: 'channelChanged'; channelId: string | null }
   | { event: 'appearance'; appearance: Appearance }
+  | { event: 'connection'; connected: boolean }
+  /** The instance's panel was shown or hidden (e.g. its tab was selected or covered). */
+  | { event: 'visibility'; visible: boolean }
+  | { event: 'alertSummary'; summary: AlertSummary }
 
 export type EventMessage = { protocol: typeof PROTOCOL; kind: 'event' } & AgentEvent
 

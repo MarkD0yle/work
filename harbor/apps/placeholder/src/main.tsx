@@ -7,13 +7,12 @@ import '@harbor/tokens/tokens.css'
 import '@harbor/ui/ui.css'
 import '@harbor/widgets/widgets.css'
 
-/* Stand-in for every iframe app until its real build lands (Phase 6+).
- * It knows nothing about the shell: identity, user, theme and channel all
- * arrive through the agent client. */
+/* The interop probe: a dev tool hosted as an ordinary iframe app, on two
+ * origins, to exercise the agent. It knows nothing about the shell: identity,
+ * user, theme and channel all arrive through the agent client. */
 function App() {
   const [client, setClient] = useState<HarborClient | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const partner = new URLSearchParams(location.search).get('skin') === 'partner'
 
   useEffect(() => {
     let live = true
@@ -30,7 +29,7 @@ function App() {
   if (error) return <ErrorState title="Could not connect to the shell" body={error} onReload={() => location.reload()} />
   if (!client) return <Skeleton />
   return (
-    <div className={partner ? 'hw-probe--partner' : undefined} style={{ height: '100%' }}>
+    <div style={{ height: '100%' }}>
       <InteropProbe client={client} />
     </div>
   )
