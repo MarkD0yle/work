@@ -32,7 +32,7 @@ npm install
 npm run dev      # start Vite dev server with HMR
 ```
 
-Then open the printed local URL. The app opens on the **File Gallery** landing page; use the sidebar to jump between screens. Your last-viewed page is remembered via `localStorage`.
+Then open the printed local URL. The app opens on the **landing page** (`src/pages/home.tsx`); from there, search or open the **File Gallery** to reach any screen. A floating Home pill returns you to the landing page. Your last-viewed page is remembered via `localStorage`.
 
 ### Scripts
 
@@ -85,6 +85,24 @@ A page's section is resolved by `sectionForSlug(slug, explicitSection)`: an expl
 
 Pages render standalone inside `<main>` with no props, so they can't call `App`'s state setter directly. Instead, in-app navigation (e.g. opening a card from the File Gallery) fires a `window` `CustomEvent` that `App` listens for — see [`src/lib/navigation.ts`](src/lib/navigation.ts). This keeps page signatures clean and avoids threading a router through everything. The active slug is persisted with the `useLocalStorage` hook.
 
+### Landing page and team tools
+
+The landing page ([`src/pages/home.tsx`](src/pages/home.tsx)) is organised by job: **Find**, **Build**, **Share**. Each is a section that rotates through real examples every five seconds. Rotation pauses on hover, on keyboard focus, off screen and in a hidden tab; picking an example stops it; it never starts under `prefers-reduced-motion`. The behaviour lives in [`src/hooks/useRotation.ts`](src/hooks/useRotation.ts) and [`src/components/landing/FeatureShowcase.tsx`](src/components/landing/FeatureShowcase.tsx).
+
+Five tools support building screens with AI assistants. Each is a normal page in `src/pages`:
+
+| Tool | File | What it does |
+| --- | --- | --- |
+| Brief Builder | `brief-builder.tsx` | Assembles one copyable prompt from a base screen, patterns and the house rules in [`src/lib/houseRules.ts`](src/lib/houseRules.ts) |
+| Drift Radar | `drift-radar.tsx` | Scores every screen for rounded corners, hex colours and inline styles, with a fix prompt per screen |
+| What's New | `whats-new.tsx` | Feed of feature notes and new screens, plus a guided tour on the landing page |
+| Demo Reel | `demo-reel.tsx` | Saved playlist of screens that plays full screen |
+| Side by Side | `side-by-side.tsx` | Two screens next to each other at half scale |
+
+**Announcing a feature:** add one entry to `ANNOUNCEMENTS` in [`src/lib/whatsNew.ts`](src/lib/whatsNew.ts). New screens appear in the feed automatically.
+
+**Drift data** comes from a build-time source scan ([`scripts/pageIntel.ts`](scripts/pageIntel.ts)), exposed to the app as the `virtual:page-intel` module by a small plugin in `vite.config.ts`. The counts are regex estimates. Restart the dev server to refresh them.
+
 ## Project layout
 
 ```
@@ -97,6 +115,7 @@ src/
   hooks/             # reusable hooks (localStorage, saved views, forensic sizing, …)
   lib/               # data + logic helpers (mock data, filters, section map, firebase, …)
 scripts/deploy.sh    # build + Firebase deploy helper
+scripts/pageIntel.ts # build-time source scan behind Drift Radar and Brief Builder
 copilot/             # Copilot handoffs (OneDS rebuild specs), rubric, grades, specs — see copilot/README.md
 firebase.json        # Hosting config (serves dist/, SPA rewrite to index.html)
 ```
