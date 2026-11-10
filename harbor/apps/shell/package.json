@@ -1,0 +1,19 @@
+{
+  "name": "@harbor/shell",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": { "dev": "vite", "build": "vite build" },
+  "dependencies": {
+    "@harbor/agent": "workspace:*",
+    "@harbor/agent-client": "workspace:*",
+    "@harbor/schemas": "workspace:*",
+    "@harbor/tokens": "workspace:*",
+    "@harbor/ui": "workspace:*",
+    "@harbor/widgets": "workspace:*",
+    "dockview": "^4.9.0",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "zustand": "^5.0.8"
+  }
+}

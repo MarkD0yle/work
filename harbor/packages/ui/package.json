@@ -1,0 +1,16 @@
+{
+  "name": "@harbor/ui",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./ui.css": "./src/ui.css"
+  },
+  "dependencies": {
+    "@harbor/tokens": "workspace:*",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "@harbor/schemas": "workspace:*"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "name": "@harbor/tokens",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": { ".": "./src/index.ts", "./tokens.css": "./src/tokens.css" },
+  "dependencies": {}
+}

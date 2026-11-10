@@ -34,3 +34,6 @@ CLAUDE.md
 *.njsproj
 *.sln
 *.sw?
+
+# Harbor keeps its own builder rules alongside its spec
+!/harbor/CLAUDE.md

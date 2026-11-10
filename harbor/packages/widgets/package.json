@@ -1,0 +1,8 @@
+{
+  "name": "@harbor/widgets",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": { ".": "./src/index.ts", "./widgets.css": "./src/widgets.css" },
+  "dependencies": { "@harbor/agent-client": "workspace:*", "@harbor/schemas": "workspace:*", "@harbor/ui": "workspace:*", "react": "^19.2.6" }
+}
