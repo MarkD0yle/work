@@ -346,3 +346,81 @@
  * frame instead, so the blotter's status bar isn't pushed below the fold by
  * the prototype bar above it. */
 .ai-host-frame .h-screen { height: 100%; }
+
+/* ------------------------------------------------------------------
+ * Landing page (src/pages/home.tsx) and team tools.
+ * ------------------------------------------------------------------ */
+
+/* Faint drafting grid behind the hero. */
+.landing-grid {
+  background-image:
+    linear-gradient(to right, var(--color-neutral-200) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--color-neutral-200) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(to bottom, black, transparent);
+}
+
+/* Time left on the active example in a rotating feature section. The
+ * animation is the timer: FeatureShowcase advances when it ends, so pausing
+ * the animation pauses the rotation with nothing to keep in sync. */
+@keyframes rotation-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.rotation-progress {
+  transform-origin: left;
+  animation: rotation-progress 5s linear forwards;
+}
+
+.rotation-progress[data-paused="true"] {
+  animation-play-state: paused;
+}
+
+/* Preview swap in a feature section. */
+@keyframes landing-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-landing-fade-in {
+  animation: landing-fade-in 0.3s ease-out both;
+}
+
+/* Demo Reel: time left on the current screen. Decorative; a timer advances. */
+.reel-progress {
+  transform-origin: left;
+  animation: rotation-progress 10s linear forwards;
+}
+
+.reel-progress[data-seconds="5"] {
+  animation-duration: 5s;
+}
+
+.reel-progress[data-seconds="20"] {
+  animation-duration: 20s;
+}
+
+/* The element a tour step is pointing at. */
+[data-tour-active="true"] {
+  outline: 2px solid var(--color-indigo-600);
+  outline-offset: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rotation-progress,
+  .reel-progress,
+  .animate-landing-fade-in {
+    animation: none;
+  }
+}

@@ -1,9 +1,10 @@
-import { defineConfig } from 'vite'
+import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { execSync } from 'node:child_process'
 import { readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
+import { buildPageIntel } from './scripts/pageIntel.ts'
 
 /* Map each src/pages slug to the unix time it was first added, so the
  * gallery can offer a "Recent" sort. Git's first-add date is the source of
@@ -38,9 +39,28 @@ function pageAddedTimes(): Record<string, number> {
   return map
 }
 
+/* Expose the build-time source scan (scripts/pageIntel.ts) to the app as
+ * `virtual:page-intel`. A virtual module, not `define`, so the JSON is
+ * emitted once instead of being inlined at every reference. Computed when
+ * the dev server starts; restart it to refresh. */
+function pageIntelPlugin(): Plugin {
+  const id = 'virtual:page-intel'
+  const resolved = '\0' + id
+  return {
+    name: 'page-intel',
+    resolveId(source) {
+      return source === id ? resolved : undefined
+    },
+    load(loadId) {
+      if (loadId !== resolved) return undefined
+      return `export const intel = ${JSON.stringify(buildPageIntel())};`
+    },
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), pageIntelPlugin()],
   define: {
     __PAGES_ADDED_AT__: JSON.stringify(pageAddedTimes()),
   },

@@ -1,4 +1,4 @@
-import { useMemo, useState, type ComponentType } from "react";
+import { useEffect, useMemo, useState, type ComponentType } from "react";
 import {
   SECTIONS,
   OTHER_SECTION_ID,
@@ -9,7 +9,11 @@ import {
   accentForSection,
   metaForSlug,
 } from "../lib/galleryMeta";
-import { navigateToPage } from "../lib/navigation";
+import {
+  clearNavParams,
+  navigateToPage,
+  peekNavParams,
+} from "../lib/navigation";
 import GalleryCard, {
   type GalleryItem,
 } from "../components/gallery/GalleryCard";
@@ -36,7 +40,8 @@ function formatTitle(slug: string) {
   return slug.replace(/[-_]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-// Build the full catalogue once at module load. Exclude the gallery itself.
+// Build the full catalogue once at module load. Exclude the gallery itself
+// and the landing page, which is not a screen.
 const ALL_ITEMS: GalleryItem[] = Object.entries(pageModules)
   .map(([path, mod]) => {
     const slug = path.replace(/^\.\//, "").replace(/\.tsx$/, "");
@@ -53,7 +58,7 @@ const ALL_ITEMS: GalleryItem[] = Object.entries(pageModules)
       accent: accentForSection(section),
     };
   })
-  .filter((item) => item.slug !== "gallery")
+  .filter((item) => item.slug !== "gallery" && item.slug !== "home")
   .sort((a, b) => a.title.localeCompare(b.title));
 
 // Unix time each page was first added (injected at build time — see
@@ -75,8 +80,12 @@ const SECTION_ORDER = [
 ];
 
 export default function GalleryPage() {
-  const [query, setQuery] = useState("");
-  const [activeSection, setActiveSection] = useState<string | null>(null);
+  // The landing page can hand over a search query or a section to open on.
+  const [query, setQuery] = useState(() => peekNavParams("gallery").query ?? "");
+  const [activeSection, setActiveSection] = useState<string | null>(
+    () => peekNavParams("gallery").section ?? null,
+  );
+  useEffect(() => clearNavParams(), []);
   const [activeTags, setActiveTags] = useState<Set<string>>(new Set());
   const [sort, setSort] = useState<SortKey>("title");
   // Direction for the Recent sort: "desc" = newest first (default).

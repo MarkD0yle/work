@@ -62,6 +62,7 @@ const ALL_ITEMS: ExampleItem[] = Object.entries(pageModules)
   .filter(
     ([path]) =>
       !path.endsWith("/uxf.tsx") &&
+      !path.endsWith("/home.tsx") &&
       !path.endsWith("/gallery.tsx") &&
       !path.endsWith("/pattern-atlas.tsx"),
   )
