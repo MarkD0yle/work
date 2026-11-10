@@ -41,18 +41,15 @@ const pages: PageEntry[] = Object.entries(pageModules)
   })
   .sort((a, b) => a.title.localeCompare(b.title));
 
-// The landing page is home. Fall back to the File Gallery, then to the first
-// page alphabetically, so the app still opens if either file is removed.
-const DEFAULT_SLUG =
-  ["home", "gallery"].find((slug) => pages.some((p) => p.slug === slug)) ??
-  pages[0]?.slug ??
-  "";
+// Prefer the File Gallery as the landing page when present; otherwise fall
+// back to the first page alphabetically.
+const DEFAULT_SLUG = pages.some((p) => p.slug === "gallery")
+  ? "gallery"
+  : (pages[0]?.slug ?? "");
 
 function App() {
   const [storedSlug, setActiveSlug] = useLocalStorage<string>(
-    // v2: the key changed when the landing page replaced the gallery as
-    // home, so returning visitors land on the new page once.
-    "active.slug.v2",
+    "active.slug",
     DEFAULT_SLUG,
   );
 
@@ -70,8 +67,9 @@ function App() {
   );
   const ActivePage = activePage?.Component;
 
-  // Home (the landing page) is the primary navigation surface. On any other
-  // page, a floating pill returns you there.
+  // The home page (File Gallery) is the primary navigation surface, so the
+  // sidebar is hidden. When drilled into another page, a floating pill returns
+  // you home.
   const onHome = activeSlug === DEFAULT_SLUG;
 
   return (

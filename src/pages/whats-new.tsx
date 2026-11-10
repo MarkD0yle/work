@@ -12,9 +12,7 @@ export const fullWidth = true;
 
 /* What's New — every feature note and new screen, newest first.
  *
- * The What's New tour on the landing page walks through the latest few of
- * these. This page is the full list, so nothing is lost when the tour is
- * skipped. Entries come from src/lib/whatsNew.ts. */
+ * Entries come from src/lib/whatsNew.ts. */
 
 type Kind = "all" | "feature" | "screen";
 
@@ -55,13 +53,6 @@ export default function WhatsNewPage() {
                 Mark all as read
               </button>
             )}
-            <button
-              type="button"
-              className={button.primary}
-              onClick={() => navigateToPage("home", { tour: "news" })}
-            >
-              Start the tour
-            </button>
           </>
         }
       />

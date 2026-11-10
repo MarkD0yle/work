@@ -31,9 +31,6 @@ export type LoadedPage = {
 
 const loaders = import.meta.glob<PageModule>("../pages/*.tsx");
 
-/** The landing page is not a screen, so it never appears in a list. */
-const HIDDEN = new Set(["home"]);
-
 function slugOf(path: string) {
   return path.replace(/^\.\.\/pages\//, "").replace(/\.tsx$/, "");
 }
@@ -57,11 +54,7 @@ function loadCatalogue(): Promise<CatalogueItem[]> {
         sectionLabel: sectionLabel(section),
       };
     }),
-  ).then((all) =>
-    all
-      .filter((item) => !HIDDEN.has(item.slug))
-      .sort((a, b) => a.title.localeCompare(b.title)),
-  );
+  ).then((all) => all.sort((a, b) => a.title.localeCompare(b.title)));
   return cache;
 }
 

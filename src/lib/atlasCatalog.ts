@@ -83,7 +83,7 @@ export function getAtlasItems(): AtlasItem[] {
         seed: hashSlug(slug),
       };
     })
-    .filter((item) => item.slug !== "pattern-atlas" && item.slug !== "home")
+    .filter((item) => item.slug !== "pattern-atlas")
     .sort((a, b) => a.title.localeCompare(b.title));
   return cached;
 }
