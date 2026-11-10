@@ -22,6 +22,7 @@ prompt file and screenshots. Copy the whole package folder into the target repo.
 |---|---|---|---|
 | [`handoffs/fi-studio-oneds/`](handoffs/fi-studio-oneds/README.md) | The five FI Studio screens (credit map, get quotes, order ticket, BWIC, curve ideas) | Yes — 6 runs | Yes — 13 |
 | [`handoffs/ai-assistant-oneds/`](handoffs/ai-assistant-oneds/README.md) | AI Assistant — floating, docked and full-screen chat, docked beside the blotter | Yes — 4 runs | Yes — 20 |
+| [`handoffs/permission-set-modal-oneds/`](handoffs/permission-set-modal-oneds/README.md) | "New permission set" modal and its onboarding accordion (Accordion + Modal Forms, Example A) | Yes — 3 runs | Yes — 8 |
 | [`handoffs/pre-trade-checks-oneds/`](handoffs/pre-trade-checks-oneds/README.md) | Pre-Trade Checks screen | No | No |
 | [`handoffs/right-panels-oneds/`](handoffs/right-panels-oneds/README.md) | 11 contextual right panels | No | No |
 | [`handoffs/rebuild-all-designs.prompt.md`](handoffs/rebuild-all-designs.prompt.md) | Every screen, in batches | Is the prompt | No |
