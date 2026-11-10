@@ -25,6 +25,8 @@ fi
 if [ "$SKIP_BUILD" = false ]; then
   echo "==> Building production bundle..."
   npm run build
+  echo "==> Building Harbor into dist/harbor..."
+  npm run build:harbor
 else
   echo "==> Skipping build (--skip-build)"
 fi

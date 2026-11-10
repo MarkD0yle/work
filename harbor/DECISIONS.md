@@ -187,3 +187,9 @@ Every choice the spec did not make, with one line of reasoning. Newest phase las
 - **The golden path is one spec covering all twelve steps.** The per-phase tests are kept beside it because they check more detail.
 - **Performance figures are measured on the dev servers.** There is no production-build performance test.
 - **No CI workflow file was added.** The gates are `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm e2e`; wiring them into a pipeline affects the shared repository and was not asked for.
+
+## Hosting
+
+- **The hosted build serves every app from one host under `/harbor/<app>/`** (`scripts/build-hosted.mjs`). Static hosting gives one origin, so apps share it there; origin checks still run, and per-port origins remain the development and test setup.
+- **A hosted directory uses relative URLs and the origin `"self"`,** which the shell resolves against the page when it loads the directory. The build script writes it from the dev directory, so there is still one source of truth.
+- **The shell reads `directory.json` and `popout.html` relative to its base path,** so it works at `/` in development and under a path when hosted.

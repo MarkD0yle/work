@@ -1,4 +1,4 @@
-import { parseDirectory } from '@harbor/schemas'
+import { parseDirectory, type DirectoryRecord } from '@harbor/schemas'
 import { shell } from './state.ts'
 
 /**
@@ -16,9 +16,11 @@ export function loadDirectory(): Promise<void> {
 
 async function fetchDirectory(): Promise<void> {
   try {
-    const response = await fetch('/directory.json', { cache: 'no-store' })
+    const response = await fetch(`${import.meta.env.BASE_URL}directory.json`, { cache: 'no-store' })
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
-    const { records, errors } = parseDirectory(await response.json())
+    const parsed = parseDirectory(await response.json())
+    const records = parsed.records.map(resolveRecord)
+    const errors = parsed.errors
     for (const e of errors) console.warn(`[directory] skipped record ${e.appId ?? e.index}: ${e.error}`)
     applyFramePolicy(records.flatMap((r) => r.allowedOrigins))
     shell.set({
@@ -28,6 +30,20 @@ async function fetchDirectory(): Promise<void> {
     })
   } catch (error) {
     shell.set({ directory: [], directoryErrors: [`The App Directory could not be loaded (${String(error)}).`], directoryLoaded: true })
+  }
+}
+
+/**
+ * A hosted build serves every app from the shell's own host under a path, so
+ * its directory uses relative URLs and the origin "self". Resolve both against
+ * the page here. Absolute URLs and real origins pass through unchanged.
+ */
+function resolveRecord(record: DirectoryRecord): DirectoryRecord {
+  if (record.kind !== 'app') return record
+  return {
+    ...record,
+    details: { ...record.details, url: new URL(record.details.url, window.location.href).href },
+    allowedOrigins: record.allowedOrigins.map((o) => (o === 'self' ? window.location.origin : o)),
   }
 }
 

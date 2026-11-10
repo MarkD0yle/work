@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "build:harbor": "cd harbor && npx -y pnpm@10 install --frozen-lockfile && node scripts/build-hosted.mjs ../dist/harbor",
     "deploy": "./scripts/deploy.sh",
     "deploy:nobuild": "./scripts/deploy.sh --skip-build"
   },
