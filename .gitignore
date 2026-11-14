@@ -37,3 +37,6 @@ CLAUDE.md
 
 # Harbor keeps its own builder rules alongside its spec
 !/harbor/CLAUDE.md
+
+# Ledgerline keeps its own builder rules alongside its spec
+!/ledgerline/CLAUDE.md

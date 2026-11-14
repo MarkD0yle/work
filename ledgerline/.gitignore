@@ -1,0 +1,10 @@
+node_modules
+dist
+.tsbuild
+.turbo
+storybook-static
+playwright-report
+test-results
+coverage
+apps/api/data
+*.local
