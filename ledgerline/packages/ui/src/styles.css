@@ -94,3 +94,19 @@
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum';
 }
+
+/* Grid: financial cells fill the cell so numbers right-align on the same edge. */
+.ll-cell-financial .ag-cell-value,
+.ll-cell-financial .ag-cell-wrapper {
+  width: 100%;
+}
+.ll-grid-body {
+  height: 100%;
+}
+.ll-header-icon-only .ag-header-cell-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}

@@ -22,9 +22,11 @@ import type {
   JobStatus,
   JobType,
   PeriodState,
+  Provenance,
   RecurringBreakRule,
   SavedView,
   ToleranceRule,
+  TransactionFinancialField,
   Workspace,
 } from '@ledgerline/contracts';
 import { index, integer, primaryKey, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
@@ -121,6 +123,8 @@ export const transactions = sqliteTable(
     origin: text('origin').$type<'entered' | 'imported' | 'calculated'>().notNull(),
     createdBy: text('created_by').notNull(),
     createdAt: text('created_at').notNull(),
+    /** Provenance of overridden fields, keyed by field name. */
+    overrides: json<Partial<Record<TransactionFinancialField, Provenance>>>('overrides'),
     version: integer('version').notNull(),
   },
   (t) => [

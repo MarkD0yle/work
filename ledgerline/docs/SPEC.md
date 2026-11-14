@@ -143,12 +143,12 @@ The central workspace. AG Grid wrapped; apps never import AG Grid.
 **Keyboard:** arrows move; Space selects; Shift extends; Ctrl/Cmd+A selects all in view (not all server rows); Enter or F2 edits; Escape cancels then clears; Ctrl/Cmd+C copies; Shift+F10 opens actions.
 
 **Acceptance**
-- [ ] 100,000 server-side rows: first paint under 1.5s, smooth scroll (Enterprise only).
-- [ ] A financial column never shows more or fewer decimals than its registry entry.
-- [ ] Refresh keeps focus, selection and scroll.
-- [ ] Every keyboard interaction works with no mouse.
-- [ ] Lint fails if `ag-grid-*` is imported outside `packages/ui/src/grid`.
-- [ ] Row and column counts announced to screen readers, including server totals.
+- [ ] 100,000 server-side rows: first paint under 1.5s, smooth scroll (Enterprise only). *First paint passes on Community (0.6–1.2s on 250,000 rows). Smooth scroll not yet proven; see DECISIONS.md.*
+- [x] A financial column never shows more or fewer decimals than its registry entry.
+- [x] Refresh keeps focus, selection and scroll.
+- [x] Every keyboard interaction works with no mouse.
+- [x] Lint fails if `ag-grid-*` is imported outside `packages/ui/src/grid`.
+- [x] Row and column counts announced to screen readers, including server totals.
 
 ### 7.2 Saved Views and Workspaces — Milestone 2
 
@@ -233,10 +233,10 @@ One input and one display cell per financial kind.
 - Null displays by `nullReason`: missing `—`, unavailable `n/a` with tooltip, not applicable blank with aria label. Zero is `0.00`.
 
 **Acceptance**
-- [ ] `1.5m` in a USD amount saves as `"1500000.00"`.
-- [ ] JPY amounts never show decimals.
-- [ ] An override cannot save without a reason; audit holds before and after.
-- [ ] Missing, unavailable, not applicable and zero render differently.
+- [x] `1.5m` in a USD amount saves as `"1500000.00"`.
+- [x] JPY amounts never show decimals.
+- [x] An override cannot save without a reason; audit holds before and after.
+- [x] Missing, unavailable, not applicable and zero render differently.
 
 ### 7.6 Date and Period Fields — Milestone 2
 
@@ -276,9 +276,9 @@ Implements `UiState` and `Message`. Every other capability depends on it.
 - Stale data shows as-of and a refresh action. It never refreshes over unsaved edits; that is a conflict state.
 
 **Acceptance**
-- [ ] All 15 `UiState` kinds have stories in light and dark.
-- [ ] New blocking errors announced via an assertive live region; warnings polite.
-- [ ] Clicking a notification-panel message focuses its field or row.
+- [x] All 15 `UiState` kinds have stories in light and dark.
+- [x] New blocking errors announced via an assertive live region; warnings polite.
+- [x] Clicking a notification-panel message focuses its field or row.
 
 ### 7.8 Action Registry and Contextual Actions — Milestone 3
 

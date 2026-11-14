@@ -101,5 +101,11 @@ export type Proofs = [
   Sub<Out<typeof S.user>, C.User>,
   Back<C.User, Out<typeof S.user>>,
   Sub<Out<typeof S.gridQuery>, C.GridQuery>,
+  Sub<Out<typeof S.transactionStatus>, C.TransactionStatus>,
+  Back<C.TransactionStatus, Out<typeof S.transactionStatus>>,
+  Sub<Out<typeof S.transactionRow>, C.TransactionRow>,
+  Back<C.TransactionRow, Out<typeof S.transactionRow>>,
+  Sub<Out<typeof S.transactionPatch>, C.TransactionPatch>,
+  Back<C.TransactionPatch, Out<typeof S.transactionPatch>>,
   Back<C.GridQuery, Out<typeof S.gridQuery>>,
 ];

@@ -493,6 +493,19 @@ export function seed(db: Db, scale: SeedScale): SeedResult {
           ['interface-custody-feed', 15],
         ] as const),
         createdAt: `${tradeDate}T${pad(r.int(8, 17), 2)}:${pad(r.int(0, 59), 2)}:00Z`,
+        // A few calculated amounts were overridden, so the overridden state is always on screen.
+        overrides:
+          quantity && price && r.chance(0.01)
+            ? {
+                amount: {
+                  origin: 'overridden',
+                  overriddenBy: actor('u-ada'),
+                  overrideReason: 'Agreed net amount with counterparty.',
+                  asOf: `${tradeDate}T17:30:00Z`,
+                  originalValue: new Decimal(amount).mul(1.0005).toFixed(dp),
+                },
+              }
+            : null,
         version: 1,
       });
       if (unposted && tradeDate <= recentCutoff && oldUnposted.length < v.sampledExceptions * 3) {

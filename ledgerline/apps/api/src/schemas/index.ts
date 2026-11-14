@@ -479,3 +479,28 @@ export const gridQuery = z.object({
 });
 
 export const errorBody = z.object({ messages: z.array(message), permission: permission.exactOptional() });
+
+// ── Transactions ──
+export const transactionStatus = z.enum(['unposted', 'posted', 'reversed']);
+export const transactionFinancialField = z.enum(['quantity', 'price', 'amount']);
+
+export const transactionRow = z.object({
+  id: z.string(),
+  portfolio: entityRef,
+  security: entityRef.nullable(),
+  type: z.string(),
+  tradeDate: businessDate,
+  settleDate: businessDate,
+  quantity: financialValue,
+  price: financialValue,
+  amount: financialValue,
+  currency: z.string(),
+  status: transactionStatus,
+  warning: message.exactOptional(),
+  version: z.number().int(),
+});
+
+export const transactionPatch = z.object({
+  changes: z.partialRecord(transactionFinancialField, decimalString),
+  reason: z.string().exactOptional(),
+});

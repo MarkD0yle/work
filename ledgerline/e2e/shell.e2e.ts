@@ -60,7 +60,6 @@ test.describe('Milestone 0 shell', () => {
     for (const name of [
       'Portfolios',
       'Securities',
-      'Transactions',
       'Market Data',
       'Cash',
       'Accounting',

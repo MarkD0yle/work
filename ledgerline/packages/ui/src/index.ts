@@ -31,3 +31,32 @@ export {
 } from './components/dropdown-menu';
 export { Separator } from './components/separator';
 export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './components/tooltip';
+
+export { Input, Label, Textarea } from './components/input';
+export { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from './components/popover';
+export { useDensity } from './lib/use-density';
+
+// Financial fields and cells (SPEC 7.5)
+export { FinancialCell, type FinancialCellProps } from './financial/financial-cell';
+export { FinancialInput, type FinancialInputProps } from './financial/financial-input';
+export { formatFinancial, rawFinancial, type FormattedFinancial } from './financial/format';
+export { parseFinancialInput, type ParseResult } from './financial/parse';
+export { displayPrecision, minorUnits, registryPrecision, storagePrecision } from './financial/registry';
+
+// State and validation (SPEC 7.7)
+export { describeState, type StateDescription, type Tone } from './state/describe';
+export { FieldMessage, type FieldMessageProps } from './state/field-message';
+export { MessageList, MessageText } from './state/message-list';
+export {
+  NotificationPanel,
+  NotificationProvider,
+  NotificationToggle,
+  useNotifications,
+  type NotificationItem,
+  type TargetResolver,
+} from './state/notifications';
+export { RowMarker, type RowMarkerProps } from './state/row-marker';
+export { SectionBanner, type SectionBannerProps } from './state/section-banner';
+export { StateOverlay, type StateOverlayProps } from './state/state-overlay';
+
+// The data grid (SPEC 7.1) is a separate entry, `@ledgerline/ui/grid`, so screens without a grid do not load the grid engine.

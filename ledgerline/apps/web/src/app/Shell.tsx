@@ -3,13 +3,15 @@ import {
   applyTheme,
   Button,
   cn,
+  NotificationPanel,
+  NotificationToggle,
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@ledgerline/ui';
 import { useQuery } from '@tanstack/react-query';
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { NavLink, Outlet } from 'react-router';
 import { ApiError, fetchMe, fetchUsers } from '../api/client';
 import { useSession } from '../state/session';
@@ -33,6 +35,7 @@ export function Shell() {
   useEffect(() => applyTheme(theme), [theme]);
   useEffect(() => applyDensity(effectiveDensity), [effectiveDensity]);
 
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const failed = users.error ?? me.error;
 
   return (
@@ -63,6 +66,7 @@ export function Shell() {
           Ledgerline
         </NavLink>
         <div className="flex-1" />
+        <NotificationToggle open={notificationsOpen} onToggle={() => setNotificationsOpen((open) => !open)} />
         <RoleSwitcher users={users.data ?? []} currentId={userId} onChange={setUser} />
         <PreferencesMenu theme={theme} density={effectiveDensity} onTheme={setTheme} onDensity={setDensity} />
       </header>
@@ -110,6 +114,7 @@ export function Shell() {
             <Outlet context={me.data} />
           )}
         </main>
+        <NotificationPanel open={notificationsOpen} onClose={() => setNotificationsOpen(false)} />
       </div>
     </div>
   );

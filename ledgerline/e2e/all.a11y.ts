@@ -58,6 +58,7 @@ interface StoryIndex {
   entries: Record<string, { id: string; title: string; name: string; type: string }>;
 }
 
+// `a11y.manual` stops Storybook's own addon running axe in the page at the same time as this test.
 // The story list comes from the built Storybook, so a new story is covered without touching this file.
 const index = JSON.parse(
   readFileSync(new URL('../storybook-static/index.json', import.meta.url), 'utf8'),
@@ -72,7 +73,9 @@ for (const theme of THEMES) {
   test.describe(`stories, ${theme}`, () => {
     for (const story of stories) {
       test(`${story.title} / ${story.name}`, async ({ page }) => {
-        await page.goto(`${STORYBOOK}/iframe.html?id=${story.id}&viewMode=story&globals=theme:${theme}`);
+        await page.goto(
+          `${STORYBOOK}/iframe.html?id=${story.id}&viewMode=story&globals=theme:${theme};a11y.manual:!true`,
+        );
         await page.locator('#storybook-root > *, [data-radix-popper-content-wrapper]').first().waitFor();
         await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
         await expectNoSeriousViolations(page);

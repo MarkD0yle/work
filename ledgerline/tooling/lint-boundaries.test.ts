@@ -49,8 +49,14 @@ describe('financial number handling in UI code', () => {
     "export const a = parseFloat('1.5');",
     "export const a = Number('1.5');",
   ])('rejects %s', async (code) => {
-    expect(await rulesFiredFor('packages/ui/src/financial/x.ts', code)).toContain('no-restricted-syntax');
+    expect(await rulesFiredFor('packages/ui/src/grid/x.ts', code)).toContain('no-restricted-syntax');
     expect(await rulesFiredFor('packages/compositions/src/x.ts', code)).toContain('no-restricted-syntax');
+  });
+
+  it('allows formatting only inside the financial module, which owns the precision registry', async () => {
+    expect(
+      await rulesFiredFor('packages/ui/src/financial/x.ts', 'export const a = (1.5).toFixed(2);'),
+    ).not.toContain('no-restricted-syntax');
   });
 
   it('does not apply to the API, where decimal.js output is formatted', async () => {

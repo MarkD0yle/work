@@ -2,7 +2,11 @@ import cors from '@fastify/cors';
 import type { Message, Permission, User } from '@ledgerline/contracts';
 import { eq, sql } from 'drizzle-orm';
 import Fastify, { type FastifyInstance } from 'fastify';
+import { ZodError } from 'zod';
 import { schema, type Db } from './db/client';
+import { SEED_TODAY } from './db/seed';
+import { HttpError } from './lib/http';
+import { registerTransactionRoutes } from './routes/transactions';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -39,7 +43,20 @@ function toPermission(row: typeof schema.permissions.$inferSelect, user: User): 
   };
 }
 
-export function buildApp(db: Db): FastifyInstance {
+export interface Clock {
+  /** The engine's business date. Relative filters ("yesterday") resolve against this, not the wall clock. */
+  today: string;
+  /** Current timestamp, for audit events and as-of. */
+  now: () => string;
+}
+
+/** The mock engine's business date is the seed date, so seeded "recent" data stays recent. */
+const defaultClock: Clock = {
+  today: process.env.LL_TODAY ?? SEED_TODAY,
+  now: () => new Date().toISOString(),
+};
+
+export function buildApp(db: Db, clock: Clock = defaultClock): FastifyInstance {
   const app = Fastify({ logger: process.env.LL_LOG === '1' });
   app.register(cors, { origin: true, exposedHeaders: ['ETag'] });
 
@@ -73,6 +90,41 @@ export function buildApp(db: Db): FastifyInstance {
       });
     }
     request.user = toUser(row);
+  });
+
+  app.setErrorHandler((error, _request, reply) => {
+    if (error instanceof HttpError)
+      return reply.code(error.status).send({ messages: error.messages, ...error.extra });
+    if (error instanceof ZodError) {
+      return reply.code(400).send({
+        messages: error.issues.map((issue) => ({
+          code: 'LL-VAL-0400',
+          severity: 'error',
+          level: 'field',
+          text: `${issue.path.join('.') || 'Request'}: ${issue.message}`,
+          fix: 'Correct the request and send it again.',
+          ...(issue.path.length ? { target: issue.path.join('.') } : {}),
+        })),
+      });
+    }
+    const status = (error as { statusCode?: number }).statusCode;
+    if (status && status >= 400 && status < 500) {
+      return reply.code(status).send({
+        messages: [
+          message('LL-API-0400', 'The request could not be read.', 'Check the request body is valid JSON.'),
+        ],
+      });
+    }
+    app.log.error(error);
+    return reply.code(500).send({
+      messages: [
+        message(
+          'LL-API-0500',
+          'The server hit an unexpected problem.',
+          'Try again. If it keeps happening, contact support with this code.',
+        ),
+      ],
+    });
   });
 
   app.setNotFoundHandler((request, reply) =>
@@ -114,6 +166,8 @@ export function buildApp(db: Db): FastifyInstance {
       .all()
       .map((row) => toPermission(row, request.user)),
   );
+
+  registerTransactionRoutes(app, db, API_BASE, clock);
 
   return app;
 }

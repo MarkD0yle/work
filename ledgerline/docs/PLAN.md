@@ -23,16 +23,16 @@ Session prompt template:
 
 ## Milestone 1 — Grid, Financial Fields, State and Validation
 
-- [ ] 1.1 Precision registry and formatting utilities with `decimal.js`. Unit tests for every kind, currencies USD/EUR/GBP/JPY, both sign conventions, shorthand parsing.
-- [ ] 1.2 `FinancialCell` and `FinancialInput` (SPEC 7.5). Override flow with reason. Provenance popover. Null reasons.
-- [ ] 1.3 `UiState` renderer components: `StateOverlay`, `SectionBanner`, `FieldMessage`, `RowMarker`. Stories for all 15 kinds.
-- [ ] 1.4 Notification panel with session history and jump-to-target.
-- [ ] 1.5 `LLGrid` wrapper: AG Grid theme from tokens, column types, typed cells, density, selection, status bar, state overlay, Enterprise feature switch by env.
-- [ ] 1.6 Server-side data source adapter for the `/…/query` contract.
-- [ ] 1.7 Keyboard model and screen-reader announcements (SPEC 7.1).
-- [ ] 1.8 Transactions grid route, read-only, on seeded data.
+- [x] 1.1 Precision registry and formatting utilities with `decimal.js`. Unit tests for every kind, currencies USD/EUR/GBP/JPY, both sign conventions, shorthand parsing.
+- [x] 1.2 `FinancialCell` and `FinancialInput` (SPEC 7.5). Override flow with reason. Provenance popover. Null reasons.
+- [x] 1.3 `UiState` renderer components: `StateOverlay`, `SectionBanner`, `FieldMessage`, `RowMarker`. Stories for all 15 kinds.
+- [x] 1.4 Notification panel with session history and jump-to-target.
+- [x] 1.5 `LLGrid` wrapper: AG Grid theme from tokens, column types, typed cells, density, selection, status bar, state overlay, Enterprise feature switch by env.
+- [x] 1.6 Server-side data source adapter for the `/…/query` contract.
+- [x] 1.7 Keyboard model and screen-reader announcements (SPEC 7.1).
+- [x] 1.8 Transactions grid route, read-only, on seeded data.
 
-**Exit gate:** SPEC acceptance for 7.1 (except views), 7.5 and 7.7 pass in tests. 100k-row scroll check documented (Enterprise) or noted as blocked by licence in DECISIONS.md.
+**Exit gate (passed 2026-11-14, on AG Grid Community; see DECISIONS.md for the two caveats):** SPEC acceptance for 7.1 (except views), 7.5 and 7.7 pass in tests. 100k-row scroll check documented (Enterprise) or noted as blocked by licence in DECISIONS.md.
 
 ## Milestone 2 — Views, Workspaces, Entity Picker, Dates
 

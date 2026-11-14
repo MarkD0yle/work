@@ -64,8 +64,9 @@ e2e/                   # Playwright journeys and axe checks
 
 - `contracts` imports nothing.
 - `tokens` imports nothing.
-- `ui` imports `contracts`, `tokens`, AG Grid, Radix (through shadcn/ui components).
+- `ui` imports `contracts`, `tokens`, AG Grid, Radix (through shadcn/ui components). Only `packages/ui/src/financial` may format or parse financial numbers.
 - `compositions` imports `ui`, `contracts`.
+- The grid is imported from `@ledgerline/ui/grid`, never from the main `@ledgerline/ui` entry, and grid screens are loaded on demand. This keeps the grid engine out of the initial bundle.
 - `apps/web` imports `compositions`, `ui`, `contracts`. **Never** `ag-grid-*` or `@radix-ui/*` directly.
 - `apps/api` imports `contracts` only from the frontend packages.
 - Add ESLint `no-restricted-imports` rules for all of the above in milestone 0.

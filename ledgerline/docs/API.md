@@ -11,6 +11,8 @@ This is the contract the UI depends on. In this build it is implemented by `apps
 - Errors: `{ messages: Message[] }` with HTTP 400 (validation), 403 (permission, includes `Permission` with explanation), 409 (conflict or stale version), 422 (business rule, e.g. closed period).
 - Optimistic concurrency: mutable records carry `version`; writes send `If-Match: <version>`. Mismatch returns 409 with the current record.
 - Every mutation returns the audit event ids it wrote.
+- Relative date filters (`today`, `yesterday`, …) resolve against the engine's business date, not the caller's clock. `yesterday` is the previous business day. In the mock the engine date is the seed date (`LL_TODAY` overrides it).
+- Grid queries: sort and filter fields come from a per-endpoint whitelist; an unknown field is a 400. A page is at most 1,000 rows. `groupBy` is accepted but not applied until Milestone 2.
 
 ## Server-side grid query
 
@@ -57,7 +59,7 @@ Response:
 | POST | `/transactions/query` | Grid query |
 | GET | `/transactions/:id` | Detail with financial values and provenance |
 | POST | `/transactions` | Create (validates; may return warnings to acknowledge) |
-| PATCH | `/transactions/:id` | Edit (If-Match) |
+| PATCH | `/transactions/:id` | Edit (If-Match). Body `{ changes: { quantity?, price?, amount? }, reason? }`. Unposted records only. Changing a calculated value is an override: needs `transaction.override` and a reason. Returns `{ record, auditEventIds }` |
 | POST | `/transactions/eligibility` | `{ actionId, ids }` → per-row `Permission` |
 | POST | `/transactions/preview` | `{ actionId, ids, inputs }` → `PreviewRow[]` |
 | POST | `/transactions/bulk` | `{ actionId, ids, inputs, reason }` → `BulkResult` inline (≤200) or `{ jobId }` |

@@ -463,3 +463,46 @@ export interface GridResponse<Row> {
   /** ISO timestamp */
   asOf: string;
 }
+
+// ─────────────────────────────────────────────────────────────
+// Transactions (added 0.2.0)
+// ─────────────────────────────────────────────────────────────
+
+export type TransactionStatus = 'unposted' | 'posted' | 'reversed';
+
+/** Financial fields of a transaction that can be edited or overridden. */
+export type TransactionFinancialField = 'quantity' | 'price' | 'amount';
+
+/** One transaction as the grid and the detail panel see it. */
+export interface TransactionRow {
+  id: string;
+  portfolio: EntityRef;
+  /** Null for cash-only records such as fees. */
+  security: EntityRef | null;
+  type: string;
+  tradeDate: BusinessDate;
+  settleDate: BusinessDate;
+  quantity: FinancialValue;
+  price: FinancialValue;
+  amount: FinancialValue;
+  currency: string;
+  status: TransactionStatus;
+  /** Present when the record carries a warning the user can acknowledge. */
+  warning?: Message;
+  /** Optimistic concurrency: send as If-Match on writes. */
+  version: number;
+}
+
+/** Body of PATCH /transactions/:id. */
+export interface TransactionPatch {
+  /** New decimal strings by field. */
+  changes: Partial<Record<TransactionFinancialField, string>>;
+  /** Required when a calculated value is changed (an override). */
+  reason?: string;
+}
+
+/** Every mutation returns the record and the audit events it wrote. */
+export interface MutationResult<T> {
+  record: T;
+  auditEventIds: string[];
+}
