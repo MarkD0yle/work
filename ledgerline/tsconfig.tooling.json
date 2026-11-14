@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "lib": ["ES2022", "DOM"],
+    "jsx": "react-jsx",
+    "outDir": ".tsbuild",
+    "tsBuildInfoFile": ".tsbuild/tooling.tsbuildinfo"
+  },
+  "include": ["*.ts", "e2e", "tooling", ".storybook"],
+  "references": [{ "path": "packages/tokens" }, { "path": "packages/ui" }]
+}
