@@ -238,6 +238,7 @@ export const exceptions = sqliteTable(
   (t) => [
     index('exceptions_portfolio_period').on(t.portfolioId, t.periodEnd, t.severity, t.status),
     index('exceptions_detected').on(t.detectedAt),
+    index('exceptions_status').on(t.status, t.type),
   ],
 );
 
@@ -314,7 +315,20 @@ export const jobs = sqliteTable(
     scheduledFor: text('scheduled_for'),
     log: json<NonNullable<Job['log']>>('log'),
   },
-  (t) => [index('jobs_status').on(t.status)],
+  (t) => [index('jobs_status').on(t.status), index('jobs_submitted').on(t.submittedAt)],
+);
+
+/** The content of a job's downloadable outputs (report files). Kept apart from `jobs` so job lists stay small. */
+export const jobOutputs = sqliteTable(
+  'job_outputs',
+  {
+    jobId: text('job_id').notNull(),
+    idx: integer('idx').notNull(),
+    name: text('name').notNull(),
+    contentType: text('content_type').notNull(),
+    content: text('content').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.jobId, t.idx] })],
 );
 
 export const approvals = sqliteTable(
@@ -334,7 +348,7 @@ export const approvals = sqliteTable(
     decidedAt: text('decided_at'),
     note: text('note'),
   },
-  (t) => [index('approvals_status').on(t.status)],
+  (t) => [index('approvals_status').on(t.status), index('approvals_requested').on(t.requestedAt)],
 );
 
 export const closeSignOffs = sqliteTable('close_sign_offs', {
@@ -362,7 +376,13 @@ export const auditEvents = sqliteTable(
     batchId: text('batch_id'),
     immutable: bool('immutable').notNull(),
   },
-  (t) => [index('audit_record').on(t.recordType, t.recordId, t.at), index('audit_batch').on(t.batchId)],
+  (t) => [
+    index('audit_record').on(t.recordType, t.recordId, t.at),
+    index('audit_batch').on(t.batchId),
+    // The audit list is read newest first, and often by action.
+    index('audit_at').on(t.at),
+    index('audit_action').on(t.action, t.at),
+  ],
 );
 
 export const statements = sqliteTable(

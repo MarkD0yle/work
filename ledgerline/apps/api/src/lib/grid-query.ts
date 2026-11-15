@@ -2,7 +2,8 @@
  * Turns the shared GridQuery (sort, filters, quick search, row window) into SQL.
  * Each list endpoint supplies a whitelist of fields, so nothing from the request reaches SQL as text.
  */
-import type { FilterCondition, GridQuery } from '@ledgerline/contracts';
+import type { FilterCondition, GridQuery, GridResponse } from '@ledgerline/contracts';
+import type { Db } from '../db/client';
 import { addBusinessDays, addDays, endOfMonth, shiftMonthEnd } from './dates';
 import { HttpError, problem } from './http';
 
@@ -11,6 +12,8 @@ export interface FieldSpec {
   sql: string;
   /** Decimals are stored as text; compare and sort them as numbers. */
   type: 'text' | 'date' | 'decimal';
+  /** Sort by this instead, when the stored text does not sort in a meaningful order (severity: high, medium, low). */
+  sortSql?: string;
 }
 
 export interface BuiltQuery {
@@ -152,7 +155,7 @@ export function buildGridQuery(
 
   const requested = (query.sort ?? []).map((s) => {
     const spec = options.fields[s.field] ?? unknownField(s.field, options.fields);
-    return { sql: expr(spec), dir: s.dir === 'desc' ? ('DESC' as const) : ('ASC' as const) };
+    return { sql: spec.sortSql ?? expr(spec), dir: s.dir === 'desc' ? ('DESC' as const) : ('ASC' as const) };
   });
   const sort = requested.length ? requested : [options.defaultSort];
   const tieDir = (sort[0] as (typeof sort)[number]).dir;
@@ -165,4 +168,34 @@ export function buildGridQuery(
     offset: query.startRow,
     ...(groupField && groupSpec ? { group: { field: groupField, sql: groupSpec.sql } } : {}),
   };
+}
+
+/**
+ * Runs a built query against one table expression and returns the shared grid response:
+ * records for a normal page, or one row per value with its count when a group level is asked for.
+ */
+export function runGridQuery<Raw, Row>(
+  sqlite: Db['$client'],
+  options: { select: string; from: string; built: BuiltQuery; map: (raw: Raw) => Row; asOf: string },
+): GridResponse<Row> {
+  const { built, from } = options;
+  if (built.group) {
+    const groups = sqlite
+      .prepare(
+        `SELECT ${built.group.sql} AS key, count(*) AS count ${from} ${built.where} GROUP BY ${built.group.sql} ORDER BY ${built.group.sql} LIMIT ? OFFSET ?`,
+      )
+      .all(...built.params, built.limit, built.offset) as { key: string | null; count: number }[];
+    const total = sqlite
+      .prepare(`SELECT count(DISTINCT coalesce(${built.group.sql}, '')) AS n ${from} ${built.where}`)
+      .get(...built.params) as { n: number };
+    const field = built.group.field;
+    return { rows: [], groups: groups.map((g) => ({ field, ...g })), totalRows: total.n, asOf: options.asOf };
+  }
+  const rows = sqlite
+    .prepare(`${options.select} ${from} ${built.where} ${built.orderBy} LIMIT ? OFFSET ?`)
+    .all(...built.params, built.limit, built.offset) as Raw[];
+  const total = sqlite.prepare(`SELECT count(*) AS n ${from} ${built.where}`).get(...built.params) as {
+    n: number;
+  };
+  return { rows: rows.map(options.map), totalRows: total.n, asOf: options.asOf };
 }

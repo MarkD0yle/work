@@ -2,7 +2,7 @@ import { decodeViewDiff, encodeViewDiff, type ViewDiff } from '@ledgerline/ui';
 import { useCallback, useState } from 'react';
 import { useLocation, useOutletContext, useSearchParams } from 'react-router';
 import type { Me } from '../api/client';
-import { TransactionsBlotter } from '../features/transactions/TransactionsBlotter';
+import { TransactionsBlotter } from '@ledgerline/compositions/transactions';
 
 /**
  * The Transactions page. The URL carries the view id and any unsaved changes (`?view=…&d=…`),

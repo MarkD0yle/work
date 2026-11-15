@@ -4,7 +4,13 @@ const WEB = 'http://localhost:5310';
 const WEB_COMMUNITY = 'http://localhost:5311';
 const STORYBOOK = 'http://localhost:6310';
 /** Tests run against their own freshly seeded database, never the dev one. */
-const env = { LL_DB_PATH: 'apps/api/data/e2e.sqlite', LL_API_PORT: '4311', SEED_SCALE: 'small' };
+// Jobs pause a little between chunks, so a journey can leave and come back while one is still running.
+const env = {
+  LL_DB_PATH: 'apps/api/data/e2e.sqlite',
+  LL_API_PORT: '4311',
+  SEED_SCALE: 'small',
+  LL_JOB_TICK_MS: '350',
+};
 
 export default defineConfig({
   timeout: 30_000,
@@ -22,6 +28,14 @@ export default defineConfig({
       use: { baseURL: WEB_COMMUNITY },
     },
     { name: 'a11y', testDir: './e2e', testMatch: /.*\.a11y\.ts/, use: { baseURL: WEB } },
+    // One baseline image per story. A smaller viewport keeps the images small.
+    {
+      name: 'visual',
+      testDir: './e2e',
+      testMatch: /.*\.visual\.ts/,
+      snapshotPathTemplate: '{testDir}/__screenshots__/{arg}{ext}',
+      use: { baseURL: WEB, viewport: { width: 1000, height: 700 } },
+    },
   ],
   webServer: [
     {

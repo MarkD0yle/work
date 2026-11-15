@@ -1,0 +1,43 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Docs/Capabilities/Action Registry" />
+
+# Action Registry
+
+**Status:** Hypothesis. Its acceptance criteria pass in automated tests. No user has tested it yet, so it has not moved to Draft (SPEC §11).
+
+**Spec:** SPEC 7.8
+
+## Purpose
+
+One list of actions per screen. The toolbar, the selection bar, the context menu, the command palette and a future assistant all read the same definitions, so an action has one label, one shortcut and one set of rules.
+
+## When to use, and when not
+
+**Use it** for every action a screen offers, including ones that only open a form.
+
+**Do not use it** to add a button that bypasses the registry.
+
+## Foundations
+
+At most three actions show as buttons (primary first, then destructive); the rest overflow. Any action with a consequence goes through the confirm step. A validator fails the build for an action that is half described.
+
+## States
+
+Enabled, disabled with a reason (permission, selection size, record state), running and done.
+
+## Data contract
+
+`ActionDef<Row>`: id, label, description, tier, appliesTo, consequence, shortcut, `available`, `eligibility`, `requiresReason`, `agentRequiresConfirmation`, `inputSchema`, `preview`, `execute`.
+
+## Permissions
+
+`available(ctx)` returns a `Permission`. A missing permission is a denial with a reason, never a silent allow. Actions with a consequence always need human confirmation from an agent.
+
+## Accessibility
+
+Disabled actions stay focusable and show their reason on focus and hover. Shortcuts are shown identically on every surface and listed in the shortcut sheet.
+
+## Code reference
+
+`@ledgerline/ui`: `resolveActions`, `layoutActions`, `validateRegistry`, `ActionBar`, `CommandPalette`. Tests: `registry.test.ts`, `e2e/milestone3.e2e.ts`.

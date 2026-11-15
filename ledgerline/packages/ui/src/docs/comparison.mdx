@@ -1,0 +1,43 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Docs/Capabilities/Comparison" />
+
+# Comparison
+
+**Status:** Hypothesis. Its acceptance criteria pass in automated tests. No user has tested it yet, so it has not moved to Draft (SPEC §11).
+
+**Spec:** SPEC 7.9
+
+## Purpose
+
+Two sources side by side with the difference between them: expected and actual, prior day and today, investment book and accounting book.
+
+## When to use, and when not
+
+**Use it** when a user has to judge whether two numbers agree, and by how much.
+
+**Do not use it** for a single value with a history (use the audit timeline).
+
+## Foundations
+
+The difference shows as amount, percent and units; the user picks which leads. A tolerance result is a word: Within, Near limit, Breach. A missing side is never compared as zero.
+
+## States
+
+Agree, within tolerance, near the limit, breach, nothing to compare (one side missing or the reference is zero), only differences shown (stated), and empty.
+
+## Data contract
+
+`Comparison`: two labels, a tolerance as a percentage, and `ComparisonRow[]` with `left`, `right` and optional units, all `FinancialValue`.
+
+## Permissions
+
+Read only. It shows what the caller was allowed to load.
+
+## Accessibility
+
+A breach is identifiable without colour. Each side's header gives its source and update time. The table scrolls by keyboard.
+
+## Code reference
+
+`@ledgerline/ui`: `ComparisonTable`, `formatDelta`. Tests: `comparison.test.tsx`. Used in the exception panel and the close console's Books tab.

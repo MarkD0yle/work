@@ -33,14 +33,22 @@ export { Separator } from './components/separator';
 export { toast, Toaster } from './components/toaster';
 export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './components/tooltip';
 
-export { Input, Label, Textarea } from './components/input';
+export { Input, Select, Label, Textarea } from './components/input';
 export { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from './components/popover';
 export { useDensity } from './lib/use-density';
 
 // Financial fields and cells (SPEC 7.5)
 export { FinancialCell, type FinancialCellProps } from './financial/financial-cell';
 export { FinancialInput, type FinancialInputProps } from './financial/financial-input';
-export { formatFinancial, rawFinancial, type FormattedFinancial } from './financial/format';
+export { formatDelta, type FormattedDelta, type ToleranceLevel } from './financial/delta';
+export {
+  formatFinancial,
+  formatPercent,
+  fractionToPercent,
+  percentToFraction,
+  rawFinancial,
+  type FormattedFinancial,
+} from './financial/format';
 export { parseFinancialInput, type ParseResult } from './financial/parse';
 export { displayPrecision, minorUnits, registryPrecision, storagePrecision } from './financial/registry';
 
@@ -124,7 +132,14 @@ export { detectIdentifier, shouldSearch, type IdentifierKind } from './picker/id
 
 // Action registry (SPEC 7.8)
 export { ActionBar, ActionLabel, ActionMenuItems, type ActionBarProps } from './actions/action-bar';
-export { ConfirmDialog, type ConfirmDialogProps, type Noun } from './actions/confirm-dialog';
+export { BulkResultPanel, bulkResultCsv, type BulkResultPanelProps } from './actions/bulk-results';
+export {
+  ConfirmDialog,
+  confirmPhrase,
+  TYPED_CONFIRM_ROWS,
+  type ConfirmDialogProps,
+  type Noun,
+} from './actions/confirm-dialog';
 export {
   formatShortcut,
   groupIneligible,
@@ -159,3 +174,29 @@ export {
 } from './components/context-menu';
 
 // The data grid (SPEC 7.1) is a separate entry, `@ledgerline/ui/grid`, so screens without a grid do not load the grid engine.
+export {
+  BatchGrid,
+  type BatchColumn,
+  type BatchEdit,
+  type BatchGridProps,
+  type BatchRow,
+} from './batch/batch-grid';
+export { parseDelimited } from './batch/tabular';
+export { readXlsx } from './batch/xlsx';
+export { Tabs, TabsContent, TabsList, TabsTrigger } from './components/tabs';
+export {
+  GLOSSARY,
+  GlossaryProvider,
+  GlossaryTerm,
+  GlossaryText,
+  type GlossaryProviderProps,
+} from './glossary/glossary';
+export { formatTimestamp } from './financial/provenance';
+export { ComparisonTable, type ComparisonTableProps, type DeltaMode } from './comparison/comparison';
+export {
+  ActorLabel,
+  AuditTimeline,
+  auditChanges,
+  describeAction,
+  type AuditTimelineProps,
+} from './audit/audit-timeline';

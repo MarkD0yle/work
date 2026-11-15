@@ -56,3 +56,19 @@ export function formatFinancial(fv: FinancialValue): FormattedFinancial {
 export function rawFinancial(fv: FinancialValue): string {
   return fv.value ?? '';
 }
+
+/** A fraction as a percentage figure with no sign or symbol: "0.02" is "2". Full precision, for calculations and inputs. */
+export function fractionToPercent(fraction: string): string {
+  return new Decimal(fraction).mul(100).toString();
+}
+
+/** A percentage figure back to a fraction: "2" is "0.02". */
+export function percentToFraction(percent: string): string {
+  return new Decimal(percent).div(100).toString();
+}
+
+/** A fraction shown as a percentage: "0.02" reads "2.00%". */
+export function formatPercent(fraction: string, decimals = 2): string {
+  const value = new Decimal(fraction).mul(100);
+  return `${value.isNegative() ? '-' : ''}${formatDecimal(value, decimals)}%`;
+}

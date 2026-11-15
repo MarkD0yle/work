@@ -1,0 +1,43 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Docs/Capabilities/Data Grid" />
+
+# Data Grid
+
+**Status:** Hypothesis. Its acceptance criteria pass in automated tests. No user has tested it yet, so it has not moved to Draft (SPEC §11).
+
+**Spec:** SPEC 7.1
+
+## Purpose
+
+One grid for every list of records: search, sort, filter, group, select and act, on a few rows or a quarter of a million. It is the surface most work happens on.
+
+## When to use, and when not
+
+**Use it** for any list a user scans, selects from or acts on. Use `kind: 'server'` for more than 10,000 rows or any unbounded list.
+
+**Do not use it** for a short fixed list inside a panel (use a table), or for a batch on its way in (use the Batch Grid).
+
+## Foundations
+
+Density tokens set row height (24, 32, 40). Financial columns right-align in tabular figures. Colour only ever backs up a word. The grid engine (AG Grid) is imported only inside `packages/ui/src/grid` and loads on demand.
+
+## States
+
+Loading, empty (no data), no matches (with the number of active filters), blocking error with retry, permission-limited, stale, processing (a bulk run in a job) and partial success (a results panel). Every active filter is a removable tag: there are no hidden filters.
+
+## Data contract
+
+`LLColumnDef<Row>[]` (financial, date, status, entity, text, boolean, delta), an `LLDataSource<Row>` (`client` rows or a `server` query returning `GridResponse<Row>`), `rowId`, and optionally `ActionDef<Row>[]`. Saved view state is `GridViewState`. The server query is the shared `GridQuery`.
+
+## Permissions
+
+`gridFeatures(segment)` switches capability by role: clients get no selection bar; new users see the preview before every confirm. Restricted columns cannot be copied and say why. Actions come disabled with their reason, never hidden.
+
+## Accessibility
+
+Row and column counts are announced, including the server total. Every action reachable by mouse is reachable by keyboard (Shift+F10 opens the same menu). Focus, selection and scroll survive a refresh. Group rows name their group in words.
+
+## Code reference
+
+`@ledgerline/ui/grid`: `LLGrid`, `gridFeatures`, `LLColumnDef`, `LLDataSource`, `GridJobs`. Stories: Grid/LLGrid, Grid/BatchGrid. Tests: `grid.test.ts`, `dom-cells.test.tsx`, `e2e/transactions.e2e.ts`.

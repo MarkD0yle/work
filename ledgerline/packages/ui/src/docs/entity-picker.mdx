@@ -1,0 +1,43 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Docs/Capabilities/Entity Picker" />
+
+# Entity Picker
+
+**Status:** Hypothesis. Its acceptance criteria pass in automated tests. No user has tested it yet, so it has not moved to Draft (SPEC §11).
+
+**Spec:** SPEC 7.3
+
+## Purpose
+
+Finds one portfolio or security among a million by name or any identifier, fast, and says why a record cannot be chosen.
+
+## When to use, and when not
+
+**Use it** wherever a user names a portfolio, security or other entity: filters, entry forms, admin scope.
+
+**Do not use it** for a list of fewer than about ten fixed choices (use a select).
+
+## Foundations
+
+A combobox with an inline list. Exact identifier matches rank first and say which identifier matched. Recent picks show before typing.
+
+## States
+
+Idle with recents, searching, results, no results (with what was searched), restricted results (listed, announced, not selectable) and error.
+
+## Data contract
+
+`search(query, { includeInactive }) → EntitySearchResult[]` and optional `recent()`. The value is an `EntityRef`. The sheet variant takes criteria (type, currency) and returns several refs.
+
+## Permissions
+
+Records outside the user's scope come back `restricted` with a reason and stay visible. Inactive records are hidden unless asked for.
+
+## Accessibility
+
+ARIA combobox with `aria-activedescendant`. Restricted options are focusable so the reason is read, and are marked disabled. Pasting an identifier selects an exact match.
+
+## Code reference
+
+`@ledgerline/ui`: `EntityPicker`, `EntityPickerSheet`. Tests: `picker.test.tsx`, `e2e/milestone2.e2e.ts`.

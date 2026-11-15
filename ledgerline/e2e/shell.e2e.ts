@@ -54,18 +54,10 @@ test.describe('Milestone 0 shell', () => {
     expect(await prefs.evaluate((el) => el.getBoundingClientRect().height)).toBe(40);
   });
 
-  test('every domain in the rail is reachable and says it is a placeholder', async ({ page }) => {
+  test('every domain not built yet is reachable and says it is a placeholder', async ({ page }) => {
     await page.goto('/profile');
     const rail = page.getByRole('navigation', { name: 'Domains' });
-    for (const name of [
-      'Portfolios',
-      'Securities',
-      'Market Data',
-      'Cash',
-      'Accounting',
-      'Reports',
-      'Admin',
-    ]) {
+    for (const name of ['Portfolios', 'Securities', 'Cash']) {
       await rail.getByRole('link', { name }).click();
       await expect(page.getByRole('heading', { level: 1, name })).toBeVisible();
       await expect(page.getByText('Not built yet')).toBeVisible();

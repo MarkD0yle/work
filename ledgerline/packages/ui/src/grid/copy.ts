@@ -1,14 +1,27 @@
 import { formatBusinessDate } from '../dates/format';
+import { formatDelta } from '../financial/delta';
 import { formatFinancial, rawFinancial } from '../financial/format';
 
 export { formatBusinessDate };
-import type { LLColumnDef } from './types';
+import type { FormattedDelta } from '../financial/delta';
+import type { DeltaColumn, LLColumnDef } from './types';
+
+export function deltaOf<Row>(column: DeltaColumn<Row>, row: Row): FormattedDelta {
+  const value = column.value(row);
+  return value
+    ? formatDelta(value, column.reference(row), column.tolerancePct, column.referenceLabel)
+    : { display: 'none', text: '', ariaLabel: 'Not applicable', raw: '' };
+}
 
 /** The text a cell shows. This is also what plain Copy puts on the clipboard. */
 export function displayText<Row>(column: LLColumnDef<Row>, row: Row): string {
   switch (column.type) {
     case 'financial':
       return formatFinancial(column.value(row)).text;
+    case 'delta': {
+      const d = deltaOf(column, row);
+      return d.label ? `${d.text} ${d.label}` : d.text;
+    }
     case 'date':
       return formatBusinessDate(column.value(row));
     case 'status': {
@@ -31,6 +44,8 @@ export function rawText<Row>(column: LLColumnDef<Row>, row: Row): string {
   switch (column.type) {
     case 'financial':
       return rawFinancial(column.value(row));
+    case 'delta':
+      return deltaOf(column, row).raw;
     case 'date':
       return column.value(row).value ?? '';
     case 'status':

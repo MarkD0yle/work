@@ -122,7 +122,7 @@ test.describe('transactions grid', () => {
     // Reach the grid by keyboard, then move with arrows.
     await page.getByRole('searchbox', { name: 'Quick search transactions' }).focus();
     // Tab reaches the grid header; ArrowDown enters the rows.
-    for (let i = 0; i < 6; i += 1) {
+    for (let i = 0; i < 12; i += 1) {
       if (await page.evaluate(() => Boolean(document.activeElement?.closest('.ag-header-cell')))) break;
       await page.keyboard.press('Tab');
     }

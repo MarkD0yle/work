@@ -1,0 +1,43 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Docs/Capabilities/Audit History" />
+
+# Audit History
+
+**Status:** Hypothesis. Its acceptance criteria pass in automated tests. No user has tested it yet, so it has not moved to Draft (SPEC §11).
+
+**Spec:** SPEC 7.10
+
+## Purpose
+
+Who did what, when, to which record, what it changed from and to, why, and on what evidence. For one record as a timeline, or for everything as a list.
+
+## When to use, and when not
+
+**Use it** on every record that can change, and as the answer to "what happened here?".
+
+**Do not use it** as an editing surface. Events are immutable.
+
+## Foundations
+
+Newest first. Only fields that changed are listed. Action ids are put into words. An agent's event always names the person it acted for.
+
+## States
+
+Loading, error, empty (the record predates audit history, and says so) and the timeline.
+
+## Data contract
+
+`AuditEvent`: action, record reference, `ActorRef` (with `onBehalfOf` for agents), time, effective date, before, after, note, evidence, batch id, immutable.
+
+## Permissions
+
+Needs `audit.view`. Nothing in the interface can edit or delete an event; each shows a lock.
+
+## Accessibility
+
+An ordered list. A change reads "from X changed to Y", not only an arrow. The lock has a text label.
+
+## Code reference
+
+`@ledgerline/ui`: `AuditTimeline`, `auditChanges`, `describeAction`. Compositions: `RecordHistory`, `AuditGrid`. Tests: `audit.test.tsx`, `e2e/milestone6.e2e.ts`.

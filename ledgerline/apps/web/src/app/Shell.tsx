@@ -6,9 +6,6 @@ import {
   CommandPalette,
   encodeViewDiff,
   isTypingTarget,
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
   ShortcutSheet,
   useCommands,
   useCommandSource,
@@ -20,7 +17,7 @@ import {
   TooltipTrigger,
 } from '@ledgerline/ui';
 import { useQuery } from '@tanstack/react-query';
-import { CircleHelp, Command, ListChecks, PanelLeftClose, PanelLeftOpen, ShieldCheck } from 'lucide-react';
+import { CircleHelp, Command, PanelLeftClose, PanelLeftOpen, ShieldCheck } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router';
 import {
@@ -37,7 +34,7 @@ import { GlobalSearch } from './GlobalSearch';
 import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 import { PreferencesMenu } from './PreferencesMenu';
 import { RoleSwitcher } from './RoleSwitcher';
-import { ErrorPanel, LoadingPanel } from './StatePanel';
+import { ErrorPanel, JobTray, LoadingPanel } from '@ledgerline/compositions';
 
 export function Shell() {
   const { userId, theme, density, railCollapsed, setUser, setTheme, setDensity, toggleRail } = useSession();
@@ -179,23 +176,9 @@ export function Shell() {
           <kbd className="font-sans text-2xs text-muted-foreground">Ctrl+K</kbd>
         </Button>
         {userId && me.data ? <WorkspaceSwitcher userId={userId} /> : null}
-        {isClient ? null : (
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="ghost">
-                <ListChecks aria-hidden />
-                Jobs
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent align="end" aria-label="Jobs">
-              <p className="font-medium">No jobs yet</p>
-              <p className="text-muted-foreground">
-                Reports, exports, imports and large bulk actions will run here, so you can leave a screen and
-                come back for the result.
-              </p>
-            </PopoverContent>
-          </Popover>
-        )}
+        {isClient || !me.data ? null : userId ? (
+          <JobTray userId={userId} onOpenAll={() => void navigate('/jobs')} />
+        ) : null}
         <Button
           variant="ghost"
           size="icon"

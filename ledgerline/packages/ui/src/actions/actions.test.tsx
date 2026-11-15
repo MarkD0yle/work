@@ -104,16 +104,19 @@ function Harness({
   defs,
   selection,
   onDone,
+  autoPreview = false,
 }: {
   defs: ActionDef<Row>[];
   selection: Row[];
   onDone: (o: ActionOutcome<Row>) => void;
+  autoPreview?: boolean;
 }) {
   const actions = resolveActions(defs, ctx(selection));
   const { run, dialog } = useActionRunner<Row>({
     rowId: (r) => r.id,
     noun: { one: 'transaction', many: 'transactions' },
     onDone,
+    autoPreview: () => autoPreview,
   });
   return (
     <TooltipProvider>
@@ -242,12 +245,96 @@ describe('running actions', () => {
     await userEvent.click(screen.getByRole('menuitem', { name: /Delete/ }));
     const dialog = screen.getByRole('dialog', { name: 'Delete 1 transaction?' });
     expect(dialog).toHaveTextContent('This cannot be undone.');
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Delete 1 transaction' }));
+    // It cannot be undone, so it asks for the action and the count to be typed, even for one row.
+    const confirm = within(dialog).getByRole('button', { name: 'Delete 1 transaction' });
+    expect(confirm).toBeDisabled();
+    expect(dialog).toHaveTextContent('Asked because this cannot be undone.');
+    await userEvent.type(within(dialog).getByLabelText(/to confirm/), 'Delete 1');
+    expect(confirm).toBeEnabled();
+    await userEvent.click(confirm);
     expect(execute).not.toHaveBeenCalled();
     expect(within(dialog).getByRole('alert')).toHaveTextContent('Enter a reason.');
     await userEvent.type(within(dialog).getByLabelText('Reason (required)'), 'Duplicate entry');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Delete 1 transaction' }));
     expect(execute).toHaveBeenCalledWith(['T-1'], { reason: 'Duplicate entry' });
+  });
+
+  it('confirmation scales with risk: one Enter up to 50 rows, a typed phrase above that', async () => {
+    const execute = vi.fn(async (ids: string[]) => result(ids));
+    const many = (n: number) => rows(...Array.from({ length: n }, () => 'unposted' as const));
+    const { unmount } = render(<Harness defs={registry(execute)} selection={many(50)} onDone={vi.fn()} />);
+    await userEvent.click(screen.getByRole('button', { name: /^Post/ }));
+    const small = screen.getByRole('dialog', { name: 'Post 50 transactions?' });
+    expect(within(small).queryByLabelText(/to confirm/)).not.toBeInTheDocument();
+    expect(within(small).getByRole('button', { name: 'Post 50 transactions' })).toHaveFocus();
+    unmount();
+
+    render(<Harness defs={registry(execute)} selection={many(51)} onDone={vi.fn()} />);
+    await userEvent.click(screen.getByRole('button', { name: /^Post/ }));
+    const large = screen.getByRole('dialog', { name: 'Post 51 transactions?' });
+    const confirm = within(large).getByRole('button', { name: 'Post 51 transactions' });
+    expect(confirm).toBeDisabled();
+    expect(large).toHaveTextContent('Asked because this runs on more than 50 transactions.');
+    await userEvent.type(within(large).getByLabelText(/to confirm/), 'post 50');
+    expect(confirm).toBeDisabled();
+    await userEvent.type(within(large).getByLabelText(/to confirm/), '{Backspace}{Backspace}51{Enter}');
+    expect(execute).toHaveBeenCalledTimes(1);
+    expect(execute.mock.calls[0]?.[0]).toHaveLength(51);
+  });
+
+  it('500 selected with 40 ineligible shows 460 eligible and the 40 grouped by reason before submit', async () => {
+    const selection: Row[] = Array.from({ length: 500 }, (_, i) => ({
+      id: `T-${i}`,
+      status: i < 460 ? 'unposted' : 'posted',
+    }));
+    render(<Harness defs={registry()} selection={selection} onDone={vi.fn()} />);
+    await userEvent.click(screen.getByRole('button', { name: /^Post/ }));
+    const dialog = screen.getByRole('dialog', { name: 'Post 460 transactions?' });
+    expect(dialog).toHaveTextContent('500 selected. This will run on 460. 40 will be left as they are:');
+    expect(within(dialog).getByRole('listitem')).toHaveTextContent('40: Already posted.');
+  });
+
+  it('the preview is one click away, and opens by itself when asked to', async () => {
+    const preview = vi.fn(async (ids: string[]) =>
+      ids.map((id, i) => ({
+        id,
+        before: { status: 'unposted' },
+        after: { status: i === 1 ? 'unposted' : 'posted' },
+        ...(i === 1
+          ? {
+              warnings: [
+                {
+                  code: 'LL-VAL-0119',
+                  severity: 'error' as const,
+                  level: 'row' as const,
+                  text: 'Settlement date is missing.',
+                  fix: 'Add it, then post again.',
+                },
+              ],
+            }
+          : {}),
+      })),
+    );
+    const defs = registry().map((d) => (d.id === 'transaction.post' ? { ...d, preview } : d));
+    const { unmount } = render(
+      <Harness defs={defs} selection={rows('unposted', 'unposted')} onDone={vi.fn()} />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: /^Post/ }));
+    // Not forced on a super user: nothing is fetched until they ask.
+    expect(preview).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: 'Preview the changes' }));
+    const table = await screen.findByRole('table', { name: 'Preview of changes' });
+    expect(preview).toHaveBeenCalledWith(['T-1', 'T-2']);
+    // The row with something to check is listed first.
+    expect(within(table).getAllByRole('row')[1]).toHaveTextContent('T-2');
+    expect(within(table).getAllByRole('row')[1]).toHaveTextContent('Settlement date is missing.');
+    expect(screen.getByText(/1 with something to check/)).toBeInTheDocument();
+    unmount();
+
+    render(<Harness defs={defs} selection={rows('unposted')} onDone={vi.fn()} autoPreview />);
+    await userEvent.click(screen.getByRole('button', { name: /^Post/ }));
+    expect(await screen.findByRole('table', { name: 'Preview of changes' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Preview the changes' })).not.toBeInTheDocument();
   });
 
   it('a failure reports messages instead of throwing', async () => {

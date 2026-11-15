@@ -81,15 +81,16 @@ test.describe('grid toolbar', () => {
   test('columns can be hidden and shown, and the toolbar says how many are hidden', async ({ page }) => {
     await expect(page.locator('.ag-header-cell[col-id="price"]')).toBeVisible();
     await page.getByRole('button', { name: 'Columns' }).click();
-    await page.getByRole('menuitemcheckbox', { name: 'Price' }).click();
+    await page.getByRole('menuitemcheckbox', { name: 'Price', exact: true }).click();
     await page.getByRole('menuitemcheckbox', { name: 'Portfolio' }).click();
     await page.keyboard.press('Escape');
     await expect(page.locator('.ag-header-cell[col-id="price"]')).toHaveCount(0);
-    await expect(page.getByRole('button', { name: /Columns.*2 hidden/ })).toBeVisible();
+    // Two just hidden, plus the optional Price vs vendor column, which starts hidden.
+    await expect(page.getByRole('button', { name: /Columns.*3 hidden/ })).toBeVisible();
 
     await page.getByRole('button', { name: /Columns/ }).click();
-    await expect(page.getByRole('menuitemcheckbox', { name: 'Price' })).not.toBeChecked();
-    await page.getByRole('menuitemcheckbox', { name: 'Price' }).click();
+    await expect(page.getByRole('menuitemcheckbox', { name: 'Price', exact: true })).not.toBeChecked();
+    await page.getByRole('menuitemcheckbox', { name: 'Price', exact: true }).click();
     await page.keyboard.press('Escape');
     await expect(page.locator('.ag-header-cell[col-id="price"]')).toBeVisible();
   });

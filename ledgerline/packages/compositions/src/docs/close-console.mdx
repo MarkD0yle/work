@@ -1,0 +1,43 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Docs/Compositions/Period Close Console" />
+
+# Period Close Console
+
+**Status:** Hypothesis. Its acceptance criteria pass in automated tests. No user has tested it yet, so it has not moved to Draft (SPEC §11).
+
+**Spec:** SPEC 8.3
+
+## Purpose
+
+Takes a period from open to closed and signed off across many portfolios, and shows what is in the way.
+
+## When to use, and when not
+
+**Use it** for controllers at month end.
+
+**Do not use it** to post or correct transactions (use the blotter).
+
+## Foundations
+
+Overview first: cutoff countdown, checks passed, what is blocking, close status per type. Close runs as one job with a result per portfolio. A block override and a reopen both need a second approver.
+
+## States
+
+Open, blocked (naming the exceptions), override waiting, override approved or rejected, closing, closed, signed off, package ready, reopen waiting and reopened.
+
+## Data contract
+
+`PeriodOverviewRow`, `CloseChecklist`, `CloseSignOff`, `ApprovalRequest`, `Comparison` for the Books tab.
+
+## Permissions
+
+`period.view`, `period.close`, `period.overrideBlock`, `period.reopen`, `period.signoff`. Every unavailable action says why beneath the buttons.
+
+## Accessibility
+
+Blocking is a count and words, never only colour. The checklist is a table with the result as text. Reasons for disabled actions are in the page, not only in tooltips.
+
+## Code reference
+
+`@ledgerline/compositions/accounting`: `CloseConsole`. API: `apps/api/src/routes/close.ts`. Tests: `milestone6.test.ts`, `e2e/milestone6.e2e.ts`.

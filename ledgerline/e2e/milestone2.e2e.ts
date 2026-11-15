@@ -143,6 +143,10 @@ test.describe('saved views', () => {
     await expect(page.locator('.ag-header-cell[col-id="amount"]')).toHaveAttribute('aria-sort', 'descending');
     await expect(page.getByRole('button', { name: /Group.*1/ })).toBeVisible();
     await expect(page.locator('.ag-row-group').first()).toBeVisible();
+    // A group row names its group, as the cells do: the status label, not the stored code.
+    await expect(page.locator('.ag-row-group [data-slot="group-label"]').first()).toHaveText(
+      /^(Unposted|Posted|Reversed)$/,
+    );
     // Opening a group loads its records, sorted as the view says.
     const leaf = lastQuery(
       page,
@@ -296,9 +300,10 @@ test.describe('workspaces', () => {
   });
 
   test('a user with no start-up workspace lands on their access page', async ({ page }) => {
-    await signIn(page, 'u-eli');
+    // Fay, the administrator, has no workspace of her own or from a team. (A client lands on Client Home instead.)
+    await signIn(page, 'u-fay');
     await page.goto('/');
-    await expect(page.getByRole('heading', { name: 'Signed in as Eli' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Signed in as Fay' })).toBeVisible();
   });
 
   test('a team default cannot be changed by a member; saving makes their own, which then opens at sign-in', async ({

@@ -37,7 +37,9 @@ class DomCell<Row> implements ICellRendererComp<Row> {
     if (isGroupRow(params.data)) this.gui.replaceChildren();
     else
       this.gui.replaceChildren(
-        params.data === undefined ? placeholderElement() : cellElement(params.llColumn, params.data),
+        params.data === undefined || params.data === null
+          ? placeholderElement()
+          : cellElement(params.llColumn, params.data),
       );
   }
 }
@@ -49,6 +51,7 @@ function MarkerCell<Row>(params: ICellRendererParams<Row> & { llMessages: (row: 
 
 const DEFAULT_WIDTH: Record<LLColumnDef<unknown>['type'], number> = {
   financial: 170,
+  delta: 170,
   date: 124,
   status: 112,
   entity: 300,
@@ -83,11 +86,14 @@ export function toColDefs<Row>(
     colId: column.field,
     headerName: headerText(column),
     width: column.width ?? DEFAULT_WIDTH[column.type],
-    sortable: column.sortable ?? true,
+    sortable: column.type === 'delta' ? false : (column.sortable ?? true),
+    ...(column.hiddenByDefault ? { hide: true } : {}),
     resizable: true,
     ...(column.pinned ? { pinned: column.pinned } : {}),
     // Financial columns right-align in tabular figures; alignment is a property of the kind, not the cell.
-    ...(column.type === 'financial' ? { type: 'rightAligned', cellClass: 'll-cell-financial' } : {}),
+    ...(column.type === 'financial' || column.type === 'delta'
+      ? { type: 'rightAligned', cellClass: 'll-cell-financial' }
+      : {}),
     cellRenderer: DomCell,
     cellRendererParams: { llColumn: column },
     enableRowGroup: column.groupable ?? false,

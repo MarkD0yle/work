@@ -2,7 +2,7 @@ import type { Workspace } from '@ledgerline/contracts';
 import { Badge } from '@ledgerline/ui';
 import type { Ref } from 'react';
 import type { Me } from '../../api/client';
-import { TransactionsBlotter, type BlotterHandle } from '../transactions/TransactionsBlotter';
+import { TransactionsBlotter, type BlotterHandle } from '@ledgerline/compositions/transactions';
 
 export type Panel = Workspace['panels'][number];
 

@@ -1,4 +1,5 @@
 import type { Message } from '@ledgerline/contracts';
+import { GlossaryText } from '../glossary/glossary';
 import { cn } from '../lib/cn';
 import { SEVERITY_LABEL, SEVERITY_TONE, ToneIcon } from './tone';
 
@@ -10,8 +11,15 @@ export function MessageText({ message, className }: { message: Message; classNam
   return (
     <span className={cn('min-w-0', className)}>
       <span className="sr-only">{SEVERITY_LABEL[message.severity]}: </span>
-      <span>{message.text}</span>
-      {message.fix ? <span className="text-muted-foreground"> {message.fix}</span> : null}{' '}
+      <span>
+        <GlossaryText text={message.text} />
+      </span>
+      {message.fix ? (
+        <span className="text-muted-foreground">
+          {' '}
+          <GlossaryText text={message.fix} />
+        </span>
+      ) : null}{' '}
       <span className="font-mono text-2xs whitespace-nowrap text-muted-foreground">{message.code}</span>
     </span>
   );

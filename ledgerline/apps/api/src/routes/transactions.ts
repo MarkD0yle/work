@@ -1,4 +1,5 @@
 import type {
+  ActorRef,
   BulkResult,
   BusinessDate,
   FinancialKind,
@@ -6,6 +7,8 @@ import type {
   GridResponse,
   Message,
   MutationResult,
+  Permission,
+  PreviewRow,
   Provenance,
   TransactionFinancialField,
   TransactionRow,
@@ -14,6 +17,7 @@ import type {
 import { Decimal } from 'decimal.js';
 import type { FastifyInstance } from 'fastify';
 import type { Db } from '../db/client';
+import type { JobRunner } from '../jobs/runner';
 import { writeAudit } from '../lib/audit';
 import { endOfMonth, normaliseBusinessDate } from '../lib/dates';
 import { buildGridQuery, type FieldSpec } from '../lib/grid-query';
@@ -58,14 +62,16 @@ const FIELDS: Record<string, FieldSpec> = {
   warning: { sql: 't.warning_code', type: 'text' },
 };
 
-const SELECT = `
+export const TRANSACTION_SELECT = `
   SELECT t.*, p.name AS portfolio_name, p.calendar AS portfolio_calendar,
-         s.description AS security_label, s.isin, s.cusip, s.sedol, s.ticker, s.asset_class
+         s.description AS security_label, s.isin, s.cusip, s.sedol, s.ticker, s.asset_class,
+         (SELECT px.price FROM prices px WHERE px.security_id = t.security_id AND px.price_date <= t.trade_date AND px.price IS NOT NULL
+          ORDER BY px.price_date DESC LIMIT 1) AS vendor_price
   FROM transactions t
   JOIN portfolios p ON p.id = t.portfolio_id
   LEFT JOIN securities s ON s.id = t.security_id`;
 
-interface Raw {
+export interface TransactionRaw {
   id: string;
   portfolio_id: string;
   portfolio_name: string;
@@ -90,9 +96,10 @@ interface Raw {
   created_at: string;
   overrides: string | null;
   version: number;
+  vendor_price: string | null;
 }
 
-function toRow(raw: Raw): TransactionRow {
+export function toTransactionRow(raw: TransactionRaw): TransactionRow {
   const overrides = (raw.overrides ? JSON.parse(raw.overrides) : {}) as Partial<
     Record<TransactionFinancialField, Provenance>
   >;
@@ -151,6 +158,20 @@ function toRow(raw: Raw): TransactionRow {
       traded ? { ...base, origin: 'calculated', source: 'Quantity × price' } : base,
     ),
     currency: raw.currency,
+    // Shown beside the price as a comparison. Only for records that have a price of their own.
+    ...(raw.price !== null
+      ? {
+          vendorPrice: {
+            kind: 'price' as const,
+            value: raw.vendor_price,
+            currency: raw.currency,
+            precision: 6,
+            signConvention: 'natural' as const,
+            provenance: { origin: 'vendor' as const, source: 'Vendor price on or before the trade date' },
+            ...(raw.vendor_price === null ? { nullReason: 'unavailable' as const } : {}),
+          },
+        }
+      : {}),
     status: raw.status,
     ...(raw.warning_code && warning
       ? { warning: { code: raw.warning_code, severity: 'warning', level: 'row', target: raw.id, ...warning } }
@@ -176,11 +197,11 @@ export function registerTransactionRoutes(
 ): void {
   const sqlite = db.$client;
 
-  const load = (id: string, user: User): Raw => {
+  const load = (id: string, user: User): TransactionRaw => {
     const scope = scopeFor(user);
     const raw = sqlite
-      .prepare(`${SELECT} WHERE t.id = ? ${scope ? `AND ${scope.sql}` : ''}`)
-      .get(id, ...(scope?.params ?? [])) as Raw | undefined;
+      .prepare(`${TRANSACTION_SELECT} WHERE t.id = ? ${scope ? `AND ${scope.sql}` : ''}`)
+      .get(id, ...(scope?.params ?? [])) as TransactionRaw | undefined;
     if (!raw)
       throw new HttpError(404, [
         problem(
@@ -240,7 +261,9 @@ export function registerTransactionRoutes(
       .all(...built.params, built.limit, built.offset) as string[];
     const byId = new Map(
       (ids.length
-        ? (sqlite.prepare(`${SELECT} WHERE t.id IN (${ids.map(() => '?').join(', ')})`).all(...ids) as Raw[])
+        ? (sqlite
+            .prepare(`${TRANSACTION_SELECT} WHERE t.id IN (${ids.map(() => '?').join(', ')})`)
+            .all(...ids) as TransactionRaw[])
         : []
       ).map((raw) => [raw.id, raw]),
     );
@@ -248,14 +271,14 @@ export function registerTransactionRoutes(
     const total = sqlite.prepare(`SELECT count(*) AS n ${from} ${built.where}`).get(...built.params) as {
       n: number;
     };
-    return { rows: rows.map(toRow), totalRows: total.n, asOf: clock.now() };
+    return { rows: rows.map(toTransactionRow), totalRows: total.n, asOf: clock.now() };
   });
 
   app.get<{ Params: { id: string } }>(
     `${base}/transactions/:id`,
     async (request): Promise<TransactionRow> => {
       requirePermission(db, request.user, 'transaction.view');
-      return toRow(load(request.params.id, request.user));
+      return toTransactionRow(load(request.params.id, request.user));
     },
   );
 
@@ -283,7 +306,7 @@ export function registerTransactionRoutes(
 
       const result = sqlite.transaction((): MutationResult<TransactionRow> => {
         const raw = load(request.params.id, request.user);
-        const before = toRow(raw);
+        const before = toTransactionRow(raw);
         if (String(raw.version) !== String(ifMatch).replace(/"/g, '')) {
           throw new HttpError(
             409,
@@ -418,7 +441,7 @@ export function registerTransactionRoutes(
             Object.keys(overrides).length ? JSON.stringify(overrides) : null,
             raw.id,
           );
-        const after = toRow(load(raw.id, request.user));
+        const after = toTransactionRow(load(raw.id, request.user));
 
         const snapshot = (row: TransactionRow): Record<string, string | null> => ({
           quantity: row.quantity.value,
@@ -451,169 +474,354 @@ export function registerTransactionRoutes(
 }
 
 // ─────────────────────────────────────────────────────────────
-// Bulk actions (inline form). Preview, eligibility endpoint and jobs for large runs arrive in Milestone 5.
+// Bulk actions (SPEC 7.4). Up to INLINE_LIMIT rows run in the request; more run as a job.
+// One function judges a row, so eligibility, preview, inline runs and jobs can never disagree.
 // ─────────────────────────────────────────────────────────────
 
 const BULK_ACTIONS = {
-  'transaction.post': { from: 'unposted', to: 'posted', done: 'Already posted.', verb: 'post' },
-  'transaction.reverse': { from: 'posted', to: 'reversed', done: 'Already reversed.', verb: 'reverse' },
-  'transaction.delete': { from: 'unposted', to: null, done: '', verb: 'delete' },
+  'transaction.post': { from: 'unposted', to: 'posted', done: 'Already posted.', label: 'Post' },
+  'transaction.reverse': { from: 'posted', to: 'reversed', done: 'Already reversed.', label: 'Reverse' },
+  'transaction.delete': { from: 'unposted', to: null, done: '', label: 'Delete' },
 } as const;
-type BulkActionId = keyof typeof BULK_ACTIONS;
+export type BulkActionId = keyof typeof BULK_ACTIONS;
+export const INLINE_LIMIT = 200;
+/** The most rows one bulk request may carry, inline or as a job. */
+export const BULK_LIMIT = 5000;
+export const BULK_HANDLER = 'transaction.bulk';
+const TRADED = new Set(['buy', 'sell', 'repo', 'maturity']);
 
-const INLINE_LIMIT = 200;
+export interface BulkRun {
+  actionId: BulkActionId;
+  actor: ActorRef;
+  scope: string[] | undefined;
+  at: string;
+  note: string | undefined;
+  /** Shared by every audit event of the run. For a job this is the job id. */
+  batchId: string;
+}
+
+type Verdict =
+  | { kind: 'run'; raw: TransactionRaw }
+  | { kind: 'skip'; raw: TransactionRaw; reason: string }
+  | { kind: 'fail'; raw?: TransactionRaw; message: Message };
+
+export function createTransactionBulk(db: Db) {
+  const sqlite = db.$client;
+  const load = sqlite.prepare(`${TRANSACTION_SELECT} WHERE t.id = ?`);
+  const periodOf = sqlite.prepare(
+    'SELECT period_end, closes FROM periods WHERE portfolio_id = ? AND period_end = ?',
+  );
+  const failure = (id: string, code: string, text: string, fix: string): Message => ({
+    code,
+    severity: 'error',
+    level: 'row',
+    text,
+    fix,
+    target: id,
+  });
+
+  /** What would happen to one row. Nothing is changed here. */
+  function judge(actionId: BulkActionId, id: string, scope: string[] | undefined): Verdict {
+    const action = BULK_ACTIONS[actionId];
+    const raw = load.get(id) as TransactionRaw | undefined;
+    if (!raw || (scope && !scope.includes(raw.portfolio_id))) {
+      return {
+        kind: 'fail',
+        message: failure(
+          id,
+          'LL-TXN-0404',
+          `Transaction ${id} was not found.`,
+          'It may have been deleted, or it is outside your portfolio scope.',
+        ),
+      };
+    }
+    // Rows already in the target state are skipped, never repeated: a retry cannot post a row twice.
+    if (action.to && raw.status === action.to) return { kind: 'skip', raw, reason: action.done };
+    if (raw.status !== action.from) {
+      // Business rule 2: cannot reverse an unposted transaction; cannot delete a posted one.
+      return {
+        kind: 'skip',
+        raw,
+        reason:
+          actionId === 'transaction.reverse'
+            ? 'Not posted, so there is nothing to reverse.'
+            : actionId === 'transaction.delete'
+              ? `It is ${raw.status}. Only unposted transactions can be deleted; reverse it instead.`
+              : `It is ${raw.status}. Only unposted transactions can be posted.`,
+      };
+    }
+    if (actionId === 'transaction.post') {
+      // Business rule 1: cannot post into a closed period; the message names the period and who can reopen it.
+      const period = periodOf.get(raw.portfolio_id, endOfMonth(raw.trade_date)) as
+        { period_end: string; closes: string } | undefined;
+      const state = period ? (JSON.parse(period.closes) as Record<string, string>).transaction : undefined;
+      if (period && (state === 'closed' || state === 'closing')) {
+        return {
+          kind: 'fail',
+          raw,
+          message: failure(
+            id,
+            'LL-PER-0001',
+            `The period ending ${period.period_end} is ${state} for transactions in ${raw.portfolio_name}.`,
+            'Ask a controller in Investment Accounting to reopen the period, or change the trade date.',
+          ),
+        };
+      }
+      if (raw.settle_date !== null && raw.settle_date < raw.trade_date) {
+        return {
+          kind: 'fail',
+          raw,
+          message: failure(
+            id,
+            'LL-VAL-0118',
+            'Settlement date is before trade date.',
+            'Correct the dates, then post again.',
+          ),
+        };
+      }
+      if (raw.settle_date === null && TRADED.has(raw.type)) {
+        return {
+          kind: 'fail',
+          raw,
+          message: failure(
+            id,
+            'LL-VAL-0119',
+            'Settlement date is missing.',
+            'Add the settlement date, then post again.',
+          ),
+        };
+      }
+    }
+    return { kind: 'run', raw };
+  }
+
+  function processRow(run: BulkRun, id: string, result: BulkResult): void {
+    const verdict = judge(run.actionId, id, run.scope);
+    if (verdict.kind === 'fail') {
+      result.failed.push({ id, message: verdict.message });
+      return;
+    }
+    if (verdict.kind === 'skip') {
+      result.skipped.push({ id, reason: verdict.reason });
+      return;
+    }
+    const { raw } = verdict;
+    const action = BULK_ACTIONS[run.actionId];
+    if (action.to)
+      sqlite
+        .prepare('UPDATE transactions SET status = ?, version = version + 1 WHERE id = ?')
+        .run(action.to, id);
+    else sqlite.prepare('DELETE FROM transactions WHERE id = ?').run(id);
+    writeAudit(db, {
+      action: run.actionId,
+      recordType: 'transaction',
+      recordId: id,
+      actor: run.actor,
+      at: run.at,
+      effectiveDate: raw.trade_date,
+      before: { status: raw.status },
+      after: { status: action.to ?? 'deleted' },
+      batchId: run.batchId,
+      ...(run.note ? { note: { kind: 'comment' as const, text: run.note } } : {}),
+    });
+    result.succeeded.push(id);
+  }
+
+  /** One audit event for the batch, sharing the batch id with every row's event. */
+  function finish(run: BulkRun, requested: number, result: BulkResult): void {
+    writeAudit(db, {
+      action: `${run.actionId}.batch`,
+      recordType: 'batch',
+      recordId: run.batchId,
+      actor: run.actor,
+      at: run.at,
+      batchId: run.batchId,
+      after: {
+        requested,
+        succeeded: result.succeeded.length,
+        failed: result.failed.length,
+        skipped: result.skipped.length,
+      },
+      ...(run.note ? { note: { kind: 'comment' as const, text: run.note } } : {}),
+    });
+  }
+
+  return { judge, processRow, finish };
+}
 
 export function registerTransactionBulkRoutes(
   app: FastifyInstance,
   db: Db,
   base: string,
   clock: { today: string; now: () => string },
+  jobs: JobRunner,
 ): void {
   const sqlite = db.$client;
+  const bulk = createTransactionBulk(db);
+  const actorOf = (user: User): ActorRef => ({ type: 'user', id: user.id, name: user.name });
 
-  app.post(`${base}/transactions/bulk`, async (request): Promise<BulkResult> => {
-    const body = schemas.bulkRequest.parse(request.body);
-    const action = BULK_ACTIONS[body.actionId as BulkActionId];
-    if (!action) {
+  function actionOf(actionId: string): BulkActionId {
+    if (!(actionId in BULK_ACTIONS)) {
       throw new HttpError(400, [
         problem(
           'LL-BLK-0001',
-          `"${body.actionId}" is not a bulk action for transactions.`,
+          `"${actionId}" is not a bulk action for transactions.`,
           `Use one of: ${Object.keys(BULK_ACTIONS).join(', ')}.`,
           'actionId',
         ),
       ]);
     }
-    // Permission for the action as a whole. Ben cannot reverse (business rule 3).
-    requirePermission(db, request.user, body.actionId);
-    if (body.ids.length > INLINE_LIMIT) {
+    return actionId as BulkActionId;
+  }
+  function checkSize(ids: string[]): void {
+    if (ids.length > BULK_LIMIT) {
       throw new HttpError(400, [
         problem(
           'LL-BLK-0002',
-          `${body.ids.length} records is too many to run at once.`,
-          `Select ${INLINE_LIMIT} or fewer. Larger runs will go through jobs.`,
+          `${ids.length} records is too many for one run.`,
+          `Select ${BULK_LIMIT.toLocaleString('en-US')} or fewer.`,
           'ids',
         ),
       ]);
     }
+  }
 
-    const actor = { type: 'user' as const, id: request.user.id, name: request.user.name };
-    const at = clock.now();
-    const scope = request.user.blotterScope;
-    const note = body.reason?.trim();
+  // The job form of the same action. It runs as the user who submitted it, with their permissions as they are now.
+  jobs.register(BULK_HANDLER, {
+    items: (job) => (job.inputs.ids as string[] | undefined) ?? [],
+    processItem: (ctx, id, result) => {
+      const actionId = actionOf(String(ctx.job.inputs.actionId));
+      requirePermission(db, ctx.user, actionId);
+      bulk.processRow(
+        {
+          actionId,
+          actor: actorOf(ctx.user),
+          scope: ctx.user.blotterScope,
+          at: clock.now(),
+          note: (ctx.job.inputs.reason as string | undefined)?.trim() || undefined,
+          batchId: ctx.job.id,
+        },
+        id,
+        result,
+      );
+    },
+    finish: (ctx, result) => {
+      const actionId = actionOf(String(ctx.job.inputs.actionId));
+      bulk.finish(
+        {
+          actionId,
+          actor: actorOf(ctx.user),
+          scope: ctx.user.blotterScope,
+          at: clock.now(),
+          note: (ctx.job.inputs.reason as string | undefined)?.trim() || undefined,
+          batchId: ctx.job.id,
+        },
+        ((ctx.job.inputs.ids as string[] | undefined) ?? []).length,
+        result,
+      );
+    },
+  });
+
+  // Per-row eligibility before submit (SPEC 7.4): ineligible rows are counted and explained, never dropped silently.
+  app.post(
+    `${base}/transactions/eligibility`,
+    async (request): Promise<{ id: string; permission: Permission }[]> => {
+      const body = schemas.bulkRequest.parse(request.body);
+      const actionId = actionOf(body.actionId);
+      checkSize(body.ids);
+      return body.ids.map((id) => {
+        const verdict = bulk.judge(actionId, id, request.user.blotterScope);
+        return {
+          id,
+          permission:
+            verdict.kind === 'skip' || (verdict.kind === 'fail' && !verdict.raw)
+              ? {
+                  action: actionId,
+                  accessLevel: 'none',
+                  allowed: false,
+                  reason: 'recordState',
+                  explanation: verdict.kind === 'skip' ? verdict.reason : verdict.message.text,
+                }
+              : { action: actionId, accessLevel: 'full', allowed: true },
+        };
+      });
+    },
+  );
+
+  // What the action would do to each eligible row, with anything that would make it fail (SPEC 7.4 preview).
+  app.post(`${base}/transactions/preview`, async (request): Promise<PreviewRow[]> => {
+    const body = schemas.bulkRequest.parse(request.body);
+    const actionId = actionOf(body.actionId);
+    requirePermission(db, request.user, actionId);
+    checkSize(body.ids);
+    const after = BULK_ACTIONS[actionId].to ?? 'deleted';
+    return body.ids.flatMap((id): PreviewRow[] => {
+      const verdict = bulk.judge(actionId, id, request.user.blotterScope);
+      if (!verdict.raw || verdict.kind === 'skip') return [];
+      const row = toTransactionRow(verdict.raw);
+      const warnings = [
+        ...(verdict.kind === 'fail' ? [verdict.message] : []),
+        ...(row.warning ? [row.warning] : []),
+      ];
+      return [
+        {
+          id,
+          before: { status: verdict.raw.status },
+          after: { status: verdict.kind === 'fail' ? verdict.raw.status : after },
+          ...(warnings.length ? { warnings } : {}),
+        },
+      ];
+    });
+  });
+
+  app.post(`${base}/transactions/bulk`, async (request, reply): Promise<BulkResult> => {
+    const body = schemas.bulkRequest.parse(request.body);
+    const actionId = actionOf(body.actionId);
+    // Permission for the action as a whole. Ben cannot reverse (business rule 3).
+    requirePermission(db, request.user, actionId);
+    checkSize(body.ids);
+    const note = body.reason?.trim() || undefined;
+    const noun = body.ids.length === 1 ? 'transaction' : 'transactions';
+
+    if (body.ids.length > INLINE_LIMIT) {
+      // Large runs are jobs: the user can leave, and the result waits in the job tray.
+      const job = jobs.submit({
+        type: 'bulkAction',
+        name: `${BULK_ACTIONS[actionId].label} ${body.ids.length.toLocaleString('en-US')} ${noun}`,
+        user: request.user,
+        handler: BULK_HANDLER,
+        inputs: { actionId, ids: body.ids, ...(note ? { reason: note } : {}) },
+      });
+      reply.code(202);
+      return { jobId: job.id, status: 'queued', succeeded: [], failed: [], skipped: [] };
+    }
 
     return sqlite.transaction((): BulkResult => {
-      const batchSeq =
+      const seq =
         (
-          sqlite.prepare("SELECT count(*) AS n FROM audit_events WHERE action LIKE '%.batch'").get() as {
-            n: number;
-          }
+          sqlite
+            .prepare(
+              "SELECT count(*) AS n FROM audit_events WHERE action LIKE '%.batch' AND batch_id LIKE 'B-%'",
+            )
+            .get() as { n: number }
         ).n + 1;
-      const batchId = `B-${String(batchSeq).padStart(6, '0')}`;
+      const run: BulkRun = {
+        actionId,
+        actor: actorOf(request.user),
+        scope: request.user.blotterScope,
+        at: clock.now(),
+        note,
+        batchId: `B-${String(seq).padStart(6, '0')}`,
+      };
       const result: BulkResult = {
-        jobId: batchId,
+        jobId: run.batchId,
         status: 'completed',
         succeeded: [],
         failed: [],
         skipped: [],
       };
-      const fail = (id: string, code: string, text: string, fix: string) =>
-        result.failed.push({ id, message: { code, severity: 'error', level: 'row', text, fix, target: id } });
-
-      for (const id of body.ids) {
-        const raw = sqlite.prepare(`${SELECT} WHERE t.id = ?`).get(id) as Raw | undefined;
-        if (!raw || (scope && !scope.includes(raw.portfolio_id))) {
-          fail(
-            id,
-            'LL-TXN-0404',
-            `Transaction ${id} was not found.`,
-            'It may have been deleted, or it is outside your portfolio scope.',
-          );
-          continue;
-        }
-        // Rows already in the target state are skipped, never repeated: a retry cannot post a row twice.
-        if (action.to && raw.status === action.to) {
-          result.skipped.push({ id, reason: action.done });
-          continue;
-        }
-        if (raw.status !== action.from) {
-          // Business rule 2: cannot reverse an unposted transaction; cannot delete a posted one.
-          result.skipped.push({
-            id,
-            reason:
-              body.actionId === 'transaction.reverse'
-                ? 'Not posted, so there is nothing to reverse.'
-                : body.actionId === 'transaction.delete'
-                  ? `It is ${raw.status}. Only unposted transactions can be deleted; reverse it instead.`
-                  : `It is ${raw.status}. Only unposted transactions can be posted.`,
-          });
-          continue;
-        }
-        if (body.actionId === 'transaction.post') {
-          // Business rule 1: cannot post into a closed period; the message names the period and who can reopen it.
-          const period = sqlite
-            .prepare('SELECT period_end, closes FROM periods WHERE portfolio_id = ? AND period_end = ?')
-            .get(raw.portfolio_id, endOfMonth(raw.trade_date)) as
-            { period_end: string; closes: string } | undefined;
-          const state = period
-            ? (JSON.parse(period.closes) as Record<string, string>).transaction
-            : undefined;
-          if (period && (state === 'closed' || state === 'closing')) {
-            fail(
-              id,
-              'LL-PER-0001',
-              `The period ending ${period.period_end} is ${state} for transactions in ${raw.portfolio_name}.`,
-              'Ask a controller in Investment Accounting to reopen the period, or change the trade date.',
-            );
-            continue;
-          }
-          if (raw.settle_date !== null && raw.settle_date < raw.trade_date) {
-            fail(
-              id,
-              'LL-VAL-0118',
-              'Settlement date is before trade date.',
-              'Correct the dates, then post again.',
-            );
-            continue;
-          }
-        }
-
-        if (action.to)
-          sqlite
-            .prepare('UPDATE transactions SET status = ?, version = version + 1 WHERE id = ?')
-            .run(action.to, id);
-        else sqlite.prepare('DELETE FROM transactions WHERE id = ?').run(id);
-        writeAudit(db, {
-          action: body.actionId,
-          recordType: 'transaction',
-          recordId: id,
-          actor,
-          at,
-          effectiveDate: raw.trade_date,
-          before: { status: raw.status },
-          after: { status: action.to ?? 'deleted' },
-          batchId,
-          ...(note ? { note: { kind: 'comment' as const, text: note } } : {}),
-        });
-        result.succeeded.push(id);
-      }
-
-      // One audit event per row plus one for the batch, sharing the batch id.
-      writeAudit(db, {
-        action: `${body.actionId}.batch`,
-        recordType: 'batch',
-        recordId: batchId,
-        actor,
-        at,
-        batchId,
-        after: {
-          requested: body.ids.length,
-          succeeded: result.succeeded.length,
-          failed: result.failed.length,
-          skipped: result.skipped.length,
-        },
-        ...(note ? { note: { kind: 'comment' as const, text: note } } : {}),
-      });
+      for (const id of body.ids) bulk.processRow(run, id, result);
+      bulk.finish(run, body.ids.length, result);
       result.status =
         result.failed.length === 0 && result.skipped.length === 0
           ? 'completed'

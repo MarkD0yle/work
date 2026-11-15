@@ -1,0 +1,43 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Docs/Capabilities/Dates and Periods" />
+
+# Dates and Periods
+
+**Status:** Hypothesis. Its acceptance criteria pass in automated tests. No user has tested it yet, so it has not moved to Draft (SPEC §11).
+
+**Spec:** SPEC 7.6
+
+## Purpose
+
+Business dates with a stated basis (trade, settle, effective, ledger, valuation), entered quickly and checked against market calendars and accounting periods.
+
+## When to use, and when not
+
+**Use it** for any business date. Use the period picker for month-end periods.
+
+**Do not use it** for timestamps (use `formatTimestamp`), and never with JavaScript `Date` for a business date.
+
+## Foundations
+
+Dates are ISO `YYYY-MM-DD` strings. Null is null, never a placeholder date. Shortcuts (`t`, `t+2`, `eom`) count from the engine's business date, not the browser clock.
+
+## States
+
+Empty, valid, adjusted (moved off a weekend or holiday, with the rule named), warning (kept on a non-business day), blocked (a closed period, naming the period and who can reopen it) and unreadable.
+
+## Data contract
+
+`BusinessDate`: value, basis, optional calendar and business-day rule. `AccountingPeriod` carries a state per close type.
+
+## Permissions
+
+Entry into a closed period is refused in the field and again by the server. Reopening needs the reopen permission and a second approver.
+
+## Accessibility
+
+Every date field shows its basis as text. The resolved date is spelled out under the field as the user types. Errors are announced and stay until fixed.
+
+## Code reference
+
+`@ledgerline/ui`: `BusinessDateInput`, `PeriodPicker`, `formatIsoDate`, `formatPeriod`. Tests: `dates.test.tsx`, `e2e/milestone2.e2e.ts`.

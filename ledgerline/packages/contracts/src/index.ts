@@ -219,6 +219,8 @@ export interface Job {
   progress?: { done: number; total: number };
   outputs?: { name: string; format: 'csv' | 'xlsx' | 'pdf' | 'delimited'; url: string }[];
   result?: BulkResult;
+  /** Row counts. Lists and live updates carry these instead of `result`, which can hold thousands of ids. */
+  counts?: { succeeded: number; failed: number; skipped: number };
   inputs: Record<string, unknown>;
   scheduledFor?: string;
   log?: { at: string; level: 'info' | 'warn' | 'error'; text: string }[];
@@ -362,6 +364,21 @@ export interface ExceptionRecord {
   proposal?: { by: ActorRef; summary: string; actionId: string; inputs?: Record<string, unknown> };
   evidence: EvidenceRef[];
   thread: { id: string; author: ActorRef; at: string; text: string }[];
+  /** The accounting period the exception belongs to. */
+  periodEnd?: string;
+  /** Portfolio name, for display beside the id. */
+  portfolioName?: string;
+  /** For price exceptions: the tolerance rule that failed, its threshold and what was observed (SPEC 8.4). */
+  failedRule?: FailedRule;
+}
+
+export interface FailedRule {
+  ruleId: string;
+  check: ToleranceRule['check'];
+  /** The rule's threshold: a fraction for moves ("0.02" is 2%), market days for stale. */
+  threshold: string;
+  /** What was observed, in the same unit as the threshold. Absent for a missing price. */
+  actual?: string;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -497,6 +514,8 @@ export interface TransactionRow {
   quantity: FinancialValue;
   price: FinancialValue;
   amount: FinancialValue;
+  /** Latest vendor price on or before the trade date, for the "vs vendor" comparison column. */
+  vendorPrice?: FinancialValue;
   currency: string;
   status: TransactionStatus;
   /** Present when the record carries a warning the user can acknowledge. */
@@ -544,4 +563,156 @@ export interface MarketCalendar {
   /** Calendar code, e.g. 'US'. */
   market: string;
   holidays: { date: string; name: string }[];
+}
+
+// ─────────────────────────────────────────────────────────────
+// Transaction entry and import (added 0.4.0)
+// ─────────────────────────────────────────────────────────────
+
+/** What a user enters for a transaction. Decimals are strings; dates are ISO. */
+export interface TransactionInput {
+  portfolioId: string;
+  /** Not needed for cash-only records such as fees. */
+  securityId?: string | null;
+  type: string;
+  tradeDate: string;
+  settleDate?: string | null;
+  quantity?: string | null;
+  price?: string | null;
+  /** For records with no quantity and price (income, fee, margin). Calculated otherwise. */
+  amount?: string | null;
+}
+
+/** Body of POST /transactions. */
+export interface TransactionCreate extends TransactionInput {
+  /** Codes of warnings the user has read and chosen to save through. Recorded in audit. */
+  acknowledgedWarnings?: string[];
+  /** The transaction this one was cloned from, recorded in audit. */
+  cloneOf?: string;
+}
+
+/** A pasted or uploaded row before mapping: values by source column header. */
+export type ImportSourceRow = Record<string, string>;
+
+/** Body of POST /imports/validate and /imports/commit. */
+export interface ImportRequest {
+  mapping: ImportMapping;
+  rows: ImportSourceRow[];
+}
+
+export interface ImportCommit extends ImportRequest {
+  /** The file (or "Clipboard paste") the rows came from. Attached to every audit event as evidence. */
+  fileEvidence: { name: string };
+  /** Must be true to commit rows that carry warnings. */
+  acknowledgeWarnings?: boolean;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Close console, price review, comparison (added in Milestone 6)
+// ─────────────────────────────────────────────────────────────
+
+export interface CloseCheck {
+  id: string;
+  label: string;
+  /** What this check catches, in plain language. */
+  catches: string;
+  /** `blocked` when a high-severity exception is open; `warning` when only lower ones are. */
+  status: 'passed' | 'warning' | 'blocked';
+  open: number;
+  high: number;
+  exceptionTypes: ExceptionType[];
+}
+
+export interface CloseChecklist {
+  period: AccountingPeriod;
+  portfolio: EntityRef;
+  checks: CloseCheck[];
+  /** Open high-severity exceptions. Close is blocked while this list is not empty. */
+  blocking: { id: string; type: ExceptionType; label: string; owner?: ActorRef }[];
+  /** A block override for this period, if one was asked for. */
+  override?: ApprovalRequest;
+  /** A reopen waiting for approval, if any. */
+  reopen?: ApprovalRequest;
+  signOff?: CloseSignOff;
+}
+
+export interface PeriodOverviewRow {
+  periodId: string;
+  portfolio: EntityRef;
+  periodEnd: string;
+  /** ISO timestamp of the close cutoff. */
+  cutoff: string;
+  state: PeriodState;
+  closes: Record<CloseType, PeriodState>;
+  checksPassed: number;
+  checksTotal: number;
+  /** Open high-severity exceptions: what blocks close. */
+  blocking: number;
+  openExceptions: number;
+  overrideStatus?: ApprovalRequest['status'];
+  signOff?: CloseSignOff;
+}
+
+export interface PriceRow {
+  id: string;
+  security: EntityRef;
+  assetClass: string;
+  priceDate: BusinessDate;
+  price: FinancialValue;
+  priorPrice: FinancialValue;
+  source: string;
+  toleranceStatus: 'ok' | 'stale' | 'variance' | 'missing';
+  failedRule?: FailedRule;
+}
+
+export interface ToleranceImpact {
+  priceDate: string;
+  /** Prices that pass today and would fail under the proposed rules. */
+  appear: number;
+  /** Prices that fail today and would pass under the proposed rules. */
+  clear: number;
+  failingNow: number;
+  failingAfter: number;
+}
+
+/** One line of a comparison: the same measure from two sources (SPEC 7.9). */
+export interface ComparisonRow {
+  key: string;
+  label: string;
+  left: FinancialValue;
+  right: FinancialValue;
+  /** Units behind each side, when the comparison is about holdings. */
+  leftUnits?: FinancialValue;
+  rightUnits?: FinancialValue;
+}
+
+export interface Comparison {
+  leftLabel: string;
+  rightLabel: string;
+  /** Tolerance on the percentage difference, as a percentage: "0.5" is 0.5%. */
+  tolerancePct: string;
+  rows: ComparisonRow[];
+}
+
+// ─────────────────────────────────────────────────────────────
+// Client home (added in Milestone 7)
+// ─────────────────────────────────────────────────────────────
+
+export interface PositionRow {
+  id: string;
+  portfolio: EntityRef;
+  security: EntityRef;
+  assetClass: string;
+  quantity: FinancialValue;
+  marketValue: FinancialValue;
+  asOf: BusinessDate;
+}
+
+export interface Statement {
+  id: string;
+  portfolio: EntityRef;
+  periodEnd: string;
+  name: string;
+  /** Path, under the API base, to download the PDF. */
+  url: string;
 }

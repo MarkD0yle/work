@@ -7,10 +7,23 @@ import { schema, type Db } from './db/client';
 import { SEED_TODAY } from './db/seed';
 import { HttpError } from './lib/http';
 import { registerEntityRoutes } from './routes/entities';
+import { JobRunner } from './jobs/runner';
+import { registerAdminRoutes } from './routes/admin';
+import { registerApprovalRoutes } from './routes/approvals';
+import { registerClientRoutes } from './routes/client';
+import { registerCloseRoutes } from './routes/close';
+import { registerEntryRoutes } from './routes/entry';
+import { registerExceptionRoutes } from './routes/exceptions';
+import { registerPriceRoutes } from './routes/prices';
+import { registerJobRoutes } from './routes/jobs';
 import { registerTransactionBulkRoutes, registerTransactionRoutes } from './routes/transactions';
 import { registerViewRoutes } from './routes/views';
 
 declare module 'fastify' {
+  interface FastifyInstance {
+    /** The job queue. Exposed so tests can run a job to the end without waiting. */
+    jobs: JobRunner;
+  }
   interface FastifyRequest {
     /** The signed-in user. Set for every route except the public ones. */
     user: User;
@@ -67,7 +80,10 @@ export function buildApp(db: Db, clock: Clock = defaultClock): FastifyInstance {
     const path = request.url.split('?')[0] ?? '';
     if (request.method === 'OPTIONS' || PUBLIC_ROUTES.has(path) || !path.startsWith(API_BASE)) return;
     const header = request.headers['x-ll-user'];
-    const userId = Array.isArray(header) ? header[0] : header;
+    // The browser's EventSource cannot send headers, so the progress stream alone may name the user in the query.
+    const streamUser =
+      path === `${API_BASE}/jobs/stream` ? (request.query as { user?: string }).user : undefined;
+    const userId = (Array.isArray(header) ? header[0] : header) ?? streamUser;
     if (!userId) {
       return reply.code(401).send({
         messages: [
@@ -172,10 +188,29 @@ export function buildApp(db: Db, clock: Clock = defaultClock): FastifyInstance {
       .map((row) => toPermission(row, request.user)),
   );
 
+  // Jobs run in this process and are saved after every chunk, so they carry on after a restart.
+  const jobs = new JobRunner(db, {
+    now: clock.now,
+    chunk: Number(process.env.LL_JOB_CHUNK ?? 50),
+    tickMs: Number(process.env.LL_JOB_TICK_MS ?? 150),
+  });
+  app.decorate('jobs', jobs);
+  app.addHook('onClose', async () => jobs.stop());
+
   registerTransactionRoutes(app, db, API_BASE, clock);
-  registerTransactionBulkRoutes(app, db, API_BASE, clock);
+  registerTransactionBulkRoutes(app, db, API_BASE, clock, jobs);
+  registerJobRoutes(app, db, API_BASE, clock, jobs);
   registerViewRoutes(app, db, API_BASE, clock);
   registerEntityRoutes(app, db, API_BASE);
+  registerEntryRoutes(app, db, API_BASE, clock);
+  registerExceptionRoutes(app, db, API_BASE, clock);
+  registerCloseRoutes(app, db, API_BASE, clock, jobs);
+  registerApprovalRoutes(app, db, API_BASE, clock);
+  registerPriceRoutes(app, db, API_BASE, clock);
+  registerAdminRoutes(app, db, API_BASE, clock);
+  registerClientRoutes(app, db, API_BASE, clock);
 
+  // Every handler is registered by now: pick up anything left unfinished by the last run.
+  jobs.resume();
   return app;
 }

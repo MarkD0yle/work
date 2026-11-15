@@ -1,0 +1,43 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Docs/Capabilities/Jobs, Processing and Results" />
+
+# Jobs, Processing and Results
+
+**Status:** Hypothesis. Its acceptance criteria pass in automated tests. No user has tested it yet, so it has not moved to Draft (SPEC §11).
+
+**Spec:** SPEC 7.11
+
+## Purpose
+
+Long work runs in the background so the user can leave: large bulk actions, reports, period close. The result waits for them.
+
+## When to use, and when not
+
+**Use it** for anything that can take more than a moment or touches more than 200 records.
+
+**Do not use it** for a quick action whose result the user is waiting on.
+
+## Foundations
+
+A job is a list of items worked in chunks and saved after each chunk, so it survives an API restart and never does an item twice. Retry runs only what failed, with the original inputs.
+
+## States
+
+Queued, running (with progress), completed, partly done (three counts), failed (with the reason), cancelled (rows done stay done) and unread (finished, not yet opened).
+
+## Data contract
+
+`Job`: type, status, progress, inputs, outputs, `result: BulkResult`, counts and log. Live updates arrive as server-sent events.
+
+## Permissions
+
+A job runs as its submitter and re-checks their permission on every chunk. Only the submitter or an administrator can retry or cancel. Clients see only their own jobs and have no tray.
+
+## Accessibility
+
+The tray button's name starts with its visible text and count. A finished job raises a notification. Progress is a labelled progress bar plus text.
+
+## Code reference
+
+`@ledgerline/compositions`: `JobTray`, `JobDetail`, `watchJob`; `@ledgerline/compositions/jobs`: `JobsGrid`. API: `apps/api/src/jobs/runner.ts`. Tests: `jobs.test.ts`, `e2e/milestone5.e2e.ts`.

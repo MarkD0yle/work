@@ -1,0 +1,43 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Docs/Compositions/Approval Queue" />
+
+# Approval Queue
+
+**Status:** Hypothesis. Its acceptance criteria pass in automated tests. No user has tested it yet, so it has not moved to Draft (SPEC §11).
+
+**Spec:** SPEC 8.5
+
+## Purpose
+
+Maker-checker: a second person decides reopens and close-block overrides, seeing what will change and why.
+
+## When to use, and when not
+
+**Use it** for any action marked as needing approval.
+
+**Do not use it** as a general task list.
+
+## Foundations
+
+The maker can never decide their own request. A rejection needs a note and returns to the maker.
+
+## States
+
+Waiting (with how long), approved, rejected (with the note), and not decidable by you (with the reason).
+
+## Data contract
+
+`ApprovalRequest`: action, record refs, maker, reason, before, after, evidence, status, checker, note.
+
+## Permissions
+
+`approval.decide`. Others see only the requests they made.
+
+## Accessibility
+
+Approve and Reject for your own request are disabled with the segregation-of-duties reason in the page. A refusal from the server stays in the dialog.
+
+## Code reference
+
+`@ledgerline/compositions/accounting`: `ApprovalQueue`. API: `apps/api/src/routes/approvals.ts`. Tests: `milestone6.test.ts`, `e2e/milestone6.e2e.ts`.
