@@ -495,6 +495,7 @@ export const transactionRow = z.object({
   quantity: financialValue,
   price: financialValue,
   amount: financialValue,
+  vendorPrice: financialValue.exactOptional(),
   currency: z.string(),
   status: transactionStatus,
   warning: message.exactOptional(),
@@ -547,3 +548,47 @@ export const bulkRequest = z.object({
   inputs: unknownRecord.exactOptional(),
   reason: z.string().exactOptional(),
 });
+
+// ── Transaction entry and import ──
+export const transactionInput = z.object({
+  portfolioId: z.string(),
+  securityId: z.string().nullable().exactOptional(),
+  type: z.string(),
+  tradeDate: z.string(),
+  settleDate: z.string().nullable().exactOptional(),
+  quantity: z.string().nullable().exactOptional(),
+  price: z.string().nullable().exactOptional(),
+  amount: z.string().nullable().exactOptional(),
+});
+
+export const transactionCreate = transactionInput.extend({
+  acknowledgedWarnings: z.array(z.string()).exactOptional(),
+  cloneOf: z.string().exactOptional(),
+});
+
+export const importSourceRow = z.record(z.string(), z.string());
+export const importRequest = z.object({ mapping: importMapping, rows: z.array(importSourceRow).max(10_000) });
+export const importCommit = importRequest.extend({
+  fileEvidence: z.object({ name: z.string().min(1) }),
+  acknowledgeWarnings: z.boolean().exactOptional(),
+});
+
+const TYPE_ALIASES: Record<string, string> = {
+  buy: 'buy',
+  purchase: 'buy',
+  sell: 'sell',
+  sale: 'sell',
+  income: 'income',
+  coupon: 'income',
+  dividend: 'income',
+  corporateaction: 'corporateAction',
+  'corporate action': 'corporateAction',
+  repo: 'repo',
+  margin: 'margin',
+  maturity: 'maturity',
+  fee: 'fee',
+};
+
+/** Reads a transaction type as people write it in spreadsheets ("Purchase", "Corporate action"). Unknown text is returned as typed. */
+export const transactionTypeAlias = (text: string): string =>
+  TYPE_ALIASES[text.trim().toLowerCase()] ?? text.trim();

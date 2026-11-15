@@ -1,4 +1,4 @@
-import type { ActorRef, AuditEvent } from '@ledgerline/contracts';
+import type { ActorRef, AuditEvent, EvidenceRef } from '@ledgerline/contracts';
 import type { Db } from '../db/client';
 
 export interface AuditInput {
@@ -13,6 +13,7 @@ export interface AuditInput {
   note?: NonNullable<AuditEvent['note']>;
   /** Shared by every row event of one bulk run, and by the run's own event. */
   batchId?: string;
+  evidence?: EvidenceRef[];
 }
 
 /** Writes one immutable audit event and returns its id. Every data-changing action calls this. */
@@ -22,8 +23,8 @@ export function writeAudit(db: Db, event: AuditInput): string {
   const id = `AU-${String(seq).padStart(7, '0')}`;
   sqlite
     .prepare(
-      `INSERT INTO audit_events (id, action, record_type, record_id, actor, at, effective_date, before, after, note, batch_id, immutable)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+      `INSERT INTO audit_events (id, action, record_type, record_id, actor, at, effective_date, before, after, note, batch_id, evidence, immutable)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
     )
     .run(
       id,
@@ -37,6 +38,7 @@ export function writeAudit(db: Db, event: AuditInput): string {
       event.after ? JSON.stringify(event.after) : null,
       event.note ? JSON.stringify(event.note) : null,
       event.batchId ?? null,
+      event.evidence ? JSON.stringify(event.evidence) : null,
     );
   return id;
 }

@@ -497,6 +497,8 @@ export interface TransactionRow {
   quantity: FinancialValue;
   price: FinancialValue;
   amount: FinancialValue;
+  /** Latest vendor price on or before the trade date, for the "vs vendor" comparison column. */
+  vendorPrice?: FinancialValue;
   currency: string;
   status: TransactionStatus;
   /** Present when the record carries a warning the user can acknowledge. */
@@ -544,4 +546,46 @@ export interface MarketCalendar {
   /** Calendar code, e.g. 'US'. */
   market: string;
   holidays: { date: string; name: string }[];
+}
+
+// ─────────────────────────────────────────────────────────────
+// Transaction entry and import (added 0.4.0)
+// ─────────────────────────────────────────────────────────────
+
+/** What a user enters for a transaction. Decimals are strings; dates are ISO. */
+export interface TransactionInput {
+  portfolioId: string;
+  /** Not needed for cash-only records such as fees. */
+  securityId?: string | null;
+  type: string;
+  tradeDate: string;
+  settleDate?: string | null;
+  quantity?: string | null;
+  price?: string | null;
+  /** For records with no quantity and price (income, fee, margin). Calculated otherwise. */
+  amount?: string | null;
+}
+
+/** Body of POST /transactions. */
+export interface TransactionCreate extends TransactionInput {
+  /** Codes of warnings the user has read and chosen to save through. Recorded in audit. */
+  acknowledgedWarnings?: string[];
+  /** The transaction this one was cloned from, recorded in audit. */
+  cloneOf?: string;
+}
+
+/** A pasted or uploaded row before mapping: values by source column header. */
+export type ImportSourceRow = Record<string, string>;
+
+/** Body of POST /imports/validate and /imports/commit. */
+export interface ImportRequest {
+  mapping: ImportMapping;
+  rows: ImportSourceRow[];
+}
+
+export interface ImportCommit extends ImportRequest {
+  /** The file (or "Clipboard paste") the rows came from. Attached to every audit event as evidence. */
+  fileEvidence: { name: string };
+  /** Must be true to commit rows that carry warnings. */
+  acknowledgeWarnings?: boolean;
 }

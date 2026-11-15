@@ -58,14 +58,16 @@ const FIELDS: Record<string, FieldSpec> = {
   warning: { sql: 't.warning_code', type: 'text' },
 };
 
-const SELECT = `
+export const TRANSACTION_SELECT = `
   SELECT t.*, p.name AS portfolio_name, p.calendar AS portfolio_calendar,
-         s.description AS security_label, s.isin, s.cusip, s.sedol, s.ticker, s.asset_class
+         s.description AS security_label, s.isin, s.cusip, s.sedol, s.ticker, s.asset_class,
+         (SELECT px.price FROM prices px WHERE px.security_id = t.security_id AND px.price_date <= t.trade_date AND px.price IS NOT NULL
+          ORDER BY px.price_date DESC LIMIT 1) AS vendor_price
   FROM transactions t
   JOIN portfolios p ON p.id = t.portfolio_id
   LEFT JOIN securities s ON s.id = t.security_id`;
 
-interface Raw {
+export interface TransactionRaw {
   id: string;
   portfolio_id: string;
   portfolio_name: string;
@@ -90,9 +92,10 @@ interface Raw {
   created_at: string;
   overrides: string | null;
   version: number;
+  vendor_price: string | null;
 }
 
-function toRow(raw: Raw): TransactionRow {
+export function toTransactionRow(raw: TransactionRaw): TransactionRow {
   const overrides = (raw.overrides ? JSON.parse(raw.overrides) : {}) as Partial<
     Record<TransactionFinancialField, Provenance>
   >;
@@ -151,6 +154,20 @@ function toRow(raw: Raw): TransactionRow {
       traded ? { ...base, origin: 'calculated', source: 'Quantity × price' } : base,
     ),
     currency: raw.currency,
+    // Shown beside the price as a comparison. Only for records that have a price of their own.
+    ...(raw.price !== null
+      ? {
+          vendorPrice: {
+            kind: 'price' as const,
+            value: raw.vendor_price,
+            currency: raw.currency,
+            precision: 6,
+            signConvention: 'natural' as const,
+            provenance: { origin: 'vendor' as const, source: 'Vendor price on or before the trade date' },
+            ...(raw.vendor_price === null ? { nullReason: 'unavailable' as const } : {}),
+          },
+        }
+      : {}),
     status: raw.status,
     ...(raw.warning_code && warning
       ? { warning: { code: raw.warning_code, severity: 'warning', level: 'row', target: raw.id, ...warning } }
@@ -176,11 +193,11 @@ export function registerTransactionRoutes(
 ): void {
   const sqlite = db.$client;
 
-  const load = (id: string, user: User): Raw => {
+  const load = (id: string, user: User): TransactionRaw => {
     const scope = scopeFor(user);
     const raw = sqlite
-      .prepare(`${SELECT} WHERE t.id = ? ${scope ? `AND ${scope.sql}` : ''}`)
-      .get(id, ...(scope?.params ?? [])) as Raw | undefined;
+      .prepare(`${TRANSACTION_SELECT} WHERE t.id = ? ${scope ? `AND ${scope.sql}` : ''}`)
+      .get(id, ...(scope?.params ?? [])) as TransactionRaw | undefined;
     if (!raw)
       throw new HttpError(404, [
         problem(
@@ -240,7 +257,9 @@ export function registerTransactionRoutes(
       .all(...built.params, built.limit, built.offset) as string[];
     const byId = new Map(
       (ids.length
-        ? (sqlite.prepare(`${SELECT} WHERE t.id IN (${ids.map(() => '?').join(', ')})`).all(...ids) as Raw[])
+        ? (sqlite
+            .prepare(`${TRANSACTION_SELECT} WHERE t.id IN (${ids.map(() => '?').join(', ')})`)
+            .all(...ids) as TransactionRaw[])
         : []
       ).map((raw) => [raw.id, raw]),
     );
@@ -248,14 +267,14 @@ export function registerTransactionRoutes(
     const total = sqlite.prepare(`SELECT count(*) AS n ${from} ${built.where}`).get(...built.params) as {
       n: number;
     };
-    return { rows: rows.map(toRow), totalRows: total.n, asOf: clock.now() };
+    return { rows: rows.map(toTransactionRow), totalRows: total.n, asOf: clock.now() };
   });
 
   app.get<{ Params: { id: string } }>(
     `${base}/transactions/:id`,
     async (request): Promise<TransactionRow> => {
       requirePermission(db, request.user, 'transaction.view');
-      return toRow(load(request.params.id, request.user));
+      return toTransactionRow(load(request.params.id, request.user));
     },
   );
 
@@ -283,7 +302,7 @@ export function registerTransactionRoutes(
 
       const result = sqlite.transaction((): MutationResult<TransactionRow> => {
         const raw = load(request.params.id, request.user);
-        const before = toRow(raw);
+        const before = toTransactionRow(raw);
         if (String(raw.version) !== String(ifMatch).replace(/"/g, '')) {
           throw new HttpError(
             409,
@@ -418,7 +437,7 @@ export function registerTransactionRoutes(
             Object.keys(overrides).length ? JSON.stringify(overrides) : null,
             raw.id,
           );
-        const after = toRow(load(raw.id, request.user));
+        const after = toTransactionRow(load(raw.id, request.user));
 
         const snapshot = (row: TransactionRow): Record<string, string | null> => ({
           quantity: row.quantity.value,
@@ -521,7 +540,8 @@ export function registerTransactionBulkRoutes(
         result.failed.push({ id, message: { code, severity: 'error', level: 'row', text, fix, target: id } });
 
       for (const id of body.ids) {
-        const raw = sqlite.prepare(`${SELECT} WHERE t.id = ?`).get(id) as Raw | undefined;
+        const raw = sqlite.prepare(`${TRANSACTION_SELECT} WHERE t.id = ?`).get(id) as
+          TransactionRaw | undefined;
         if (!raw || (scope && !scope.includes(raw.portfolio_id))) {
           fail(
             id,
