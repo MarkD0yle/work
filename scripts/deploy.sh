@@ -27,6 +27,8 @@ if [ "$SKIP_BUILD" = false ]; then
   npm run build
   echo "==> Building Harbor into dist/harbor..."
   npm run build:harbor
+  echo "==> Building the Ledgerline demo into dist/ledgerline..."
+  npm run build:ledgerline
 else
   echo "==> Skipping build (--skip-build)"
 fi

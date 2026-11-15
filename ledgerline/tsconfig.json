@@ -8,6 +8,7 @@
     { "path": "packages/test-utils" },
     { "path": "apps/api" },
     { "path": "apps/web" },
+    { "path": "apps/demo" },
     { "path": "tsconfig.tooling.json" }
   ]
 }

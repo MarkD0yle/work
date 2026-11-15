@@ -83,7 +83,7 @@ function WorkspaceView({ me, workspace }: { me: Me; workspace: Workspace }) {
 
   const popOut = (i: number) => {
     const opened = window.open(
-      `/popout/${workspace.id}/${i}`,
+      `${import.meta.env.BASE_URL}popout/${workspace.id}/${i}`,
       `ll-${workspace.id}-${i}`,
       'popup,width=1280,height=800',
     );

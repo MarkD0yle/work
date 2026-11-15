@@ -41,49 +41,53 @@ function gridRoute(load: () => Promise<ComponentType>) {
   };
 }
 
-const router = createBrowserRouter([
-  {
-    path: '/',
-    element: <Shell />,
-    children: [
-      { index: true, element: <Start /> },
-      { path: 'profile', element: <Home /> },
-      {
-        path: 'w/:workspaceId',
-        lazy: gridRoute(async () => (await import('./routes/Workspace')).WorkspaceScreen),
-      },
-      // Loaded on demand: the grid engine is large and not needed for first paint.
-      {
-        path: 'transactions',
-        lazy: gridRoute(async () => (await import('./routes/Transactions')).Transactions),
-      },
-      {
-        path: 'jobs',
-        lazy: gridRoute(async () => (await import('./routes/Jobs')).Jobs),
-      },
-      {
-        path: 'accounting/:section?',
-        lazy: gridRoute(async () => (await import('./routes/Accounting')).Accounting),
-      },
-      {
-        path: 'market-data',
-        lazy: gridRoute(async () => (await import('./routes/MarketData')).MarketData),
-      },
-      { path: 'reports', element: <Reports /> },
-      { path: 'admin', element: <Admin /> },
-      {
-        path: 'home',
-        lazy: gridRoute(async () => (await import('./routes/ClientHomePage')).ClientHomePage),
-      },
-      { path: ':domain', element: <DomainPlaceholder /> },
-    ],
-  },
-  // A workspace panel in its own window: no shell around it.
-  {
-    path: '/popout/:workspaceId/:panel',
-    lazy: gridRoute(async () => (await import('./routes/Popout')).Popout),
-  },
-]);
+const router = createBrowserRouter(
+  [
+    {
+      path: '/',
+      element: <Shell />,
+      children: [
+        { index: true, element: <Start /> },
+        { path: 'profile', element: <Home /> },
+        {
+          path: 'w/:workspaceId',
+          lazy: gridRoute(async () => (await import('./routes/Workspace')).WorkspaceScreen),
+        },
+        // Loaded on demand: the grid engine is large and not needed for first paint.
+        {
+          path: 'transactions',
+          lazy: gridRoute(async () => (await import('./routes/Transactions')).Transactions),
+        },
+        {
+          path: 'jobs',
+          lazy: gridRoute(async () => (await import('./routes/Jobs')).Jobs),
+        },
+        {
+          path: 'accounting/:section?',
+          lazy: gridRoute(async () => (await import('./routes/Accounting')).Accounting),
+        },
+        {
+          path: 'market-data',
+          lazy: gridRoute(async () => (await import('./routes/MarketData')).MarketData),
+        },
+        { path: 'reports', element: <Reports /> },
+        { path: 'admin', element: <Admin /> },
+        {
+          path: 'home',
+          lazy: gridRoute(async () => (await import('./routes/ClientHomePage')).ClientHomePage),
+        },
+        { path: ':domain', element: <DomainPlaceholder /> },
+      ],
+    },
+    // A workspace panel in its own window: no shell around it.
+    {
+      path: '/popout/:workspaceId/:panel',
+      lazy: gridRoute(async () => (await import('./routes/Popout')).Popout),
+    },
+    // The hosted demo is served under a sub-path; in development BASE_URL is '/'.
+  ],
+  { basename: import.meta.env.BASE_URL },
+);
 
 const root = document.getElementById('root');
 if (!root) throw new Error('Missing #root');
