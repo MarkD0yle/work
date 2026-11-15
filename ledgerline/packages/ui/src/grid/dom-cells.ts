@@ -54,8 +54,8 @@ export function financialCellElement(value: FinancialValue, qualifier?: string):
   const origin = value.provenance.origin;
   const isNull = f.display !== 'value';
   const flags = [
-    origin === 'calculated' ? 'calculated' : null,
-    origin === 'overridden' ? 'overridden' : null,
+    origin === 'calculated' && !isNull ? 'calculated' : null,
+    origin === 'overridden' && !isNull ? 'overridden' : null,
     value.locked ? 'locked' : null,
   ].filter(Boolean);
 
@@ -77,8 +77,9 @@ export function financialCellElement(value: FinancialValue, qualifier?: string):
   button.title = f.tooltip ?? provenanceSummary(value);
 
   if (ICONS) {
-    if (origin === 'calculated') button.append(ICONS.calculated.cloneNode(true));
-    if (origin === 'overridden') button.append(ICONS.overridden.cloneNode(true));
+    // Origin icons describe a value, so a cell with no value shows none.
+    if (origin === 'calculated' && !isNull) button.append(ICONS.calculated.cloneNode(true));
+    if (origin === 'overridden' && !isNull) button.append(ICONS.overridden.cloneNode(true));
     if (value.locked) button.append(ICONS.locked.cloneNode(true));
   }
   if (qualifier) button.append(el('span', MUTED_LABEL, `${qualifier} `));

@@ -1,7 +1,9 @@
 import type { ColDef, ICellRendererComp, ICellRendererParams } from 'ag-grid-community';
 import type { Message } from '@ledgerline/contracts';
 import { RowMarker } from '../state/row-marker';
+import { rawText } from './copy';
 import { cellElement, placeholderElement } from './dom-cells';
+import { isGroupRow } from './grouping';
 import type { LLColumnDef } from './types';
 
 interface DomCellParams<Row> extends ICellRendererParams<Row> {
@@ -31,9 +33,12 @@ class DomCell<Row> implements ICellRendererComp<Row> {
 
   private draw(params: DomCellParams<Row>): void {
     // Rows not loaded yet (infinite and server-side models) have no data: show a quiet placeholder.
-    this.gui.replaceChildren(
-      params.data === undefined ? placeholderElement() : cellElement(params.llColumn, params.data),
-    );
+    // A group row shows its value in the group column only; its other cells are empty.
+    if (isGroupRow(params.data)) this.gui.replaceChildren();
+    else
+      this.gui.replaceChildren(
+        params.data === undefined ? placeholderElement() : cellElement(params.llColumn, params.data),
+      );
   }
 }
 
@@ -85,6 +90,16 @@ export function toColDefs<Row>(
     ...(column.type === 'financial' ? { type: 'rightAligned', cellClass: 'll-cell-financial' } : {}),
     cellRenderer: DomCell,
     cellRendererParams: { llColumn: column },
+    enableRowGroup: column.groupable ?? false,
+    // The grid needs a plain value per cell for grouping; on a group row it is that group's value.
+    valueGetter: (params) =>
+      isGroupRow(params.data)
+        ? params.data.field === column.field
+          ? (params.data.key ?? '')
+          : ''
+        : params.data === undefined
+          ? ''
+          : rawText(column, params.data),
   }));
   if (!rowMessages) return defs;
   return [
@@ -100,7 +115,7 @@ export function toColDefs<Row>(
       lockVisible: true,
       // Only rows that have messages mount the (React) marker; every other row stays an empty cell.
       cellRendererSelector: (params: ICellRendererParams<Row>) =>
-        params.data !== undefined && rowMessages(params.data).length
+        params.data !== undefined && !isGroupRow(params.data) && rowMessages(params.data).length
           ? { component: MarkerCell, params: { llMessages: rowMessages } }
           : undefined,
       valueGetter: () => '',

@@ -263,13 +263,26 @@ export const views = sqliteTable(
     name: text('name').notNull(),
     ownership: text('ownership').$type<SavedView['ownership']>().notNull(),
     owner: json<ActorRef>('owner').notNull(),
-    /** Role the view is the team default for, when ownership is 'default'. */
-    defaultForRole: text('default_for_role'),
+    /** Team whose members start on this view. */
+    defaultForTeam: text('default_for_team'),
     state: json<SavedView['state']>('state').notNull(),
     schemaVersion: integer('schema_version').notNull(),
     updatedAt: text('updated_at').notNull(),
   },
   (t) => [index('views_grid').on(t.gridId)],
+);
+
+/** Last entities each user picked, for the Entity Picker's recent list. */
+export const entityRecents = sqliteTable(
+  'entity_recents',
+  {
+    userId: text('user_id').notNull(),
+    kind: text('kind').notNull(),
+    entityId: text('entity_id').notNull(),
+    /** Monotonic counter: higher is more recent. */
+    seq: integer('seq').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.kind, t.entityId] })],
 );
 
 export const workspaces = sqliteTable('workspaces', {

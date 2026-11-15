@@ -17,7 +17,7 @@ const signIn = (page: Page, userId: string, extra: Record<string, unknown> = {})
 
 async function openGrid(page: Page, userId = 'u-ada') {
   await signIn(page, userId);
-  await page.goto('/transactions');
+  await page.goto('/transactions?view=V-transactions-default');
   await expect(page.locator('.ag-row[row-index="0"]').first()).toBeVisible();
   await expect(page.locator('[data-slot="status-bar"]')).toContainText('5,000 rows');
 }
@@ -31,7 +31,7 @@ test.describe('transactions grid', () => {
   test('first paint of the server-driven grid is fast and shows the server total', async ({ page }) => {
     await signIn(page, 'u-ada');
     const started = Date.now();
-    await page.goto('/transactions');
+    await page.goto('/transactions?view=V-transactions-default');
     await expect(page.locator('.ag-row[row-index="0"]').first()).toBeVisible();
     expect(Date.now() - started).toBeLessThan(5_000);
     await expect(page.locator('[data-slot="status-bar"]')).toContainText('5,000 rows');
@@ -290,7 +290,7 @@ test.describe('transactions grid', () => {
         }),
       }),
     );
-    await page.goto('/transactions');
+    await page.goto('/transactions?view=V-transactions-default');
     const alert = page
       .getByRole('alert')
       .filter({ hasText: 'The server hit an unexpected problem.' })
@@ -353,8 +353,10 @@ test.describe('transactions grid', () => {
   });
 
   test('a client sees only their portfolios, with no selection, and is told why', async ({ page }) => {
+    // Wide enough that the last column (portfolio) is on screen: the grid only renders visible columns.
+    await page.setViewportSize({ width: 1920, height: 900 });
     await signIn(page, 'u-eli');
-    await page.goto('/transactions');
+    await page.goto('/transactions?view=V-transactions-default');
     await expect(page.getByText('outside your account scope')).toBeVisible();
     await expect(page.locator('.ag-row[row-index="0"]').first()).toBeVisible();
     await expect(page.locator('.ag-selection-checkbox')).toHaveCount(0);

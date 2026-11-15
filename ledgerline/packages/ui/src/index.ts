@@ -60,4 +60,66 @@ export { RowMarker, type RowMarkerProps } from './state/row-marker';
 export { SectionBanner, type SectionBannerProps } from './state/section-banner';
 export { StateOverlay, type StateOverlayProps } from './state/state-overlay';
 
+export {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogTitle,
+  DialogTrigger,
+} from './components/dialog';
+
+// Date and period fields (SPEC 7.6)
+export { normaliseApiDate } from './dates/api-boundary';
+export { BusinessDateInput, type BusinessDateInputProps } from './dates/business-date-input';
+export {
+  addBusinessDays,
+  addDays,
+  addMonths,
+  adjustToBusinessDay,
+  endOfMonth,
+  isBusinessDay,
+  type BusinessDayRule,
+} from './dates/calendar';
+export {
+  BASIS_LABELS,
+  formatBusinessDate,
+  formatIsoDate,
+  formatIsoDateLong,
+  formatPeriod,
+} from './dates/format';
+export { parseDateInput, type DateParseResult } from './dates/parse';
+export { PeriodPicker, type PeriodPickerProps } from './dates/period-picker';
+
+// Saved views (SPEC 7.2)
+export { TaskChips, type TaskChip, type TaskChipsProps } from './views/task-chips';
+export { ViewSelector, type ViewSelectorProps } from './views/view-selector';
+export {
+  applyViewDiff,
+  countConditions,
+  decodeViewDiff,
+  defaultViewState,
+  diffView,
+  encodeViewDiff,
+  migrateView,
+  normaliseView,
+  startingView,
+  viewsEqual,
+  type MigratedView,
+  type ViewDiff,
+  type ViewSchema,
+  type ViewState,
+} from './views/view-state';
+
+// Entity Picker (SPEC 7.3)
+export { EntityOptionContent } from './picker/entity-option';
+export { EntityPicker, type EntityPickerProps } from './picker/entity-picker';
+export {
+  EntityPickerSheet,
+  type EntityCriteria,
+  type EntityPickerSheetProps,
+} from './picker/entity-picker-sheet';
+export { detectIdentifier, shouldSearch, type IdentifierKind } from './picker/identify';
+
 // The data grid (SPEC 7.1) is a separate entry, `@ledgerline/ui/grid`, so screens without a grid do not load the grid engine.

@@ -803,29 +803,32 @@ export function seed(db: Db, scale: SeedScale): SeedResult {
     });
 
     const insView = inserter(db, t.views);
-    const txnColumns = [
+    // Current layout (view schema version 2): the transaction id is pinned so it stays in sight while scrolling.
+    const columns = [
       'id',
-      'portfolioId',
-      'securityId',
+      'status',
       'type',
       'tradeDate',
       'settleDate',
+      'security',
       'quantity',
       'price',
       'amount',
-      'currency',
-      'status',
-    ];
-    const columns = txnColumns.map((field) => ({ field, visible: true }));
+      'portfolio',
+    ].map((field) => ({
+      field,
+      visible: true,
+      ...(field === 'id' ? { pinned: 'left' as const } : {}),
+    }));
     insView({
       id: 'V-transactions-default',
       gridId: 'transactions',
       name: 'All transactions',
       ownership: 'default',
       owner: actor('u-ada'),
-      defaultForRole: null,
+      defaultForTeam: null,
       state: { columns, sort: [{ field: 'tradeDate', dir: 'desc' }], filters: [] },
-      schemaVersion: 1,
+      schemaVersion: 2,
       updatedAt: SEED_NOW,
     });
     insView({
@@ -834,15 +837,38 @@ export function seed(db: Db, scale: SeedScale): SeedResult {
       name: "Yesterday's unposted trades",
       ownership: 'shared',
       owner: actor('u-ada'),
-      defaultForRole: 'Transaction Operations',
+      defaultForTeam: 'Transaction Operations',
       state: {
         columns,
         sort: [{ field: 'tradeDate', dir: 'desc' }],
         filters: [
           { field: 'status', op: 'eq', value: 'unposted' },
+          // Stored as relative: "yesterday" is worked out each time the view is opened.
           { field: 'tradeDate', op: 'relative', period: 'yesterday' },
         ],
         density: 'compact',
+      },
+      schemaVersion: 2,
+      updatedAt: SEED_NOW,
+    });
+    // A view saved before the columns were renamed (schema version 1), kept to exercise view migration:
+    // portfolioId and securityId became portfolio and security, and the currency column no longer exists.
+    insView({
+      id: 'V-transactions-legacy-sells',
+      gridId: 'transactions',
+      name: 'Large sells (old layout)',
+      ownership: 'shared',
+      owner: actor('u-ben'),
+      defaultForTeam: null,
+      state: {
+        columns: ['id', 'tradeDate', 'securityId', 'portfolioId', 'currency', 'amount', 'status'].map(
+          (field) => ({ field, visible: true }),
+        ),
+        sort: [{ field: 'securityId', dir: 'asc' }],
+        filters: [
+          { field: 'type', op: 'eq', value: 'sell' },
+          { field: 'amount', op: 'gt', value: '1000000' },
+        ],
       },
       schemaVersion: 1,
       updatedAt: SEED_NOW,
@@ -855,7 +881,10 @@ export function seed(db: Db, scale: SeedScale): SeedResult {
         'Transaction Operations',
         'u-ada',
         'Transaction Operations',
-        [{ gridId: 'transactions', viewId: 'V-transactions-default' }],
+        [
+          { gridId: 'transactions', viewId: 'V-transactions-default' },
+          { gridId: 'transactions', viewId: 'V-transactions-unposted-yesterday' },
+        ],
       ],
       [
         'W-accounting',
@@ -993,6 +1022,9 @@ export function seed(db: Db, scale: SeedScale): SeedResult {
     });
   })();
 
+  // The full-text index is built from the loaded securities in one pass.
+  db.$client.exec("INSERT INTO securities_fts(securities_fts) VALUES('rebuild')");
+
   return { scale, ...summarise(db) };
 }
 
@@ -1002,7 +1034,7 @@ export function summarise(db: Db): Pick<SeedResult, 'counts' | 'checksum'> {
   const counts: Record<string, number> = {};
   const tables = db.$client
     .prepare(
-      "select name from sqlite_master where type = 'table' and name not like 'sqlite_%' and name not like '\\_\\_%' escape '\\' order by name",
+      "select name from sqlite_master where type = 'table' and name not like 'sqlite_%' and name not like 'securities_fts%' and name not like '\\_\\_%' escape '\\' order by name",
     )
     .all() as { name: string }[];
   for (const { name } of tables) {

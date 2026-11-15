@@ -13,7 +13,8 @@ import type {
 import { Decimal } from 'decimal.js';
 import type { FastifyInstance } from 'fastify';
 import type { Db } from '../db/client';
-import { normaliseBusinessDate } from '../lib/dates';
+import { writeAudit } from '../lib/audit';
+import { endOfMonth, normaliseBusinessDate } from '../lib/dates';
 import { buildGridQuery, type FieldSpec } from '../lib/grid-query';
 import { HttpError, problem, requirePermission } from '../lib/http';
 import * as schemas from '../schemas/index';
@@ -51,6 +52,9 @@ const FIELDS: Record<string, FieldSpec> = {
   amount: { sql: 't.amount', type: 'decimal' },
   currency: { sql: 't.currency', type: 'text' },
   status: { sql: 't.status', type: 'text' },
+  createdBy: { sql: 't.created_by', type: 'text' },
+  /** Filter with isNotNull for "rows with warnings". */
+  warning: { sql: 't.warning_code', type: 'text' },
 };
 
 const SELECT = `
@@ -207,10 +211,28 @@ export function registerTransactionRoutes(
     });
     // Page by id first, then fetch the full rows for that page only. The id query joins a table only when a
     // filter, search or sort actually needs it, so deep pages walk an index instead of 200,000 joined rows.
-    const clauses = `${built.where} ${built.orderBy}`;
+    const clauses = `${built.where} ${built.orderBy} ${built.group?.sql ?? ''}`;
     const from = `FROM transactions t${/\bp\./.test(clauses) ? ' JOIN portfolios p ON p.id = t.portfolio_id' : ''}${
       /\bs\./.test(clauses) ? ' LEFT JOIN securities s ON s.id = t.security_id' : ''
     }`;
+    if (built.group) {
+      // One row per group value, with its record count. Groups are ordered by value so paging is stable.
+      const groups = sqlite
+        .prepare(
+          `SELECT ${built.group.sql} AS key, count(*) AS count ${from} ${built.where} GROUP BY ${built.group.sql} ORDER BY ${built.group.sql} LIMIT ? OFFSET ?`,
+        )
+        .all(...built.params, built.limit, built.offset) as { key: string | null; count: number }[];
+      const total = sqlite
+        .prepare(`SELECT count(DISTINCT coalesce(${built.group.sql}, '')) AS n ${from} ${built.where}`)
+        .get(...built.params) as { n: number };
+      const field = built.group.field;
+      return {
+        rows: [],
+        groups: groups.map((g) => ({ field, ...g })),
+        totalRows: total.n,
+        asOf: clock.now(),
+      };
+    }
     const ids = sqlite
       .prepare(`SELECT t.id ${from} ${built.where} ${built.orderBy} LIMIT ? OFFSET ?`)
       .pluck()
@@ -241,8 +263,10 @@ export function registerTransactionRoutes(
     async (request): Promise<MutationResult<TransactionRow>> => {
       requirePermission(db, request.user, 'transaction.edit');
       const patch = schemas.transactionPatch.parse(request.body);
-      const fields = Object.keys(patch.changes) as TransactionFinancialField[];
-      if (fields.length === 0)
+      const changes = patch.changes ?? {};
+      const dates = patch.dates ?? {};
+      const fields = Object.keys(changes) as TransactionFinancialField[];
+      if (fields.length === 0 && Object.keys(dates).length === 0)
         throw new HttpError(400, [
           problem('LL-TXN-0001', 'No changes were sent.', 'Send at least one field to change.'),
         ]);
@@ -311,10 +335,50 @@ export function registerTransactionRoutes(
           }
         }
 
+        // Business dates. Entry into a closed period is blocked, and the message says who can reopen it.
+        const tradeDate = dates.tradeDate ?? raw.trade_date;
+        const settleDate = dates.settleDate === undefined ? raw.settle_date : dates.settleDate;
+        if (dates.tradeDate && dates.tradeDate !== raw.trade_date) {
+          const period = sqlite
+            .prepare('SELECT period_end, closes FROM periods WHERE portfolio_id = ? AND period_end = ?')
+            .get(raw.portfolio_id, endOfMonth(tradeDate)) as
+            { period_end: string; closes: string } | undefined;
+          const state = period
+            ? (JSON.parse(period.closes) as Record<string, string>).transaction
+            : undefined;
+          if (period && (state === 'closed' || state === 'closing')) {
+            const reopeners = sqlite
+              .prepare(
+                "SELECT DISTINCT u.role, u.team FROM permissions p JOIN users u ON u.id = p.user_id WHERE p.action = 'period.reopen' AND p.allowed = 1",
+              )
+              .all() as { role: string; team: string }[];
+            const who =
+              reopeners.map((r) => `a ${r.role.toLowerCase()} in ${r.team}`).join(' or ') || 'a controller';
+            throw new HttpError(422, [
+              problem(
+                'LL-PER-0001',
+                `Trade date ${tradeDate} is in the period ending ${period.period_end}, which is ${state} for transactions in ${raw.portfolio_name}.`,
+                `Use a date in an open period, or ask ${who} to reopen the period.`,
+                'tradeDate',
+              ),
+            ]);
+          }
+        }
+        if (settleDate !== null && settleDate < tradeDate) {
+          throw new HttpError(422, [
+            problem(
+              'LL-VAL-0118',
+              'Settlement date is before trade date.',
+              `Choose a settlement date on or after ${tradeDate}.`,
+              'settleDate',
+            ),
+          ]);
+        }
+
         const next = { quantity: raw.quantity, price: raw.price, amount: raw.amount };
         for (const field of fields) {
           const decimals = field === 'quantity' ? 4 : field === 'price' ? 6 : minor(raw.currency);
-          next[field] = new Decimal(patch.changes[field] as string).toFixed(decimals);
+          next[field] = new Decimal(changes[field] as string).toFixed(decimals);
           const origin = before[field].provenance.origin;
           if (origin === 'calculated' || origin === 'overridden') {
             overrides[field] = {
@@ -342,39 +406,41 @@ export function registerTransactionRoutes(
 
         sqlite
           .prepare(
-            'UPDATE transactions SET quantity = ?, price = ?, amount = ?, overrides = ?, version = version + 1 WHERE id = ?',
+            'UPDATE transactions SET quantity = ?, price = ?, amount = ?, trade_date = ?, settle_date = ?, overrides = ?, version = version + 1 WHERE id = ?',
           )
           .run(
             next.quantity,
             next.price,
             next.amount,
+            tradeDate,
+            settleDate,
             Object.keys(overrides).length ? JSON.stringify(overrides) : null,
             raw.id,
           );
         const after = toRow(load(raw.id, request.user));
 
-        const changed = (['quantity', 'price', 'amount'] as const).filter(
-          (f) => before[f].value !== after[f].value,
-        );
-        const pick = (row: TransactionRow) => Object.fromEntries(changed.map((f) => [f, row[f].value]));
-        const seq = (sqlite.prepare('SELECT count(*) AS n FROM audit_events').get() as { n: number }).n + 1;
-        const auditId = `AU-${String(seq).padStart(7, '0')}`;
-        sqlite
-          .prepare(
-            `INSERT INTO audit_events (id, action, record_type, record_id, actor, at, effective_date, before, after, note, immutable)
-           VALUES (?, ?, 'transaction', ?, ?, ?, ?, ?, ?, ?, 1)`,
-          )
-          .run(
-            auditId,
-            isOverride ? 'transaction.override' : 'transaction.edit',
-            raw.id,
-            JSON.stringify(actor),
-            at,
-            raw.trade_date,
-            JSON.stringify(pick(before)),
-            JSON.stringify(pick(after)),
-            isOverride ? JSON.stringify({ kind: 'overrideJustification', text: reason }) : null,
-          );
+        const snapshot = (row: TransactionRow): Record<string, string | null> => ({
+          quantity: row.quantity.value,
+          price: row.price.value,
+          amount: row.amount.value,
+          tradeDate: row.tradeDate.value,
+          settleDate: row.settleDate.value,
+        });
+        const [was, now] = [snapshot(before), snapshot(after)];
+        const changed = Object.keys(was).filter((key) => was[key] !== now[key]);
+        const pick = (values: Record<string, string | null>) =>
+          Object.fromEntries(changed.map((key) => [key, values[key]]));
+        const auditId = writeAudit(db, {
+          action: isOverride ? 'transaction.override' : 'transaction.edit',
+          recordType: 'transaction',
+          recordId: raw.id,
+          actor,
+          at,
+          effectiveDate: tradeDate,
+          before: pick(was),
+          after: pick(now),
+          ...(isOverride ? { note: { kind: 'overrideJustification' as const, text: reason as string } } : {}),
+        });
         return { record: after, auditEventIds: [auditId] };
       })();
 

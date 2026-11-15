@@ -66,13 +66,14 @@ export function FinancialCell({
   const trigger = useRef<HTMLButtonElement>(null);
   const f = formatFinancial(value);
   const origin = value.provenance.origin;
+  const isNull = f.display !== 'value';
+  // Origin icons describe a value, so a cell with no value shows none.
   const flags = [
-    origin === 'calculated' ? 'calculated' : null,
-    origin === 'overridden' ? 'overridden' : null,
+    origin === 'calculated' && !isNull ? 'calculated' : null,
+    origin === 'overridden' && !isNull ? 'overridden' : null,
     value.locked ? 'locked' : null,
   ].filter(Boolean);
   const face = originalFace && originalFace.value !== null ? formatFinancial(originalFace) : null;
-  const isNull = f.display !== 'value';
 
   // The accessible name is built from the content itself (visible text plus screen-reader-only words),
   // so what is spoken always contains what is shown.
@@ -97,10 +98,12 @@ export function FinancialCell({
           className,
         )}
       >
-        {origin === 'calculated' ? (
+        {origin === 'calculated' && !isNull ? (
           <Calculator aria-hidden className="size-3.5 shrink-0 text-muted-foreground" />
         ) : null}
-        {origin === 'overridden' ? <PencilLine aria-hidden className="size-3.5 shrink-0 text-info" /> : null}
+        {origin === 'overridden' && !isNull ? (
+          <PencilLine aria-hidden className="size-3.5 shrink-0 text-info" />
+        ) : null}
         {value.locked ? <Lock aria-hidden className="size-3.5 shrink-0 text-muted-foreground" /> : null}
         {qualifier ? <span className="font-sans text-2xs text-muted-foreground">{qualifier} </span> : null}
         {isNull ? <span className="sr-only">{f.ariaLabel}</span> : null}

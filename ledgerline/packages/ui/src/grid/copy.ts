@@ -1,15 +1,8 @@
-import type { BusinessDate } from '@ledgerline/contracts';
+import { formatBusinessDate } from '../dates/format';
 import { formatFinancial, rawFinancial } from '../financial/format';
+
+export { formatBusinessDate };
 import type { LLColumnDef } from './types';
-
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-/** "13 Nov 2026": day first, month as a word, so US and European readers see the same date. */
-export function formatBusinessDate(date: BusinessDate): string {
-  if (date.value === null) return '—';
-  const [y, m, d] = date.value.split('-');
-  return `${d} ${MONTHS[Number.parseInt(m ?? '1', 10) - 1]} ${y}`;
-}
 
 /** The text a cell shows. This is also what plain Copy puts on the clipboard. */
 export function displayText<Row>(column: LLColumnDef<Row>, row: Row): string {

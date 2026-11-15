@@ -2,6 +2,7 @@ import type {
   ActionRef,
   FilterCondition,
   FinancialValue,
+  GridQuery,
   GridResponse,
   Message,
   UiState,
@@ -10,7 +11,7 @@ import { density as densityTokens } from '@ledgerline/tokens';
 import type { CellKeyDownEvent, GridApi, GridReadyEvent, IRowNode } from 'ag-grid-community';
 import { AgGridReact } from 'ag-grid-react';
 import { Decimal } from 'decimal.js';
-import { ChevronDown, Columns3, RefreshCw, Rows3, Search, X } from 'lucide-react';
+import { ChevronDown, Columns3, Group, RefreshCw, Rows3, Search, X } from 'lucide-react';
 import {
   useCallback,
   useContext,
@@ -44,12 +45,13 @@ import { cn } from '../lib/cn';
 import { useDensity } from '../lib/use-density';
 import { NotificationContext } from '../state/notifications';
 import { StateOverlay } from '../state/state-overlay';
-import { headerText, toColDefs } from './cells';
-import { buildClipboard } from './copy';
+import { headerText, MESSAGES_COLUMN, toColDefs } from './cells';
+import { buildClipboard, formatBusinessDate } from './copy';
 import { createInfiniteDatasource, createServerSideDatasource, type QueryContext } from './datasource';
 import { ensureGridModules, isGridEnterprise } from './modules';
+import { groupRowId, isGroupRow, recordOf } from './grouping';
 import { llGridTheme } from './theme';
-import type { LLColumnDef, LLGridHandle, LLGridProps, LLGridState } from './types';
+import type { GridViewState, LLColumnDef, LLGridHandle, LLGridProps, LLGridState } from './types';
 
 const OP_WORDS: Record<FilterCondition['op'], string> = {
   eq: 'is',
@@ -71,8 +73,12 @@ const PERIOD_WORDS = {
 } as const;
 
 /** Plain-language text for a filter tag, e.g. "Status is unposted" or "Trade date is yesterday". */
-export function describeFilter<Row>(filter: FilterCondition, columns: LLColumnDef<Row>[]): string {
-  const name = columns.find((c) => c.field === filter.field)?.header ?? filter.field;
+export function describeFilter<Row>(
+  filter: FilterCondition,
+  columns: LLColumnDef<Row>[],
+  labels: Record<string, string> = {},
+): string {
+  const name = labels[filter.field] ?? columns.find((c) => c.field === filter.field)?.header ?? filter.field;
   const words = OP_WORDS[filter.op];
   switch (filter.op) {
     case 'between':
@@ -124,6 +130,10 @@ export function LLGrid<Row>({
   onFiltersChange,
   onRowOpen,
   onDensityChange,
+  initialView,
+  onViewChange,
+  filterLabels,
+  onRefresh,
   rowMessages,
   state: imposedState,
   onStateChange,
@@ -150,6 +160,11 @@ export function LLGrid<Row>({
   /** The one provenance popover for the whole grid, anchored to the cell that asked for it. */
   const [provenance, setProvenance] = useState<{ anchor: HTMLElement; value: FinancialValue } | null>(null);
   const [hidden, setHidden] = useState<ReadonlySet<string>>(new Set());
+  const [grouping, setGrouping] = useState<string[]>([]);
+  /** The view as it is now. A rebuilt grid (density change) is given it back. */
+  const liveView = useRef<GridViewState | null>(initialView ?? null);
+  /** The filters and search the attached datasource was last loaded with, to avoid loading twice. */
+  const loadedKey = useRef('');
   /** Selection and scroll position, kept so a rebuilt grid (density change) can put them back. */
   const lastView = useRef<{ ids: string[]; firstRow: number }>({ ids: [], firstRow: 0 });
 
@@ -166,11 +181,7 @@ export function LLGrid<Row>({
   const serverQuery = server ? dataSource.query : null;
   const enterprise = isGridEnterprise();
 
-  // Column visibility lives in the column definitions, so it survives a grid rebuild.
-  const columnDefs = useMemo(
-    () => toColDefs(columns, rowMessages).map((def) => ({ ...def, hide: hidden.has(def.colId ?? '') })),
-    [columns, rowMessages, hidden],
-  );
+  const columnDefs = useMemo(() => toColDefs(columns, rowMessages), [columns, rowMessages]);
 
   // ── Data ────────────────────────────────────────────────
   const reload = useCallback(() => {
@@ -201,10 +212,86 @@ export function LLGrid<Row>({
   }, []);
 
   // Latest notify and label, so raising a notification never rebuilds the datasource (which would reload rows).
-  const notifyRef = useRef({ notify: notifications?.notify, label });
+  const notifyRef = useRef({ notify: notifications?.notify, label, onViewChange });
   useEffect(() => {
-    notifyRef.current = { notify: notifications?.notify, label };
-  }, [notifications?.notify, label]);
+    notifyRef.current = { notify: notifications?.notify, label, onViewChange };
+  }, [notifications?.notify, label, onViewChange]);
+
+  // ── View state: columns, sort, quick search and grouping (SPEC 7.2) ──
+  const readView = useCallback((): GridViewState => {
+    const grid = api.current;
+    if (!grid)
+      return (
+        liveView.current ?? { columns: columns.map((c) => ({ field: c.field, visible: true })), sort: [] }
+      );
+    const own = new Set(columns.map((c) => c.field));
+    const state = grid.getColumnState().filter((c) => own.has(c.colId));
+    const ordered = <T extends { i: number }>(items: T[]) => items.sort((a, b) => a.i - b.i);
+    const sortNow = ordered(
+      state.flatMap((c) =>
+        c.sort ? [{ field: c.colId, dir: c.sort as 'asc' | 'desc', i: c.sortIndex ?? 0 }] : [],
+      ),
+    ).map(({ field, dir }) => ({ field, dir }));
+    const groups = ordered(
+      state.flatMap((c) => (c.rowGroup ? [{ field: c.colId, i: c.rowGroupIndex ?? 0 }] : [])),
+    ).map((g) => g.field);
+    const search = context.current.quickSearch;
+    return {
+      columns: state.map((c) => ({
+        field: c.colId,
+        visible: !c.hide,
+        ...(c.width == null ? {} : { width: c.width }),
+        ...(c.pinned ? { pinned: c.pinned === 'right' ? ('right' as const) : ('left' as const) } : {}),
+      })),
+      sort: sortNow,
+      ...(search ? { quickSearch: search } : {}),
+      ...(groups.length ? { grouping: groups } : {}),
+    };
+  }, [columns]);
+
+  const emitView = useCallback(() => {
+    const view = readView();
+    liveView.current = view;
+    setSort(view.sort);
+    setHidden(new Set(view.columns.filter((c) => !c.visible).map((c) => c.field)));
+    setGrouping(view.grouping ?? []);
+    notifyRef.current.onViewChange?.(view);
+  }, [readView]);
+
+  const applyView = useCallback(
+    (view: GridViewState) => {
+      liveView.current = view;
+      const search = view.quickSearch?.trim() ?? '';
+      context.current = { ...context.current, quickSearch: search };
+      setSearchText(search);
+      setQuickSearch(search);
+      const grid = api.current;
+      if (!grid) return;
+      const groups = enterprise ? (view.grouping ?? []) : [];
+      grid.applyColumnState({
+        state: [
+          { colId: MESSAGES_COLUMN },
+          ...view.columns.map((c) => {
+            const sortIndex = view.sort.findIndex((s) => s.field === c.field);
+            const groupIndex = groups.indexOf(c.field);
+            return {
+              colId: c.field,
+              hide: !c.visible,
+              pinned: c.pinned ?? null,
+              ...(c.width === undefined ? {} : { width: c.width }),
+              sort: sortIndex < 0 ? null : (view.sort[sortIndex]?.dir ?? null),
+              sortIndex: sortIndex < 0 ? null : sortIndex,
+              rowGroup: groupIndex >= 0,
+              rowGroupIndex: groupIndex < 0 ? null : groupIndex,
+            };
+          }),
+        ],
+        applyOrder: true,
+      });
+      emitView();
+    },
+    [emitView, enterprise],
+  );
 
   // The datasource is attached once the grid is ready, and again if the grid is rebuilt (density change).
   useEffect(() => {
@@ -212,8 +299,11 @@ export function LLGrid<Row>({
     if (!grid || !serverQuery || gridVersion === 0) return;
     const hooks = {
       context: () => context.current,
-      onLoaded: (response: GridResponse<Row>) => {
-        setTotalRows(response.totalRows);
+      onLoaded: (response: GridResponse<Row>, query: GridQuery) => {
+        // With grouping on, the record total is the sum of the top-level groups; pages inside a group leave it alone.
+        if (response.groups) {
+          if (!query.groupKeys?.length) setTotalRows(response.groups.reduce((n, g) => n + g.count, 0));
+        } else if (!query.groupBy?.length) setTotalRows(response.totalRows);
         setAsOf(response.asOf);
         setError(null);
         // Let the grid render the new rows before selection and focus are put back.
@@ -225,6 +315,7 @@ export function LLGrid<Row>({
         for (const m of messages) notifyRef.current.notify?.(m, notifyRef.current.label);
       },
     };
+    loadedKey.current = JSON.stringify([context.current.filters, context.current.quickSearch]);
     if (enterprise)
       grid.setGridOption(
         'serverSideDatasource' as never,
@@ -258,7 +349,12 @@ export function LLGrid<Row>({
     return true;
   }, []);
 
-  useImperativeHandle(ref, () => ({ refresh, focusRow }), [refresh, focusRow]);
+  useImperativeHandle(ref, () => ({ refresh, focusRow, getViewState: readView, applyViewState: applyView }), [
+    refresh,
+    focusRow,
+    readView,
+    applyView,
+  ]);
 
   // Notification-panel messages jump to their row (SPEC 7.7).
   useEffect(() => notifications?.registerTargetResolver(focusRow), [notifications, focusRow]);
@@ -268,6 +364,10 @@ export function LLGrid<Row>({
     context.current = { filters: filters ?? [], quickSearch };
     const grid = api.current;
     if (!grid) return;
+    // Skip when the datasource was just attached with exactly these conditions: it is already loading them.
+    const key = JSON.stringify([filters ?? [], quickSearch]);
+    if (server && loadedKey.current === key) return;
+    loadedKey.current = key;
     if (server) {
       if (enterprise)
         (grid as unknown as { refreshServerSide: (p: { purge: boolean }) => void }).refreshServerSide({
@@ -281,9 +381,15 @@ export function LLGrid<Row>({
   }, [filters, quickSearch, server, enterprise]);
 
   useEffect(() => {
-    const timer = setTimeout(() => setQuickSearch(searchText.trim()), SEARCH_DEBOUNCE_MS);
+    const timer = setTimeout(() => {
+      const next = searchText.trim();
+      if (next === context.current.quickSearch) return;
+      context.current = { ...context.current, quickSearch: next };
+      setQuickSearch(next);
+      emitView();
+    }, SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [searchText]);
+  }, [searchText, emitView]);
 
   // ── State ───────────────────────────────────────────────
   const activeFilters = (filters?.length ?? 0) + (quickSearch ? 1 : 0);
@@ -316,7 +422,7 @@ export function LLGrid<Row>({
       const grid = api.current;
       if (!grid || !features.copy) return;
       const focused = grid.getFocusedCell();
-      const focusedRow = focused ? grid.getDisplayedRowAtIndex(focused.rowIndex)?.data : undefined;
+      const focusedRow = focused ? recordOf(grid.getDisplayedRowAtIndex(focused.rowIndex)?.data) : undefined;
       const rows = selected.length ? selected : focusedRow ? [focusedRow] : [];
       // With no selection, Copy takes the focused cell only. With a selection, it takes whole rows.
       const focusedColumn = focused ? columns.find((c) => c.field === focused.column.getColId()) : undefined;
@@ -360,7 +466,9 @@ export function LLGrid<Row>({
         // Select all rows in view, never every row on the server.
         e.preventDefault();
         if (!features.selection) return;
-        const nodes = event.api.getRenderedNodes().filter((n: IRowNode<Row>) => n.data !== undefined);
+        const nodes = event.api
+          .getRenderedNodes()
+          .filter((n: IRowNode<Row>) => recordOf(n.data) !== undefined);
         for (const node of nodes) node.setSelected(true);
         setAnnouncement(`${count(nodes.length)} rows in view selected.`);
       } else if (mod && key === 'c') {
@@ -386,11 +494,11 @@ export function LLGrid<Row>({
         const from = anchorRow.current ?? row;
         for (let i = Math.min(from, row); i <= Math.max(from, row); i += 1) {
           const node = event.api.getDisplayedRowAtIndex(i);
-          if (node?.data !== undefined) node.setSelected(true);
+          if (recordOf(node?.data) !== undefined) node?.setSelected(true);
         }
-      } else if ((e.key === 'Enter' || e.key === 'F2') && onRowOpen && event.data !== undefined) {
+      } else if ((e.key === 'Enter' || e.key === 'F2') && onRowOpen && recordOf(event.data) !== undefined) {
         e.preventDefault();
-        onRowOpen(event.data);
+        onRowOpen(event.data as Row);
       } else if (e.key === 'Escape') {
         if (event.api.getSelectedNodes().length) {
           event.api.deselectAll();
@@ -414,12 +522,14 @@ export function LLGrid<Row>({
       setGridVersion((v) => v + 1);
       setSelected([]);
       setProvenance(null);
+      // Put the view back before the first load, so the first query already has its sort, search and grouping.
+      if (liveView.current) applyView(liveView.current);
       const { ids, firstRow } = lastView.current;
       if (ids.length || firstRow > 0)
         restore.current = { ids: new Set(ids), focus: null, scrollTo: firstRow };
       if (!server) setTotalRows(event.api.getDisplayedRowCount());
     },
-    [server],
+    [server, applyView],
   );
 
   // ── Selected aggregates ─────────────────────────────────
@@ -446,7 +556,7 @@ export function LLGrid<Row>({
       const button = target.closest<HTMLElement>('[data-slot="financial-cell"]');
       const id = button?.closest('.ag-row')?.getAttribute('row-id');
       const field = button?.closest('[col-id]')?.getAttribute('col-id');
-      const row = id ? api.current?.getRowNode(id)?.data : undefined;
+      const row = id ? recordOf(api.current?.getRowNode(id)?.data) : undefined;
       const column = columns.find((c) => c.field === field);
       if (!button || row === undefined || column?.type !== 'financial') return;
       setProvenance((open) =>
@@ -463,11 +573,20 @@ export function LLGrid<Row>({
   }, [provenance]);
 
   // ── Columns ─────────────────────────────────────────────
-  const toggleColumn = (field: string, visible: boolean) => {
-    const next = new Set(hidden);
-    if (visible) next.delete(field);
-    else next.add(field);
-    setHidden(next);
+  const toggleColumn = (field: string, visible: boolean) => api.current?.setColumnsVisible([field], visible);
+
+  const groupable = enterprise && server ? columns.filter((c) => c.groupable) : [];
+  const toggleGroup = (field: string, on: boolean) =>
+    (api.current as unknown as { setRowGroupColumns: (keys: string[]) => void } | null)?.setRowGroupColumns(
+      on ? [...grouping, field] : grouping.filter((f) => f !== field),
+    );
+  /** Text for a group row: status labels and dates read as they do in cells. */
+  const groupLabel = (field: string | undefined, key: string | null | undefined) => {
+    const column = columns.find((c) => c.field === field);
+    if (key == null || key === '') return '(none)';
+    if (column?.type === 'status') return column.statuses[key]?.label ?? key;
+    if (column?.type === 'date') return formatBusinessDate({ value: key, basis: column.dateBasis });
+    return key;
   };
 
   // ── Filter tags: every active condition is visible and removable ──
@@ -477,7 +596,7 @@ export function LLGrid<Row>({
       : []),
     ...(filters ?? []).map((f, i) => ({
       key: `${f.field}-${f.op}-${i}`,
-      text: describeFilter(f, columns),
+      text: describeFilter(f, columns, filterLabels),
       remove: onFiltersChange ? () => onFiltersChange((filters ?? []).filter((_, j) => j !== i)) : undefined,
     })),
   ];
@@ -511,6 +630,30 @@ export function LLGrid<Row>({
           </div>
         ) : null}
         <div className="flex-1" />
+        {groupable.length ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="secondary">
+                <Group aria-hidden />
+                Group
+                {grouping.length ? <span className="text-muted-foreground">({grouping.length})</span> : null}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Group rows by</DropdownMenuLabel>
+              {groupable.map((c) => (
+                <DropdownMenuCheckboxItem
+                  key={c.field}
+                  checked={grouping.includes(c.field)}
+                  onSelect={(e) => e.preventDefault()}
+                  onCheckedChange={(checked) => toggleGroup(c.field, checked)}
+                >
+                  {headerText(c)}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : null}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="secondary">
@@ -558,7 +701,13 @@ export function LLGrid<Row>({
             </DropdownMenuContent>
           </DropdownMenu>
         ) : null}
-        <Button variant="secondary" onClick={refresh}>
+        <Button
+          variant="secondary"
+          onClick={() => {
+            refresh();
+            onRefresh?.();
+          }}
+        >
           <RefreshCw aria-hidden />
           Refresh
         </Button>
@@ -667,7 +816,9 @@ export function LLGrid<Row>({
             key={density}
             theme={llGridTheme}
             columnDefs={columnDefs}
-            getRowId={(params) => rowId(params.data)}
+            getRowId={(params) =>
+              isGroupRow(params.data) ? groupRowId(params.parentKeys, params.data) : rowId(params.data)
+            }
             rowHeight={rowHeight}
             headerHeight={rowHeight}
             {...(dataSource.kind === 'client'
@@ -687,6 +838,8 @@ export function LLGrid<Row>({
                     checkboxes: true,
                     headerCheckbox: !server,
                     enableClickSelection: false,
+                    // Group rows are headings, not records: they cannot be selected.
+                    isRowSelectable: (node: IRowNode<Row>) => !isGroupRow(node.data),
                   },
                   selectionColumnDef: { pinned: 'left' as const, width: 40, suppressHeaderMenuButton: true },
                 }
@@ -698,25 +851,39 @@ export function LLGrid<Row>({
             onSelectionChanged={(e) => {
               const nodes = e.api.getSelectedNodes();
               lastView.current.ids = nodes.flatMap((n) => (n.id ? [n.id] : []));
-              setSelected(nodes.flatMap((n) => (n.data === undefined ? [] : [n.data])));
+              setSelected(nodes.flatMap((n) => recordOf(n.data) ?? []));
             }}
             onBodyScrollEnd={(e) => {
               lastView.current.firstRow = e.api.getFirstDisplayedRowIndex();
             }}
             onRowDoubleClicked={(e) => {
-              if (e.data !== undefined) onRowOpen?.(e.data);
+              const record = recordOf(e.data);
+              if (record !== undefined) onRowOpen?.(record);
             }}
-            onSortChanged={(e) =>
-              setSort(
-                e.api
-                  .getColumnState()
-                  .flatMap((c) =>
-                    c.sort ? [{ field: c.colId, dir: c.sort as 'asc' | 'desc', i: c.sortIndex ?? 0 }] : [],
-                  )
-                  .sort((a, b) => a.i - b.i)
-                  .map(({ field, dir }) => ({ field, dir })),
-              )
-            }
+            onSortChanged={emitView}
+            onColumnVisible={emitView}
+            onColumnPinned={emitView}
+            onColumnRowGroupChanged={emitView}
+            onColumnMoved={(e) => {
+              if (e.finished) emitView();
+            }}
+            onColumnResized={(e) => {
+              if (e.finished) emitView();
+            }}
+            {...(enterprise && server
+              ? {
+                  autoGroupColumnDef: {
+                    headerName: 'Group',
+                    minWidth: 240,
+                    pinned: 'left' as const,
+                    sortable: false,
+                    valueFormatter: (p: { value: unknown; node: IRowNode<Row> | null }) =>
+                      groupLabel(p.node?.rowGroupColumn?.getColId(), p.value as string | null),
+                  },
+                  getChildCount: (data: unknown) => (isGroupRow(data) ? data.count : 0),
+                  suppressGroupChangesColumnVisibility: true,
+                }
+              : {})}
             onCellKeyDown={onCellKeyDown}
             onModelUpdated={(e) => {
               if (!server) setTotalRows(e.api.getDisplayedRowCount());

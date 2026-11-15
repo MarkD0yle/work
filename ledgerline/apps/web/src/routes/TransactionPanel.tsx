@@ -1,5 +1,7 @@
 import type {
   ActionRef,
+  BusinessDate,
+  Message,
   FinancialValue,
   MutationResult,
   Permission,
@@ -11,7 +13,11 @@ import type {
 } from '@ledgerline/contracts';
 import {
   Badge,
+  BusinessDateInput,
   Button,
+  endOfMonth,
+  formatIsoDate,
+  formatPeriod,
   FinancialCell,
   FinancialInput,
   SectionBanner,
@@ -20,8 +26,8 @@ import {
 } from '@ledgerline/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { X } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
-import { api, ApiError, fetchPermissions } from '../api/client';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { api, ApiError, fetchCalendar, fetchPeriods, fetchPermissions } from '../api/client';
 import { ErrorPanel, LoadingPanel } from '../app/StatePanel';
 
 const FIELDS: { field: TransactionFinancialField; label: string }[] = [
@@ -38,6 +44,8 @@ type Staged = Partial<Record<TransactionFinancialField, FinancialValue>>;
 interface TransactionPanelProps {
   id: string;
   user: User;
+  /** The engine's business date: `t` and `t+2` in the date fields count from here. */
+  businessDate: string;
   onSaved: () => void;
   onClose: () => void;
 }
@@ -50,11 +58,12 @@ const can = (permissions: Permission[] | undefined, action: string) =>
  * Changing a calculated value is an override: it needs the permission and a reason, and the audit history
  * keeps the original. Nothing is saved until the user chooses Save.
  */
-export function TransactionPanel({ id, user, onSaved, onClose }: TransactionPanelProps) {
+export function TransactionPanel({ id, user, businessDate, onSaved, onClose }: TransactionPanelProps) {
   const queryClient = useQueryClient();
   const { notify } = useNotifications();
   const heading = useRef<HTMLHeadingElement>(null);
   const [staged, setStaged] = useState<Staged>({});
+  const [stagedDates, setStagedDates] = useState<{ tradeDate?: BusinessDate; settleDate?: BusinessDate }>({});
   const [conflict, setConflict] = useState<TransactionRow | null>(null);
   /** The version edits are based on. After "Keep my edits" it is the other user's version. */
   const [baseVersion, setBaseVersion] = useState<number | null>(null);
@@ -66,6 +75,21 @@ export function TransactionPanel({ id, user, onSaved, onClose }: TransactionPane
     staleTime: Infinity,
   });
   const permissions = useQuery({ queryKey: ['permissions', user.id], queryFn: fetchPermissions });
+  // The portfolio's calendar and periods, for business-day rules and the closed-period check.
+  const calendarCode = record.data?.tradeDate.calendar;
+  const calendar = useQuery({
+    queryKey: ['calendar', calendarCode],
+    queryFn: () => fetchCalendar(calendarCode as string),
+    enabled: Boolean(calendarCode),
+    staleTime: Infinity,
+  });
+  const portfolioId = record.data?.portfolio.id;
+  const periods = useQuery({
+    queryKey: ['periods', user.id, portfolioId],
+    queryFn: () => fetchPeriods(portfolioId as string),
+    enabled: Boolean(portfolioId),
+  });
+  const holidays = useMemo(() => calendar.data?.holidays.map((h) => h.date) ?? [], [calendar.data]);
 
   useEffect(() => heading.current?.focus(), [id]);
 
@@ -75,10 +99,18 @@ export function TransactionPanel({ id, user, onSaved, onClose }: TransactionPane
         Object.entries(staged).flatMap(([field, value]) =>
           value.value === null ? [] : [[field, value.value]],
         ),
-      ) as TransactionPatch['changes'];
+      ) as NonNullable<TransactionPatch['changes']>;
       const reason = Object.values(staged).find((v) => v.provenance.overrideReason)?.provenance
         .overrideReason;
-      const patch: TransactionPatch = { changes, ...(reason ? { reason } : {}) };
+      const dates = {
+        ...(stagedDates.tradeDate?.value ? { tradeDate: stagedDates.tradeDate.value } : {}),
+        ...(stagedDates.settleDate ? { settleDate: stagedDates.settleDate.value } : {}),
+      };
+      const patch: TransactionPatch = {
+        ...(Object.keys(changes).length ? { changes } : {}),
+        ...(reason ? { reason } : {}),
+        ...(Object.keys(dates).length ? { dates } : {}),
+      };
       return api<MutationResult<TransactionRow>>(`/transactions/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'If-Match': String(baseVersion ?? row.version) },
@@ -88,6 +120,7 @@ export function TransactionPanel({ id, user, onSaved, onClose }: TransactionPane
     onSuccess: ({ record: saved }) => {
       queryClient.setQueryData(['transaction', user.id, id], saved);
       setStaged({});
+      setStagedDates({});
       setConflict(null);
       setBaseVersion(null);
       toast('Saved', `Transaction ${id}`);
@@ -129,7 +162,41 @@ export function TransactionPanel({ id, user, onSaved, onClose }: TransactionPane
   const row = record.data;
   const edit = can(permissions.data, 'transaction.edit');
   const override = can(permissions.data, 'transaction.override');
-  const dirty = Object.keys(staged).length > 0;
+  const changeCount = Object.keys(staged).length + Object.keys(stagedDates).length;
+  const dirty = changeCount > 0;
+  const tradeDate = stagedDates.tradeDate ?? row.tradeDate;
+  const settleDate = stagedDates.settleDate ?? { ...row.settleDate, businessDayRule: 'following' as const };
+
+  /** Entry into a closed period is blocked here, and again by the server, naming the period and who can reopen it. */
+  const checkPeriod = (iso: string): Message | null => {
+    const period = periods.data?.find((p) => p.periodEnd === endOfMonth(iso));
+    const state = period?.closes.transaction;
+    if (!period || (state !== 'closed' && state !== 'closing')) return null;
+    return {
+      code: 'LL-PER-0001',
+      severity: 'error',
+      level: 'field',
+      text: `${formatPeriod(period.periodEnd)} is ${state} for transactions in this portfolio.`,
+      fix: 'Use a date in an open period, or ask a controller in Investment Accounting to reopen it.',
+      target: 'tradeDate',
+    };
+  };
+  const checkSettle = (iso: string): Message | null =>
+    tradeDate.value && iso < tradeDate.value
+      ? {
+          code: 'LL-VAL-0118',
+          severity: 'error',
+          level: 'field',
+          text: 'Settlement date is before trade date.',
+          fix: `Choose a date on or after ${formatIsoDate(tradeDate.value)}.`,
+          target: 'settleDate',
+        }
+      : null;
+  const stageDate = (field: 'tradeDate' | 'settleDate', next: BusinessDate) =>
+    setStagedDates((prev) => {
+      const { [field]: _removed, ...rest } = prev;
+      return next.value === row[field].value ? rest : { ...rest, [field]: next };
+    });
   const actor = { type: 'user' as const, id: user.id, name: user.name };
 
   // Why the whole record is read-only, if it is. Restrictions always say why.
@@ -176,11 +243,38 @@ export function TransactionPanel({ id, user, onSaved, onClose }: TransactionPane
           <dd>{row.portfolio.label}</dd>
           <dt className="text-muted-foreground">Security</dt>
           <dd>{row.security?.label ?? 'None (cash only)'}</dd>
-          <dt className="text-muted-foreground">Trade date</dt>
-          <dd className="tabular">{row.tradeDate.value ?? 'No date'}</dd>
-          <dt className="text-muted-foreground">Settle date</dt>
-          <dd className="tabular">{row.settleDate.value ?? 'No date'}</dd>
         </dl>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <BusinessDateInput
+              label="Trade date"
+              name="tradeDate"
+              value={tradeDate}
+              today={businessDate}
+              holidays={holidays}
+              validate={checkPeriod}
+              disabled={Boolean(readOnly) || save.isPending}
+              onCommit={(next) => stageDate('tradeDate', next)}
+            />
+            {stagedDates.tradeDate ? <p className="mt-1 text-xs text-info">Changed, not saved yet.</p> : null}
+          </div>
+          <div>
+            <BusinessDateInput
+              label="Settle date"
+              name="settleDate"
+              value={settleDate}
+              today={tradeDate.value ?? businessDate}
+              holidays={holidays}
+              validate={checkSettle}
+              disabled={Boolean(readOnly) || save.isPending}
+              onCommit={(next) => stageDate('settleDate', next)}
+            />
+            {stagedDates.settleDate ? (
+              <p className="mt-1 text-xs text-info">Changed, not saved yet.</p>
+            ) : null}
+          </div>
+        </div>
 
         {banner ? (
           banner.kind === 'permissionLimited' ? (
@@ -196,6 +290,7 @@ export function TransactionPanel({ id, user, onSaved, onClose }: TransactionPane
                   // Take their version and drop my edits.
                   queryClient.setQueryData(['transaction', user.id, id], conflict);
                   setStaged({});
+                  setStagedDates({});
                   setBaseVersion(null);
                 } else {
                   // Keep my edits on top of their version; the next Save overwrites knowingly.
@@ -265,6 +360,7 @@ export function TransactionPanel({ id, user, onSaved, onClose }: TransactionPane
             disabled={!dirty || save.isPending}
             onClick={() => {
               setStaged({});
+              setStagedDates({});
               setConflict(null);
               setBaseVersion(null);
               save.reset();
@@ -274,7 +370,7 @@ export function TransactionPanel({ id, user, onSaved, onClose }: TransactionPane
           </Button>
           <span className="ml-auto text-xs text-muted-foreground" role="status">
             {dirty
-              ? `${Object.keys(staged).length} unsaved ${Object.keys(staged).length === 1 ? 'change' : 'changes'}`
+              ? `${changeCount} unsaved ${changeCount === 1 ? 'change' : 'changes'}`
               : 'No unsaved changes'}
           </span>
         </footer>

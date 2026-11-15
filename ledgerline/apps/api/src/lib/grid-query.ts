@@ -19,6 +19,8 @@ export interface BuiltQuery {
   params: unknown[];
   limit: number;
   offset: number;
+  /** Set when the query asks for a group level: return one row per value of this expression, not records. */
+  group?: { field: string; sql: string };
 }
 
 const MAX_PAGE = 1000;
@@ -129,6 +131,25 @@ export function buildGridQuery(
   const term = query.quickSearch?.trim();
   if (term) clauses.push(`(${options.quickSearch(term, params)})`);
 
+  // Grouping (server-side row model): groupKeys pin the levels already opened; the next groupBy field,
+  // if any, is the level being asked for.
+  const groupBy = query.groupBy ?? [];
+  const groupKeys = query.groupKeys ?? [];
+  groupKeys.forEach((key, level) => {
+    const field = groupBy[level];
+    if (!field) return;
+    const spec = options.fields[field] ?? unknownField(field, options.fields);
+    if (key === '' || key === null) clauses.push(`${spec.sql} IS NULL`);
+    else {
+      clauses.push(`${spec.sql} = ?`);
+      params.push(key);
+    }
+  });
+  const groupField = groupBy[groupKeys.length];
+  const groupSpec = groupField
+    ? (options.fields[groupField] ?? unknownField(groupField, options.fields))
+    : undefined;
+
   const requested = (query.sort ?? []).map((s) => {
     const spec = options.fields[s.field] ?? unknownField(s.field, options.fields);
     return { sql: expr(spec), dir: s.dir === 'desc' ? ('DESC' as const) : ('ASC' as const) };
@@ -142,5 +163,6 @@ export function buildGridQuery(
     params,
     limit: Math.min(query.endRow - query.startRow, MAX_PAGE),
     offset: query.startRow,
+    ...(groupField && groupSpec ? { group: { field: groupField, sql: groupSpec.sql } } : {}),
   };
 }

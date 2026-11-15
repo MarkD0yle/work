@@ -6,7 +6,9 @@ import { ZodError } from 'zod';
 import { schema, type Db } from './db/client';
 import { SEED_TODAY } from './db/seed';
 import { HttpError } from './lib/http';
+import { registerEntityRoutes } from './routes/entities';
 import { registerTransactionRoutes } from './routes/transactions';
+import { registerViewRoutes } from './routes/views';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -153,8 +155,11 @@ export function buildApp(db: Db, clock: Clock = defaultClock): FastifyInstance {
           w.loadAtStartup &&
           (w.owner.id === request.user.id || (w.isTeamDefault && w.group === request.user.team)),
       )
+      // The user's own startup workspaces come before the team default.
+      .sort((a, b) => Number(b.owner.id === request.user.id) - Number(a.owner.id === request.user.id))
       .map((w) => ({ id: w.id, name: w.name }));
-    return { user: request.user, startupWorkspaces: startup };
+    // The engine's business date: date shortcuts and relative filters in the UI count from here, not from the browser clock.
+    return { user: request.user, startupWorkspaces: startup, businessDate: clock.today };
   });
 
   app.get(`${API_BASE}/me/permissions`, async (request): Promise<Permission[]> =>
@@ -168,6 +173,8 @@ export function buildApp(db: Db, clock: Clock = defaultClock): FastifyInstance {
   );
 
   registerTransactionRoutes(app, db, API_BASE, clock);
+  registerViewRoutes(app, db, API_BASE, clock);
+  registerEntityRoutes(app, db, API_BASE);
 
   return app;
 }

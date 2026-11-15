@@ -19,10 +19,10 @@ async function expectNoSeriousViolations(page: Page) {
 }
 
 const routes = [
-  '/',
+  '/profile',
   '/portfolios',
   '/securities',
-  '/transactions',
+  '/transactions?view=V-transactions-default',
   '/market-data',
   '/cash',
   '/accounting',
@@ -46,7 +46,7 @@ for (const theme of THEMES) {
         }, theme);
         await page.goto(route);
         await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-        if (route === '/') await expect(page.getByRole('table')).toBeVisible();
+        if (route === '/profile') await expect(page.getByRole('table')).toBeVisible();
         await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
         await expectNoSeriousViolations(page);
       });
@@ -65,12 +65,49 @@ for (const theme of THEMES) {
         }),
       );
     }, theme);
-    await page.goto('/transactions');
+    await page.goto('/transactions?view=V-transactions-default');
     await page.getByRole('searchbox', { name: 'Quick search transactions' }).fill('TREASURY');
     await expect(page.getByRole('list', { name: 'Active filters' })).toBeVisible();
     await page.locator('.ag-row[row-index="0"] [col-id="type"]').first().dblclick();
     const panel = page.getByRole('complementary', { name: 'Transaction detail' });
     await expect(panel.getByLabel('Amount', { exact: true })).toBeVisible();
+    await expectNoSeriousViolations(page);
+  });
+}
+
+for (const theme of THEMES) {
+  test(`workspace with tabs, and its edit dialog, ${theme}`, async ({ page }) => {
+    await page.addInitScript((t) => {
+      localStorage.setItem(
+        'll-session',
+        JSON.stringify({
+          state: { userId: 'u-ada', theme: t, density: null, railCollapsed: false },
+          version: 0,
+        }),
+      );
+    }, theme);
+    await page.goto('/w/W-txn-ops');
+    await expect(page.getByRole('tablist')).toBeVisible();
+    await expect(page.locator('[data-slot="status-bar"]')).toContainText('rows');
+    await expectNoSeriousViolations(page);
+    await page.getByRole('button', { name: 'Edit workspace' }).click();
+    await expect(page.getByRole('dialog', { name: 'Edit workspace' })).toBeVisible();
+    await expectNoSeriousViolations(page);
+  });
+
+  test(`transactions with the Entity Picker open on restricted records, ${theme}`, async ({ page }) => {
+    await page.addInitScript((t) => {
+      localStorage.setItem(
+        'll-session',
+        JSON.stringify({
+          state: { userId: 'u-eli', theme: t, density: null, railCollapsed: false },
+          version: 0,
+        }),
+      );
+    }, theme);
+    await page.goto('/transactions?view=V-transactions-default');
+    await page.getByRole('combobox', { name: 'Portfolio', exact: true }).fill('P-00');
+    await expect(page.getByRole('option').first()).toBeVisible();
     await expectNoSeriousViolations(page);
   });
 }

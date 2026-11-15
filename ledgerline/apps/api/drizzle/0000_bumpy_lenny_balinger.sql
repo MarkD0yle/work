@@ -55,6 +55,14 @@ CREATE TABLE `close_sign_offs` (
 	`package_job_id` text
 );
 --> statement-breakpoint
+CREATE TABLE `entity_recents` (
+	`user_id` text NOT NULL,
+	`kind` text NOT NULL,
+	`entity_id` text NOT NULL,
+	`seq` integer NOT NULL,
+	PRIMARY KEY(`user_id`, `kind`, `entity_id`)
+);
+--> statement-breakpoint
 CREATE TABLE `exceptions` (
 	`id` text PRIMARY KEY NOT NULL,
 	`type` text NOT NULL,
@@ -246,12 +254,13 @@ CREATE TABLE `transactions` (
 	`origin` text NOT NULL,
 	`created_by` text NOT NULL,
 	`created_at` text NOT NULL,
+	`overrides` text,
 	`version` integer NOT NULL
 );
 --> statement-breakpoint
 CREATE INDEX `transactions_portfolio` ON `transactions` (`portfolio_id`);--> statement-breakpoint
 CREATE INDEX `transactions_security` ON `transactions` (`security_id`);--> statement-breakpoint
-CREATE INDEX `transactions_trade_date` ON `transactions` (`trade_date`);--> statement-breakpoint
+CREATE INDEX `transactions_trade_date` ON `transactions` (`trade_date`,`id`);--> statement-breakpoint
 CREATE INDEX `transactions_status` ON `transactions` (`status`,`trade_date`);--> statement-breakpoint
 CREATE TABLE `users` (
 	`id` text PRIMARY KEY NOT NULL,
@@ -269,7 +278,7 @@ CREATE TABLE `views` (
 	`name` text NOT NULL,
 	`ownership` text NOT NULL,
 	`owner` text NOT NULL,
-	`default_for_role` text,
+	`default_for_team` text,
 	`state` text NOT NULL,
 	`schema_version` integer NOT NULL,
 	`updated_at` text NOT NULL

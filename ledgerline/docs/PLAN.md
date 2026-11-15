@@ -36,13 +36,13 @@ Session prompt template:
 
 ## Milestone 2 — Views, Workspaces, Entity Picker, Dates
 
-- [ ] 2.1 Filter model, filter tags, task chips, quick search, Clear all, Restore default.
-- [ ] 2.2 Saved views CRUD with ownership rules, URL state, `schemaVersion` migration.
-- [ ] 2.3 Workspaces: panels, single and tabs layouts, groups, load at startup, pop-out windows kept in sync (BroadcastChannel). Team default workspaces and views per role.
-- [ ] 2.4 Entity Picker in three modes (inline, sheet with criteria and multi-select, global search). Identifier detection. Restricted records. Recent items.
-- [ ] 2.5 `BusinessDateInput` with basis label, shortcuts, calendars, business-day rules. `PeriodPicker` with state.
+- [x] 2.1 Filter model, filter tags, task chips, quick search, Clear all, Restore default.
+- [x] 2.2 Saved views CRUD with ownership rules, URL state, `schemaVersion` migration.
+- [x] 2.3 Workspaces: panels, single and tabs layouts, groups, load at startup, pop-out windows kept in sync (BroadcastChannel). Team default workspaces and views per role.
+- [x] 2.4 Entity Picker in three modes (inline, sheet with criteria and multi-select, global search). Identifier detection. Restricted records. Recent items.
+- [x] 2.5 `BusinessDateInput` with basis label, shortcuts, calendars, business-day rules. `PeriodPicker` with state.
 
-**Exit gate:** SPEC acceptance for 7.2, 7.3, 7.6 pass.
+**Exit gate (passed 2026-11-15):** SPEC acceptance for 7.2, 7.3, 7.6 pass.
 
 ## Milestone 3 — Shell and Action Registry
 

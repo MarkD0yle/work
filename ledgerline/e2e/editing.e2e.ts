@@ -45,7 +45,7 @@ async function pick(page: Page, status: 'unposted' | 'posted', index: number): P
 
 async function openPanel(page: Page, userId: string, id: string) {
   await signIn(page, userId);
-  await page.goto('/transactions');
+  await page.goto('/transactions?view=V-transactions-default');
   await page.getByRole('searchbox', { name: 'Quick search transactions' }).fill(id);
   await expect(page.locator('[data-slot="status-bar"]')).toContainText('1 row');
   await page.locator(`.ag-row[row-id="${id}"] [col-id="type"]`).first().click();
@@ -61,7 +61,7 @@ const gridCell = (page: Page, id: string, col: string) =>
 test.describe('grid toolbar', () => {
   test.beforeEach(async ({ page }) => {
     await signIn(page, 'u-ada');
-    await page.goto('/transactions');
+    await page.goto('/transactions?view=V-transactions-default');
     await expect(page.locator('[data-slot="status-bar"]')).toContainText('5,000 rows');
   });
 

@@ -10,12 +10,14 @@ import {
   TooltipTrigger,
 } from '@ledgerline/ui';
 import { useQuery } from '@tanstack/react-query';
-import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { PanelLeftClose, PanelLeftOpen, ShieldCheck } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet } from 'react-router';
 import { ApiError, fetchMe, fetchUsers } from '../api/client';
 import { useSession } from '../state/session';
 import { domains } from './domains';
+import { GlobalSearch } from './GlobalSearch';
+import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 import { PreferencesMenu } from './PreferencesMenu';
 import { RoleSwitcher } from './RoleSwitcher';
 import { ErrorPanel, LoadingPanel } from './StatePanel';
@@ -66,6 +68,8 @@ export function Shell() {
           Ledgerline
         </NavLink>
         <div className="flex-1" />
+        {me.data ? <GlobalSearch /> : null}
+        {userId && me.data ? <WorkspaceSwitcher userId={userId} /> : null}
         <NotificationToggle open={notificationsOpen} onToggle={() => setNotificationsOpen((open) => !open)} />
         <RoleSwitcher users={users.data ?? []} currentId={userId} onChange={setUser} />
         <PreferencesMenu theme={theme} density={effectiveDensity} onTheme={setTheme} onDensity={setDensity} />
@@ -96,6 +100,23 @@ export function Shell() {
                 </NavLink>
               </li>
             ))}
+            <li className="mt-2 border-t pt-2">
+              <NavLink
+                to="/profile"
+                aria-label="My access"
+                title={railCollapsed ? 'My access' : undefined}
+                className={({ isActive }) =>
+                  cn(
+                    'flex h-(--ll-control-height) items-center gap-2 rounded-md px-2 text-foreground hover:bg-accent',
+                    railCollapsed && 'justify-center px-0',
+                    isActive && 'bg-accent font-medium shadow-[inset_2px_0_0_var(--ll-accent)]',
+                  )
+                }
+              >
+                <ShieldCheck className="size-4 shrink-0" aria-hidden />
+                {railCollapsed ? null : <span>My access</span>}
+              </NavLink>
+            </li>
           </ul>
         </nav>
         {/* Focusable so keyboard users can scroll it (WCAG 2.1.1). */}

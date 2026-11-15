@@ -1,5 +1,6 @@
 import type { GridQuery, GridResponse } from '@ledgerline/contracts';
 import type { IDatasource, IGetRowsParams } from 'ag-grid-community';
+import { toGroupRow, type GroupRow } from './grouping';
 
 export interface QueryContext {
   filters: NonNullable<GridQuery['filters']>;
@@ -10,6 +11,9 @@ interface WindowRequest {
   startRow: number;
   endRow: number;
   sortModel: { colId: string; sort: 'asc' | 'desc' | null | undefined }[];
+  /** Server-side grouping: the columns grouped by, and the values of the groups already opened. */
+  groupBy?: string[];
+  groupKeys?: string[];
 }
 
 /** Maps what the grid asks for onto the shared `/…/query` contract (API.md). */
@@ -22,6 +26,7 @@ export function toGridQuery(request: WindowRequest, context: QueryContext): Grid
     ...(sort.length ? { sort } : {}),
     ...(context.filters.length ? { filters: context.filters } : {}),
     ...(quickSearch ? { quickSearch } : {}),
+    ...(request.groupBy?.length ? { groupBy: request.groupBy, groupKeys: request.groupKeys ?? [] } : {}),
   };
 }
 
@@ -59,8 +64,10 @@ interface ServerSideParams<Row> {
     startRow: number | undefined;
     endRow: number | undefined;
     sortModel: WindowRequest['sortModel'];
+    rowGroupCols?: { id: string }[];
+    groupKeys?: string[];
   };
-  success: (result: { rowData: Row[]; rowCount: number }) => void;
+  success: (result: { rowData: (Row | GroupRow)[]; rowCount: number }) => void;
   fail: () => void;
 }
 
@@ -70,12 +77,22 @@ export function createServerSideDatasource<Row>(query: Query<Row>, hooks: Dataso
     getRows(params: ServerSideParams<Row>) {
       const startRow = params.request.startRow ?? 0;
       const gridQuery = toGridQuery(
-        { startRow, endRow: params.request.endRow ?? startRow + 100, sortModel: params.request.sortModel },
+        {
+          startRow,
+          endRow: params.request.endRow ?? startRow + 100,
+          // Group rows are ordered by the server; sorting on a grouped column would only reorder inside groups.
+          sortModel: params.request.sortModel.filter((s) => s.colId !== 'ag-Grid-AutoColumn'),
+          groupBy: (params.request.rowGroupCols ?? []).map((c) => c.id),
+          groupKeys: params.request.groupKeys ?? [],
+        },
         hooks.context(),
       );
       query(gridQuery).then(
         (response) => {
-          params.success({ rowData: response.rows, rowCount: response.totalRows });
+          params.success({
+            rowData: response.groups ? response.groups.map(toGroupRow) : response.rows,
+            rowCount: response.totalRows,
+          });
           hooks.onLoaded(response, gridQuery);
         },
         (error: unknown) => {

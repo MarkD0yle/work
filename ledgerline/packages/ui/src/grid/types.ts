@@ -8,6 +8,7 @@ import type {
   GridQuery,
   GridResponse,
   Message,
+  SavedView,
   UiState,
 } from '@ledgerline/contracts';
 import type { BadgeProps } from '../components/badge';
@@ -19,6 +20,8 @@ interface ColumnBase {
   width?: number;
   sortable?: boolean;
   pinned?: 'left' | 'right';
+  /** Rows can be grouped by this column (Enterprise). The server must be able to group on the field. */
+  groupable?: boolean;
   /** Restricted columns cannot be copied; the reason is shown to the user. */
   restricted?: { reason: string };
 }
@@ -100,7 +103,14 @@ export interface LLGridState {
   ui: UiState;
 }
 
+/** The part of a saved view the grid itself owns. Filters and density belong to the caller. */
+export type GridViewState = Pick<SavedView['state'], 'columns' | 'sort' | 'quickSearch' | 'grouping'>;
+
 export interface LLGridHandle {
+  /** Columns (order, visibility, width, pinning), sort, quick search and grouping, as they are now. */
+  getViewState: () => GridViewState;
+  /** Applies a view. Reloads data once, with the new sort, search and grouping. */
+  applyViewState: (state: GridViewState) => void;
   /** Reloads data. Focus, selection and scroll position are kept. */
   refresh: () => void;
   /** Moves focus to a row by id. Returns false when the row is not loaded. */
@@ -122,6 +132,14 @@ export interface LLGridProps<Row> {
    */
   filters?: NonNullable<GridQuery['filters']>;
   onFiltersChange?: (filters: NonNullable<GridQuery['filters']>) => void;
+  /** The view to start on. Applied before the first load, so the first query already uses it. */
+  initialView?: GridViewState;
+  /** Called whenever the user changes columns, sort, quick search or grouping. */
+  onViewChange?: (state: GridViewState) => void;
+  /** Names for filter fields that are not columns, e.g. `{ portfolioId: 'Portfolio' }`, used in filter tags. */
+  filterLabels?: Record<string, string>;
+  /** Called when the user asks for a refresh (not when the caller refreshes through the handle). */
+  onRefresh?: () => void;
   /** Opens a row (Enter, F2 or double-click), e.g. in a detail panel. */
   onRowOpen?: (row: Row) => void;
   /** When given, the toolbar offers a density control. The app owns the setting so it applies everywhere. */
