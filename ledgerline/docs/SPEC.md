@@ -365,9 +365,9 @@ Spreadsheets are how manual work enters the system today. Make them a governed e
 6. Commit as a bulk action (preview, confirm, audit). Large files run as a job.
 
 **Acceptance**
-- [ ] A 5,000-row paste validates in under 5s and shows row-level errors.
-- [ ] No row commits while it has an error.
-- [ ] Every committed row has an audit event with source `imported` and the file as evidence.
+- [x] A 5,000-row paste validates in under 5s and shows row-level errors.
+- [x] No row commits while it has an error.
+- [x] Every committed row has an audit event with source `imported` and the file as evidence.
 
 ### 8.2 Exception Queue
 

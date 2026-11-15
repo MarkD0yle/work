@@ -33,7 +33,7 @@ export { Separator } from './components/separator';
 export { toast, Toaster } from './components/toaster';
 export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './components/tooltip';
 
-export { Input, Label, Textarea } from './components/input';
+export { Input, Select, Label, Textarea } from './components/input';
 export { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from './components/popover';
 export { useDensity } from './lib/use-density';
 
@@ -168,6 +168,7 @@ export {
   type BatchRow,
 } from './batch/batch-grid';
 export { parseDelimited } from './batch/tabular';
+export { readXlsx } from './batch/xlsx';
 export { Tabs, TabsContent, TabsList, TabsTrigger } from './components/tabs';
 export {
   GLOSSARY,
@@ -176,3 +177,4 @@ export {
   GlossaryText,
   type GlossaryProviderProps,
 } from './glossary/glossary';
+export { formatTimestamp } from './financial/provenance';

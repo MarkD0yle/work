@@ -34,7 +34,22 @@ const eligibleWhen =
  * are all built from this one list, and a future assistant would call the same definitions through the same
  * permissions. Post, Reverse and Delete change the ledger, so each confirms first and needs human confirmation from an agent.
  */
-export const transactionActions: ActionDef<TransactionRow>[] = [
+export interface TransactionActionHandlers {
+  /** Opens the entry form for a new transaction. */
+  onNew: () => void;
+  /** Opens the entry form filled in from an existing transaction. */
+  onClone: (id: string) => void;
+  /** Opens quick paste and file import. */
+  onImport: () => void;
+}
+
+/** Result of an action that only opens a screen: nothing has changed yet, so there is nothing to report. */
+const opened = (): Promise<BulkResult> =>
+  Promise.resolve({ jobId: 'local', status: 'completed', succeeded: [], failed: [], skipped: [] });
+
+export const createTransactionActions = (
+  handlers: TransactionActionHandlers,
+): ActionDef<TransactionRow>[] => [
   {
     id: 'transaction.post',
     label: 'Post',
@@ -97,4 +112,59 @@ export const transactionActions: ActionDef<TransactionRow>[] = [
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
     execute: bulk('transaction.delete'),
   },
+  // These three only open a screen; nothing changes until the user saves there.
+  {
+    id: 'transaction.new',
+    label: 'New transaction',
+    description: 'Opens a form to enter one transaction. It is saved as unposted.',
+    tier: 'primary',
+    appliesTo: 'none',
+    consequence: 'none',
+    available: permitted('transaction.create'),
+    agentRequiresConfirmation: false,
+    inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    execute: () => {
+      handlers.onNew();
+      return opened();
+    },
+  },
+  {
+    id: 'transaction.import',
+    label: 'Paste or import',
+    description:
+      'Pastes rows from a spreadsheet, or uploads a CSV or XLSX file, to create or correct unposted transactions.',
+    tier: 'secondary',
+    appliesTo: 'none',
+    consequence: 'none',
+    available: permitted('transaction.import'),
+    agentRequiresConfirmation: false,
+    inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    execute: () => {
+      handlers.onImport();
+      return opened();
+    },
+  },
+  {
+    id: 'transaction.clone',
+    label: 'Clone',
+    description:
+      'Starts a new unposted transaction from the selected one. Nothing is saved until you save the form.',
+    tier: 'secondary',
+    appliesTo: 'single',
+    consequence: 'none',
+    available: permitted('transaction.create'),
+    agentRequiresConfirmation: false,
+    inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    execute: (ids) => {
+      if (ids[0]) handlers.onClone(ids[0]);
+      return opened();
+    },
+  },
 ];
+
+/** The registry with handlers that do nothing, for checks that only read the definitions. */
+export const transactionActions = createTransactionActions({
+  onNew: () => {},
+  onClone: () => {},
+  onImport: () => {},
+});

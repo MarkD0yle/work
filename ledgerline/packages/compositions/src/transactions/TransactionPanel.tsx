@@ -20,7 +20,13 @@ import {
   formatPeriod,
   FinancialCell,
   FinancialInput,
+  GlossaryTerm,
+  GlossaryText,
   SectionBanner,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
   toast,
   useNotifications,
 } from '@ledgerline/ui';
@@ -29,6 +35,7 @@ import { X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { fetchCalendar, fetchPeriods, fetchPermissions, problemOf, request } from '../services';
 import { ErrorPanel, LoadingPanel } from '../state-panels';
+import { RecordHistory } from './RecordHistory';
 
 const FIELDS: { field: TransactionFinancialField; label: string }[] = [
   { field: 'quantity', label: 'Quantity' },
@@ -119,6 +126,7 @@ export function TransactionPanel({ id, user, businessDate, onSaved, onClose }: T
     },
     onSuccess: ({ record: saved }) => {
       queryClient.setQueryData(['transaction', user.id, id], saved);
+      void queryClient.invalidateQueries({ queryKey: ['audit', user.id, 'transaction', id] });
       setStaged({});
       setStagedDates({});
       setConflict(null);
@@ -230,152 +238,174 @@ export function TransactionPanel({ id, user, businessDate, onSaved, onClose }: T
       onClose={onClose}
       closeLabel={dirty ? 'Discard changes and close' : 'Close'}
     >
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
-        <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
-          <dt className="text-muted-foreground">Status</dt>
-          <dd>
-            <Badge
-              status={row.status === 'posted' ? 'good' : row.status === 'reversed' ? 'warning' : 'neutral'}
-            >
-              {row.status.charAt(0).toUpperCase() + row.status.slice(1)}
-            </Badge>
-          </dd>
-          <dt className="text-muted-foreground">Portfolio</dt>
-          <dd>{row.portfolio.label}</dd>
-          <dt className="text-muted-foreground">Security</dt>
-          <dd>{row.security?.label ?? 'None (cash only)'}</dd>
-        </dl>
+      <Tabs defaultValue="details" className="flex-1">
+        <TabsList aria-label="Transaction sections">
+          <TabsTrigger value="details">Details</TabsTrigger>
+          <TabsTrigger value="history">History</TabsTrigger>
+        </TabsList>
+        <TabsContent value="details" className="flex flex-col">
+          <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
+            <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
+              <dt className="text-muted-foreground">Status</dt>
+              <dd>
+                <Badge
+                  status={
+                    row.status === 'posted' ? 'good' : row.status === 'reversed' ? 'warning' : 'neutral'
+                  }
+                >
+                  <GlossaryTerm>{row.status.charAt(0).toUpperCase() + row.status.slice(1)}</GlossaryTerm>
+                </Badge>
+              </dd>
+              <dt className="text-muted-foreground">Portfolio</dt>
+              <dd>{row.portfolio.label}</dd>
+              <dt className="text-muted-foreground">Security</dt>
+              <dd>{row.security?.label ?? 'None (cash only)'}</dd>
+            </dl>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <BusinessDateInput
-              label="Trade date"
-              name="tradeDate"
-              value={tradeDate}
-              today={businessDate}
-              holidays={holidays}
-              validate={checkPeriod}
-              disabled={Boolean(readOnly) || save.isPending}
-              onCommit={(next) => stageDate('tradeDate', next)}
-            />
-            {stagedDates.tradeDate ? <p className="mt-1 text-xs text-info">Changed, not saved yet.</p> : null}
-          </div>
-          <div>
-            <BusinessDateInput
-              label="Settle date"
-              name="settleDate"
-              value={settleDate}
-              today={tradeDate.value ?? businessDate}
-              holidays={holidays}
-              validate={checkSettle}
-              disabled={Boolean(readOnly) || save.isPending}
-              onCommit={(next) => stageDate('settleDate', next)}
-            />
-            {stagedDates.settleDate ? (
-              <p className="mt-1 text-xs text-info">Changed, not saved yet.</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <BusinessDateInput
+                  label="Trade date"
+                  name="tradeDate"
+                  value={tradeDate}
+                  today={businessDate}
+                  holidays={holidays}
+                  validate={checkPeriod}
+                  disabled={Boolean(readOnly) || save.isPending}
+                  onCommit={(next) => stageDate('tradeDate', next)}
+                />
+                {stagedDates.tradeDate ? (
+                  <p className="mt-1 text-xs text-info">Changed, not saved yet.</p>
+                ) : null}
+              </div>
+              <div>
+                <BusinessDateInput
+                  label="Settle date"
+                  name="settleDate"
+                  value={settleDate}
+                  today={tradeDate.value ?? businessDate}
+                  holidays={holidays}
+                  validate={checkSettle}
+                  disabled={Boolean(readOnly) || save.isPending}
+                  onCommit={(next) => stageDate('settleDate', next)}
+                />
+                {stagedDates.settleDate ? (
+                  <p className="mt-1 text-xs text-info">Changed, not saved yet.</p>
+                ) : null}
+              </div>
+            </div>
+
+            {banner ? (
+              banner.kind === 'permissionLimited' ? (
+                <p data-slot="read-only-reason" className="rounded-md border bg-muted px-3 py-2">
+                  <span className="font-semibold">Read only.</span> <GlossaryText text={readOnly ?? ''} />
+                </p>
+              ) : (
+                <SectionBanner
+                  state={banner}
+                  onAction={(action) => {
+                    if (!conflict) return;
+                    if (action.actionId === REVIEW.actionId) {
+                      // Take their version and drop my edits.
+                      queryClient.setQueryData(['transaction', user.id, id], conflict);
+                      setStaged({});
+                      setStagedDates({});
+                      setBaseVersion(null);
+                    } else {
+                      // Keep my edits on top of their version; the next Save overwrites knowingly.
+                      setBaseVersion(conflict.version);
+                    }
+                    setConflict(null);
+                    save.reset();
+                  }}
+                />
+              )
             ) : null}
-          </div>
-        </div>
 
-        {banner ? (
-          banner.kind === 'permissionLimited' ? (
-            <p data-slot="read-only-reason" className="rounded-md border bg-muted px-3 py-2">
-              <span className="font-semibold">Read only.</span> {readOnly}
-            </p>
-          ) : (
-            <SectionBanner
-              state={banner}
-              onAction={(action) => {
-                if (!conflict) return;
-                if (action.actionId === REVIEW.actionId) {
-                  // Take their version and drop my edits.
-                  queryClient.setQueryData(['transaction', user.id, id], conflict);
+            {FIELDS.map(({ field, label }) => {
+              const value = staged[field] ?? row[field];
+              const original = row[field];
+              const isOverride =
+                original.provenance.origin === 'calculated' || original.provenance.origin === 'overridden';
+              // A field with no value on this kind of record (a fee has no quantity) is shown, not edited.
+              if (original.value === null && original.nullReason === 'notApplicable') {
+                return (
+                  <div key={field}>
+                    <p className="mb-1 text-xs font-medium">{label}</p>
+                    <FinancialCell value={original} className="justify-start" />
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Not used for this type of transaction.
+                    </p>
+                  </div>
+                );
+              }
+              const blocked = readOnly
+                ? readOnly
+                : isOverride && !override?.allowed
+                  ? (override?.explanation ?? 'Your role cannot override calculated values.')
+                  : null;
+              return (
+                <div key={field}>
+                  <FinancialInput
+                    label={label}
+                    name={field}
+                    value={value}
+                    actor={actor}
+                    disabled={Boolean(blocked) || save.isPending}
+                    onCommit={(next) =>
+                      setStaged((prev) => {
+                        const { [field]: _removed, ...rest } = prev;
+                        return next.value === original.value ? rest : { ...rest, [field]: next };
+                      })
+                    }
+                  />
+                  {blocked && !readOnly ? (
+                    <p className="mt-1 text-xs text-muted-foreground">{blocked}</p>
+                  ) : null}
+                  {staged[field] ? (
+                    <p className="mt-1 text-xs text-info" data-slot="dirty-marker">
+                      Changed, not saved yet
+                      {staged[field]?.provenance.origin === 'overridden' ? ' (override)' : ''}.
+                    </p>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+
+          {readOnly ? null : (
+            <footer className="flex shrink-0 items-center gap-2 border-t p-3">
+              <Button
+                disabled={!dirty || save.isPending || Boolean(conflict)}
+                onClick={() => save.mutate(row)}
+              >
+                {save.isPending ? 'Saving…' : 'Save'}
+              </Button>
+              <Button
+                variant="ghost"
+                disabled={!dirty || save.isPending}
+                onClick={() => {
                   setStaged({});
                   setStagedDates({});
+                  setConflict(null);
                   setBaseVersion(null);
-                } else {
-                  // Keep my edits on top of their version; the next Save overwrites knowingly.
-                  setBaseVersion(conflict.version);
-                }
-                setConflict(null);
-                save.reset();
-              }}
-            />
-          )
-        ) : null}
-
-        {FIELDS.map(({ field, label }) => {
-          const value = staged[field] ?? row[field];
-          const original = row[field];
-          const isOverride =
-            original.provenance.origin === 'calculated' || original.provenance.origin === 'overridden';
-          // A field with no value on this kind of record (a fee has no quantity) is shown, not edited.
-          if (original.value === null && original.nullReason === 'notApplicable') {
-            return (
-              <div key={field}>
-                <p className="mb-1 text-xs font-medium">{label}</p>
-                <FinancialCell value={original} className="justify-start" />
-                <p className="mt-1 text-xs text-muted-foreground">Not used for this type of transaction.</p>
-              </div>
-            );
-          }
-          const blocked = readOnly
-            ? readOnly
-            : isOverride && !override?.allowed
-              ? (override?.explanation ?? 'Your role cannot override calculated values.')
-              : null;
-          return (
-            <div key={field}>
-              <FinancialInput
-                label={label}
-                name={field}
-                value={value}
-                actor={actor}
-                disabled={Boolean(blocked) || save.isPending}
-                onCommit={(next) =>
-                  setStaged((prev) => {
-                    const { [field]: _removed, ...rest } = prev;
-                    return next.value === original.value ? rest : { ...rest, [field]: next };
-                  })
-                }
-              />
-              {blocked && !readOnly ? <p className="mt-1 text-xs text-muted-foreground">{blocked}</p> : null}
-              {staged[field] ? (
-                <p className="mt-1 text-xs text-info" data-slot="dirty-marker">
-                  Changed, not saved yet
-                  {staged[field]?.provenance.origin === 'overridden' ? ' (override)' : ''}.
-                </p>
-              ) : null}
-            </div>
-          );
-        })}
-      </div>
-
-      {readOnly ? null : (
-        <footer className="flex shrink-0 items-center gap-2 border-t p-3">
-          <Button disabled={!dirty || save.isPending || Boolean(conflict)} onClick={() => save.mutate(row)}>
-            {save.isPending ? 'Saving…' : 'Save'}
-          </Button>
-          <Button
-            variant="ghost"
-            disabled={!dirty || save.isPending}
-            onClick={() => {
-              setStaged({});
-              setStagedDates({});
-              setConflict(null);
-              setBaseVersion(null);
-              save.reset();
-            }}
-          >
-            Discard changes
-          </Button>
-          <span className="ml-auto text-xs text-muted-foreground" role="status">
-            {dirty
-              ? `${changeCount} unsaved ${changeCount === 1 ? 'change' : 'changes'}`
-              : 'No unsaved changes'}
-          </span>
-        </footer>
-      )}
+                  save.reset();
+                }}
+              >
+                Discard changes
+              </Button>
+              <span className="ml-auto text-xs text-muted-foreground" role="status">
+                {dirty
+                  ? `${changeCount} unsaved ${changeCount === 1 ? 'change' : 'changes'}`
+                  : 'No unsaved changes'}
+              </span>
+            </footer>
+          )}
+        </TabsContent>
+        <TabsContent value="history" className="overflow-y-auto">
+          <RecordHistory recordType="transaction" recordId={row.id} userId={user.id} />
+        </TabsContent>
+      </Tabs>
     </Shell>
   );
 }

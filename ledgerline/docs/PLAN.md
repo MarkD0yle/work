@@ -56,15 +56,15 @@ Session prompt template:
 
 ## Milestone 4 — High-volume proof: Transaction Workbench and Import
 
-- [ ] 4.1 Transaction Blotter composition: grid, views, picker filters, financial and date columns, actions.
-- [ ] 4.2 Transaction detail panel: fields, provenance, audit tab (read from API), edit with If-Match and conflict state.
-- [ ] 4.3 Create and edit transaction form with all validation levels and warning acknowledgement.
-- [ ] 4.4 Quick paste into batch grid with last mapping, then the Spreadsheet Import Wizard for files (SPEC 8.1).
-- [ ] 4.6 Clone row, fill-down and inline delta columns (SPEC 7.1).
-- [ ] 4.7 Glossary tooltips and plain-language-first messages for new users (SPEC 7.7).
+- [x] 4.1 Transaction Blotter composition: grid, views, picker filters, financial and date columns, actions. *Lives in `packages/compositions`; the app supplies API and analytics through `configureServices`.*
+- [x] 4.2 Transaction detail panel: fields, provenance, audit tab (read from API), edit with If-Match and conflict state.
+- [x] 4.3 Create and edit transaction form with all validation levels and warning acknowledgement.
+- [x] 4.4 Quick paste into batch grid with last mapping, then the Spreadsheet Import Wizard for files (SPEC 8.1).
+- [x] 4.6 Clone row, fill-down and inline delta columns (SPEC 7.1). *One delta column so far: Price vs vendor. "vs prior day" arrives with Price Review in Milestone 6.*
+- [x] 4.7 Glossary tooltips and plain-language-first messages for new users (SPEC 7.7).
 - [x] 4.5 Inline single-record post and reverse (bulk comes in M5). *Done early in Milestone 3, with Delete, so the action registry had real actions; see DECISIONS.md.*
 
-**Exit gate:** a Playwright journey: Ada finds yesterday's unposted trades with a saved view, quick-pastes 50 corrections, fixes 2 row errors, clones a trade and fills down a field, and posts 1 record with a single confirm. Ben sees Reverse disabled with a reason.
+**Exit gate (passed, `e2e/milestone4.e2e.ts`):** a Playwright journey: Ada finds yesterday's unposted trades with a saved view, quick-pastes 50 corrections, fixes 2 row errors, clones a trade and fills down a field, and posts 1 record with a single confirm. Ben sees Reverse disabled with a reason.
 
 ## Milestone 5 — Bulk Actions and Jobs
 

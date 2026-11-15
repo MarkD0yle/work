@@ -69,7 +69,8 @@ for (const theme of THEMES) {
     await page.goto('/transactions?view=V-transactions-default');
     await page.getByRole('searchbox', { name: 'Quick search transactions' }).fill('TREASURY');
     await expect(page.getByRole('list', { name: 'Active filters' })).toBeVisible();
-    await page.locator('.ag-row[row-index="0"] [col-id="type"]').first().click();
+    // The transaction id column is pinned, so it is on screen wherever the grid has scrolled to.
+    await page.locator('.ag-row[row-index="0"] [col-id="id"]').first().click();
     await page.keyboard.press('Enter');
     const panel = page.getByRole('complementary', { name: 'Transaction detail' });
     await expect(panel.getByLabel('Amount', { exact: true })).toBeVisible();
@@ -146,6 +147,83 @@ for (const theme of THEMES) {
 
     await page.getByRole('button', { name: 'Keyboard shortcuts' }).click();
     await expect(page.getByRole('dialog', { name: 'Keyboard shortcuts' })).toBeVisible();
+    await expectNoSeriousViolations(page);
+  });
+
+  test(`entry: form with errors and a warning, import grid with errors, history tab, delta column, ${theme}`, async ({
+    page,
+  }) => {
+    // Ben is flagged as a new user, so the glossary terms are on screen too.
+    await page.addInitScript((t) => {
+      localStorage.setItem(
+        'll-session',
+        JSON.stringify({
+          state: { userId: 'u-ben', theme: t, density: null, railCollapsed: false },
+          version: 0,
+        }),
+      );
+    }, theme);
+    await page.goto('/transactions?view=V-transactions-default');
+    await expect(page.locator('[data-slot="status-bar"]')).toContainText(/\d rows/);
+
+    // Delta column on.
+    await page.getByRole('button', { name: 'Columns' }).click();
+    await page.getByRole('menuitemcheckbox', { name: 'Price vs vendor' }).click();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('[data-slot="delta-cell"]').first()).toBeVisible();
+    await expectNoSeriousViolations(page);
+
+    // Entry form: field errors, then a field that cannot be read.
+    await page.locator('button[data-action-id="transaction.new"]').click();
+    const form = page.getByRole('dialog', { name: 'New transaction' });
+    await form.getByRole('button', { name: 'Save as unposted' }).click();
+    await expect(form.getByText('Portfolio is required.')).toBeVisible();
+    await expectNoSeriousViolations(page);
+    await form.getByRole('textbox', { name: /^Quantity/ }).fill('lots');
+    await form.getByRole('button', { name: 'Save as unposted' }).click();
+    await expect(form.getByText('A field holds something that could not be read.')).toBeVisible();
+    await expectNoSeriousViolations(page);
+    await form.getByRole('button', { name: 'Cancel' }).click();
+
+    // Import: the paste step, then the grid with an error, a warning and an excluded row.
+    await page.locator('button[data-action-id="transaction.import"]').click();
+    const dialog = page.getByRole('dialog', { name: 'Paste or import transactions' });
+    await expect(dialog.getByLabel('Paste rows here')).toBeVisible();
+    await expectNoSeriousViolations(page);
+    const res = await page.request.post('/api/v1/transactions/query', {
+      headers: { 'X-LL-User': 'u-ben' },
+      data: {
+        startRow: 0,
+        endRow: 4,
+        sort: [{ field: 'id', dir: 'desc' }],
+        filters: [
+          { field: 'status', op: 'eq', value: 'unposted' },
+          { field: 'type', op: 'eq', value: 'sell' },
+        ],
+      },
+    });
+    const rows = ((await res.json()) as { rows: { id: string }[] }).rows;
+    const text = [
+      'Transaction\tQuantity\tSettle date',
+      ...rows.map((r, i) => `${r.id}\t${i === 1 ? 'lots' : 100 + i}\t${i === 2 ? '2026-12-20' : ''}`),
+    ].join('\n');
+    await dialog.getByLabel('Paste rows here').fill(text);
+    await dialog.getByRole('button', { name: 'Read rows' }).click();
+    await expect(dialog.locator('[data-slot="batch-summary"]')).toContainText('1 error');
+    await dialog.getByRole('checkbox', { name: 'Include row 4' }).uncheck();
+    await expect(dialog.locator('[data-slot="batch-summary"]')).toContainText('1 excluded');
+    await expectNoSeriousViolations(page);
+    await dialog.getByRole('button', { name: 'Discard and close' }).click();
+
+    // Detail panel: glossary term on the status, then the history tab.
+    // The transaction id column is pinned, so it is on screen wherever the grid has scrolled to.
+    await page.locator('.ag-row[row-index="0"] [col-id="id"]').first().click();
+    await page.keyboard.press('Enter');
+    const panel = page.getByRole('complementary', { name: 'Transaction detail' });
+    await expect(panel.getByRole('tab', { name: 'History' })).toBeVisible();
+    await expectNoSeriousViolations(page);
+    await panel.getByRole('tab', { name: 'History' }).click();
+    await expect(panel.getByRole('tabpanel')).toBeVisible();
     await expectNoSeriousViolations(page);
   });
 }

@@ -126,7 +126,7 @@ test.describe('action registry', () => {
     await expect(bar.locator('button[data-action-id]')).toHaveCount(3);
     await expect(bar.locator('button[data-action-id]').nth(0)).toHaveAttribute('data-action-id', 'row.open');
     await bar.getByRole('button', { name: 'More actions' }).click();
-    await expect(page.getByRole('menuitem')).toHaveCount(3);
+    await expect(page.getByRole('menuitem')).toHaveCount(4);
   });
 
   test('Post confirms once, stating the consequence; one Enter posts; the result is audited', async ({
@@ -207,6 +207,7 @@ test.describe('action registry', () => {
       'transaction.post',
       'transaction.reverse',
       'transaction.delete',
+      'transaction.clone',
       'grid.copy',
       'grid.copyRaw',
     ]);

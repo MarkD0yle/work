@@ -199,7 +199,15 @@ export function LLGrid<Row>({
   const [gridVersion, setGridVersion] = useState(0);
   /** The one provenance popover for the whole grid, anchored to the cell that asked for it. */
   const [provenance, setProvenance] = useState<{ anchor: HTMLElement; value: FinancialValue } | null>(null);
-  const [hidden, setHidden] = useState<ReadonlySet<string>>(new Set());
+  // Starts from the opening view, so counts and the Columns menu are right before the grid reports anything.
+  const [hidden, setHidden] = useState<ReadonlySet<string>>(
+    () =>
+      new Set(
+        initialView
+          ? initialView.columns.filter((c) => !c.visible).map((c) => c.field)
+          : columns.filter((c) => c.hiddenByDefault).map((c) => c.field),
+      ),
+  );
   const [grouping, setGrouping] = useState<string[]>([]);
   /** The view as it is now. A rebuilt grid (density change) is given it back. */
   const liveView = useRef<GridViewState | null>(initialView ?? null);
@@ -447,7 +455,7 @@ export function LLGrid<Row>({
   const countAnnouncement =
     totalRows === null
       ? ''
-      : `${label}: ${count(totalRows)} ${totalRows === 1 ? 'row' : 'rows'}, ${columns.length} columns.`;
+      : `${label}: ${count(totalRows)} ${totalRows === 1 ? 'row' : 'rows'}, ${columns.length - hidden.size} columns.`;
 
   // ── Clipboard ───────────────────────────────────────────
   const copy = useCallback(
@@ -832,7 +840,11 @@ export function LLGrid<Row>({
   }, [provenance]);
 
   // ── Columns ─────────────────────────────────────────────
-  const toggleColumn = (field: string, visible: boolean) => api.current?.setColumnsVisible([field], visible);
+  const toggleColumn = (field: string, visible: boolean) => {
+    api.current?.setColumnsVisible([field], visible);
+    // A column the user just turned on is brought into view, so the change is seen, not hunted for.
+    if (visible) api.current?.ensureColumnVisible(field);
+  };
 
   const groupable = enterprise && server ? columns.filter((c) => c.groupable) : [];
   const toggleGroup = (field: string, on: boolean) =>
@@ -1015,7 +1027,15 @@ export function LLGrid<Row>({
             key={action.def.id}
             variant="secondary"
             data-action-id={action.def.id}
+            // An action the user cannot run stays visible and focusable, and says why.
+            aria-disabled={!action.enabled || undefined}
+            title={action.enabled ? undefined : (action.reason ?? undefined)}
+            className={action.enabled ? undefined : 'opacity-60'}
             onClick={() => {
+              if (!action.enabled) {
+                setAnnouncement(`${action.def.label} is not available. ${action.reason ?? ''}`);
+                return;
+              }
               run(action);
               if (action.def.id === 'grid.refresh') onRefresh?.();
             }}

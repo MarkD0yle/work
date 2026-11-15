@@ -14,6 +14,7 @@ import {
   diffView,
   EntityPicker,
   EntityPickerSheet,
+  GlossaryProvider,
   migrateView,
   normaliseView,
   SectionBanner,
@@ -44,6 +45,7 @@ import {
   fetchViews,
   post,
   problemOf,
+  request,
   recentEntities,
   rememberEntity,
   searchEntities,
@@ -53,8 +55,10 @@ import {
   type Me,
 } from '../services';
 import { ErrorPanel, LoadingPanel } from '../state-panels';
+import { ImportDialog } from './import/ImportDialog';
+import { TransactionForm } from './TransactionForm';
 import { TransactionPanel } from './TransactionPanel';
-import { transactionActions } from './actions';
+import { createTransactionActions } from './actions';
 import {
   ASSET_CLASSES,
   columns,
@@ -164,6 +168,9 @@ function Blotter({
   const [dropped, setDropped] = useState<string[]>(start.dropped);
   const [openId, setOpenId] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  /** The entry form: closed, open for a new transaction, or open as a clone of `source`. */
+  const [form, setForm] = useState<{ source: TransactionRow | null } | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
   /** Labels of picked entities, so filter pickers can show a name, not only an id. */
   const [labels, setLabels] = useState<Record<string, string>>({});
 
@@ -274,6 +281,22 @@ function Blotter({
     [],
   );
   const features = useMemo(() => gridFeatures(user.segment), [user.segment]);
+  // New, Import and Clone sit in the same registry as Post and Reverse, so every surface offers them the same way.
+  const actions = useMemo(
+    () =>
+      createTransactionActions({
+        onNew: () => setForm({ source: null }),
+        onImport: () => setImportOpen(true),
+        onClone: (id) => {
+          request<TransactionRow>(`/transactions/${id}`)
+            .then((source) => setForm({ source }))
+            .catch((error: unknown) => {
+              for (const m of problemOf(error)?.messages ?? []) notify(m, 'Transactions');
+            });
+        },
+      }),
+    [notify],
+  );
   const chips = useMemo(() => taskChips(user), [user]);
   const openRow = useCallback((row: TransactionRow) => setOpenId(row.id), []);
   useImperativeHandle(ref, () => ({ refresh: () => grid.current?.refresh() }), []);
@@ -328,121 +351,139 @@ function Blotter({
   const severalSecurities = filters.find((f) => f.field === 'securityId' && f.op === 'in');
 
   return (
-    <div className="flex h-full min-h-0">
-      <div className="flex min-w-0 flex-1 flex-col gap-2">
-        <div className="flex shrink-0 flex-wrap items-center gap-3">
-          <ViewSelector
-            views={views}
-            currentId={viewId}
-            dirty={dirty}
-            userId={user.id}
-            onSelect={(view) => applyView(view)}
-            onSave={() => void save()}
-            onSaveAs={(input) => void saveAs(input)}
-            onDelete={() => void remove()}
-            onRestoreDefault={() => applyView(views.find((v) => v.ownership === 'default'))}
+    <GlossaryProvider enabled={user.segment === 'newUser'}>
+      <div className="flex h-full min-h-0">
+        <div className="flex min-w-0 flex-1 flex-col gap-2">
+          <div className="flex shrink-0 flex-wrap items-center gap-3">
+            <ViewSelector
+              views={views}
+              currentId={viewId}
+              dirty={dirty}
+              userId={user.id}
+              onSelect={(view) => applyView(view)}
+              onSave={() => void save()}
+              onSaveAs={(input) => void saveAs(input)}
+              onDelete={() => void remove()}
+              onRestoreDefault={() => applyView(views.find((v) => v.ownership === 'default'))}
+            />
+            <TaskChips chips={chips} filters={filters} onChange={setFilters} />
+          </div>
+          <div className="flex shrink-0 flex-wrap items-end gap-3">
+            <EntityPicker
+              label="Portfolio"
+              className="w-72"
+              value={refFor('portfolioId', 'portfolio')}
+              onChange={(value) => setPicked('portfolioId', 'portfolio', value)}
+              search={searchPortfolios}
+              recent={recentPortfolios}
+              placeholder="Any portfolio"
+            />
+            <EntityPicker
+              label="Security"
+              className="w-80"
+              value={refFor('securityId', 'security')}
+              onChange={(value) => setPicked('securityId', 'security', value)}
+              search={searchSecurities}
+              recent={recentSecurities}
+              placeholder={
+                severalSecurities && 'value' in severalSecurities
+                  ? `${(severalSecurities.value as string[]).length} securities chosen`
+                  : 'Any held security'
+              }
+            />
+            <Button variant="secondary" onClick={() => setSheetOpen(true)}>
+              Choose several…
+            </Button>
+          </div>
+          {dropped.length ? (
+            <SectionBanner
+              state={{
+                kind: 'warning',
+                messages: [
+                  {
+                    code: 'LL-VIEW-0002',
+                    severity: 'warning',
+                    level: 'section',
+                    text: `This view used ${dropped.length === 1 ? 'a column that no longer exists' : 'columns that no longer exist'}: ${dropped.join(', ')}.`,
+                    fix: 'It was loaded without them. Save the view to stop seeing this.',
+                  },
+                ],
+              }}
+              onDismiss={() => setDropped([])}
+            />
+          ) : null}
+          <LLGrid
+            ref={grid}
+            gridId={GRID_ID}
+            label="Transactions"
+            columns={columns}
+            dataSource={dataSource}
+            rowId={rowId}
+            rowMessages={rowMessages}
+            features={features}
+            filters={filters}
+            onFiltersChange={setFilters}
+            filterLabels={filterLabels}
+            initialView={gridPart(start.state)}
+            onViewChange={setGridView}
+            onRowOpen={openRow}
+            actions={actions}
+            permissions={permissions.data ?? EMPTY_PERMISSIONS}
+            noun={NOUN}
+            onAction={onAction}
+            onDensityChange={setDensity}
+            {...(onRefresh ? { onRefresh } : {})}
+            {...(onSelection ? { onStateChange: (s) => onSelection(s.selectedIds) } : {})}
           />
-          <TaskChips chips={chips} filters={filters} onChange={setFilters} />
         </div>
-        <div className="flex shrink-0 flex-wrap items-end gap-3">
-          <EntityPicker
-            label="Portfolio"
-            className="w-72"
-            value={refFor('portfolioId', 'portfolio')}
-            onChange={(value) => setPicked('portfolioId', 'portfolio', value)}
-            search={searchPortfolios}
-            recent={recentPortfolios}
-            placeholder="Any portfolio"
-          />
-          <EntityPicker
-            label="Security"
-            className="w-80"
-            value={refFor('securityId', 'security')}
-            onChange={(value) => setPicked('securityId', 'security', value)}
-            search={searchSecurities}
-            recent={recentSecurities}
-            placeholder={
-              severalSecurities && 'value' in severalSecurities
-                ? `${(severalSecurities.value as string[]).length} securities chosen`
-                : 'Any held security'
-            }
-          />
-          <Button variant="secondary" onClick={() => setSheetOpen(true)}>
-            Choose several…
-          </Button>
-        </div>
-        {dropped.length ? (
-          <SectionBanner
-            state={{
-              kind: 'warning',
-              messages: [
-                {
-                  code: 'LL-VIEW-0002',
-                  severity: 'warning',
-                  level: 'section',
-                  text: `This view used ${dropped.length === 1 ? 'a column that no longer exists' : 'columns that no longer exist'}: ${dropped.join(', ')}.`,
-                  fix: 'It was loaded without them. Save the view to stop seeing this.',
-                },
-              ],
+        {openId ? (
+          <TransactionPanel
+            key={openId}
+            id={openId}
+            user={user}
+            businessDate={me.businessDate}
+            onSaved={() => grid.current?.refresh()}
+            onClose={() => {
+              const id = openId;
+              setOpenId(null);
+              // Focus goes back to the row the panel was opened from.
+              setTimeout(() => grid.current?.focusRow(id), 0);
             }}
-            onDismiss={() => setDropped([])}
           />
         ) : null}
-        <LLGrid
-          ref={grid}
-          gridId={GRID_ID}
-          label="Transactions"
-          columns={columns}
-          dataSource={dataSource}
-          rowId={rowId}
-          rowMessages={rowMessages}
-          features={features}
-          filters={filters}
-          onFiltersChange={setFilters}
-          filterLabels={filterLabels}
-          initialView={gridPart(start.state)}
-          onViewChange={setGridView}
-          onRowOpen={openRow}
-          actions={transactionActions}
-          permissions={permissions.data ?? EMPTY_PERMISSIONS}
-          noun={NOUN}
-          onAction={onAction}
-          onDensityChange={setDensity}
-          {...(onRefresh ? { onRefresh } : {})}
-          {...(onSelection ? { onStateChange: (s) => onSelection(s.selectedIds) } : {})}
-        />
-      </div>
-      {openId ? (
-        <TransactionPanel
-          key={openId}
-          id={openId}
-          user={user}
-          businessDate={me.businessDate}
-          onSaved={() => grid.current?.refresh()}
-          onClose={() => {
-            const id = openId;
-            setOpenId(null);
-            // Focus goes back to the row the panel was opened from.
-            setTimeout(() => grid.current?.focusRow(id), 0);
+        <EntityPickerSheet
+          open={sheetOpen}
+          onOpenChange={setSheetOpen}
+          title="Choose securities"
+          search={searchSheet}
+          types={ASSET_CLASSES}
+          currencies={CURRENCIES}
+          onConfirm={(refs) => {
+            const others = filters.filter((f) => f.field !== 'securityId');
+            setFilters(
+              refs.length
+                ? [...others, { field: 'securityId', op: 'in', value: refs.map((r) => r.id) }]
+                : others,
+            );
           }}
         />
-      ) : null}
-      <EntityPickerSheet
-        open={sheetOpen}
-        onOpenChange={setSheetOpen}
-        title="Choose securities"
-        search={searchSheet}
-        types={ASSET_CLASSES}
-        currencies={CURRENCIES}
-        onConfirm={(refs) => {
-          const others = filters.filter((f) => f.field !== 'securityId');
-          setFilters(
-            refs.length
-              ? [...others, { field: 'securityId', op: 'in', value: refs.map((r) => r.id) }]
-              : others,
-          );
-        }}
-      />
-    </div>
+        <TransactionForm
+          open={form !== null}
+          onOpenChange={(open) => !open && setForm(null)}
+          user={user}
+          businessDate={me.businessDate}
+          source={form?.source ?? null}
+          onSaved={(record) => {
+            grid.current?.refresh();
+            setOpenId(record.id);
+          }}
+        />
+        <ImportDialog
+          open={importOpen}
+          onOpenChange={setImportOpen}
+          onImported={() => grid.current?.refresh()}
+        />
+      </div>
+    </GlossaryProvider>
   );
 }

@@ -36,7 +36,7 @@ export function TabsContent({ className, ...props }: ComponentProps<typeof TabsP
   return (
     <TabsPrimitive.Content
       data-slot="tabs-content"
-      className={cn('min-h-0 flex-1 outline-hidden', className)}
+      className={cn('min-h-0 flex-1 outline-hidden data-[state=inactive]:hidden', className)}
       {...props}
     />
   );

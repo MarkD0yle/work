@@ -4,7 +4,7 @@ import type { LLColumnDef } from '@ledgerline/ui/grid';
 
 export const GRID_ID = 'transactions';
 
-const TYPE_LABELS: Record<string, string> = {
+export const TYPE_LABELS: Record<string, string> = {
   buy: 'Buy',
   sell: 'Sell',
   income: 'Income',

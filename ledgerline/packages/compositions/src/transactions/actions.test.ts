@@ -1,7 +1,7 @@
 import type { ActionContext, Permission, TransactionRow } from '@ledgerline/contracts';
 import { resolveActions, validateRegistry } from '@ledgerline/ui';
 import { describe, expect, it } from 'vitest';
-import { transactionActions } from './actions';
+import { createTransactionActions, transactionActions } from './actions';
 
 const row = (status: TransactionRow['status']) => ({ id: `T-${status}`, status }) as TransactionRow;
 const allow = (action: string): Permission => ({ action, accessLevel: 'full', allowed: true });
@@ -52,6 +52,32 @@ describe('transaction action registry', () => {
     });
   });
 
+  it('New, Import and Clone only open a screen: no confirm step, and Clone needs exactly one row', () => {
+    const calls: string[] = [];
+    const actions = createTransactionActions({
+      onNew: () => calls.push('new'),
+      onClone: (id) => calls.push(`clone ${id}`),
+      onImport: () => calls.push('import'),
+    });
+    const create = [allow('transaction.create'), allow('transaction.import')];
+    const one = resolveActions(actions, ctx([row('posted')], create));
+    const none = resolveActions(actions, ctx([], create));
+    const two = resolveActions(actions, ctx([row('posted'), row('unposted')], create));
+    const find = (list: typeof one, id: string) => list.find((a) => a.def.id === id);
+    for (const id of ['transaction.new', 'transaction.import', 'transaction.clone'])
+      expect(find(one, id)?.def.consequence, id).toBe('none');
+    expect(find(none, 'transaction.new')?.enabled).toBe(true);
+    expect(find(none, 'transaction.clone')?.enabled).toBe(false);
+    expect(find(two, 'transaction.clone')?.enabled).toBe(false);
+    expect(find(one, 'transaction.clone')?.enabled).toBe(true);
+    void find(one, 'transaction.clone')?.def.execute(['T-posted']);
+    void find(none, 'transaction.new')?.def.execute([]);
+    void find(none, 'transaction.import')?.def.execute([]);
+    expect(calls).toEqual(['clone T-posted', 'new', 'import']);
+    // Without the permission the action is listed, disabled, with the reason.
+    expect(find(resolveActions(actions, ctx([], [])), 'transaction.new')).toMatchObject({ enabled: false });
+  });
+
   it('each record is eligible for exactly the actions its status allows', () => {
     const all = ['transaction.post', 'transaction.reverse', 'transaction.delete'].map(allow);
     const enabledFor = (status: TransactionRow['status']) =>
@@ -64,7 +90,7 @@ describe('transaction action registry', () => {
     const mixed = resolveActions(
       transactionActions,
       ctx([row('unposted'), row('posted'), row('reversed')], all),
-    )[0];
+    ).find((a) => a.def.id === 'transaction.post');
     expect(mixed?.eligible).toHaveLength(1);
     expect(mixed?.ineligible.map((i) => i.reason)).toEqual([
       'Already posted.',

@@ -60,7 +60,7 @@ Response:
 | --- | --- | --- |
 | POST | `/transactions/query` | Grid query |
 | GET | `/transactions/:id` | Detail with financial values and provenance |
-| POST | `/transactions` | Create (validates; may return warnings to acknowledge) |
+| POST | `/transactions` | Create. Body `TransactionCreate`: `{ portfolioId, securityId?, type, tradeDate, settleDate?, quantity?, price?, amount?, acknowledgedWarnings?, cloneOf? }`. Errors are a 422 with one message per field (`target` names the field). Warnings are a 422 with `needsAcknowledgement: [codes]`; send the codes back in `acknowledgedWarnings` to save through them. Saved as unposted; the amount of a buy, sell, repo or maturity is calculated. Audit action `transaction.create` or `transaction.clone`, with the acknowledgement as a note. Returns 201 `{ record, auditEventIds }` |
 | PATCH | `/transactions/:id` | Edit (If-Match). Body `{ changes?: { quantity?, price?, amount? }, dates?: { tradeDate?, settleDate? }, reason? }`. A trade date in a period that is closed or closing for transactions is a 422 naming the period and who can reopen it; a settle date before the trade date is a 422. Unposted records only. Changing a calculated value is an override: needs `transaction.override` and a reason. Returns `{ record, auditEventIds }` |
 | POST | `/transactions/eligibility` | `{ actionId, ids }` → per-row `Permission` |
 | POST | `/transactions/preview` | `{ actionId, ids, inputs }` → `PreviewRow[]` |
@@ -129,8 +129,18 @@ Bulk action ids: `transaction.post`, `transaction.reverse`, `transaction.delete`
 ### Import
 | Method | Path | Purpose |
 | --- | --- | --- |
-| POST | `/imports/validate` | `{ mapping, rows }` → `ImportRowResult[]` |
-| POST | `/imports/commit` | `{ mapping, rows, fileEvidence }` → `{ jobId }` |
+| POST | `/imports/validate` | `{ mapping, rows }` → `ImportRowResult[]`, one per row, in order. Up to 10,000 rows. Transactions only for now |
+| POST | `/imports/commit` | `{ mapping, rows, fileEvidence: { name }, acknowledgeWarnings? }` → `BulkResult` inline (`jobId` is the batch id). Re-validates. Any row with an error: 422 with the failing `rows`, and nothing is written. Rows with warnings: 422 with `needsAcknowledgement: true` until `acknowledgeWarnings` is sent. One audit event per row plus one for the batch, each with the file as evidence and `after.source: "imported"` |
+| GET | `/imports/mappings/:targetType` | The signed-in user's last mapping for that target, or `null` |
+| PUT | `/imports/mappings/:targetType` | Save a mapping. A successful commit saves its mapping too |
+
+Import rules for transactions:
+- Target fields: `id`, `portfolioId`, `securityId`, `type`, `tradeDate`, `settleDate`, `quantity`, `price`, `amount`.
+- A row with an `id` corrects that unposted transaction; fields not mapped keep their current value. A row without an `id` creates a new unposted transaction.
+- A security is found by internal id, ISIN, CUSIP, SEDOL or an unambiguous ticker. A portfolio by id or exact name.
+- Dates read as `2026-11-13`, `13/11/2026`, `13.11.26`, `13 Nov 2026`. Numbers read with thousands separators, `(1,200)` as negative, and `1.5k`, `2m`, `1bn`.
+- Every row goes through the same rules as `POST /transactions`.
+- Message codes: `LL-IMP-0001` rows have errors, `0002` warnings need acknowledging, `0003` no rows, `0004` target type not available, `0010` empty row, `0011` no such transaction, `0012` not unposted, `0013` same transaction twice.
 
 ### Approvals
 | Method | Path | Purpose |
@@ -147,7 +157,7 @@ Bulk action ids: `transaction.post`, `transaction.reverse`, `transaction.delete`
 | Method | Path | Purpose |
 | --- | --- | --- |
 | POST | `/audit/query` | Grid query |
-| GET | `/audit/record/:type/:id` | Timeline for one record |
+| GET | `/audit/record/:type/:id` | Timeline for one record: `AuditEvent[]`, newest first. Needs `audit.view` (built) |
 
 ### Reports (mock)
 | Method | Path | Purpose |
