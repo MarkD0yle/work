@@ -27,8 +27,8 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { api, ApiError, fetchCalendar, fetchPeriods, fetchPermissions } from '../api/client';
-import { ErrorPanel, LoadingPanel } from '../app/StatePanel';
+import { fetchCalendar, fetchPeriods, fetchPermissions, problemOf, request } from '../services';
+import { ErrorPanel, LoadingPanel } from '../state-panels';
 
 const FIELDS: { field: TransactionFinancialField; label: string }[] = [
   { field: 'quantity', label: 'Quantity' },
@@ -70,7 +70,7 @@ export function TransactionPanel({ id, user, businessDate, onSaved, onClose }: T
 
   const record = useQuery({
     queryKey: ['transaction', user.id, id],
-    queryFn: () => api<TransactionRow>(`/transactions/${id}`),
+    queryFn: () => request<TransactionRow>(`/transactions/${id}`),
     // Never refresh under unsaved edits: that would be a silent overwrite.
     staleTime: Infinity,
   });
@@ -111,7 +111,7 @@ export function TransactionPanel({ id, user, businessDate, onSaved, onClose }: T
         ...(reason ? { reason } : {}),
         ...(Object.keys(dates).length ? { dates } : {}),
       };
-      return api<MutationResult<TransactionRow>>(`/transactions/${id}`, {
+      return request<MutationResult<TransactionRow>>(`/transactions/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'If-Match': String(baseVersion ?? row.version) },
         body: JSON.stringify(patch),
@@ -127,13 +127,13 @@ export function TransactionPanel({ id, user, businessDate, onSaved, onClose }: T
       onSaved();
     },
     onError: (error) => {
-      if (error instanceof ApiError && error.status === 409 && error.body.record) {
-        setConflict(error.body.record as TransactionRow);
+      const problem = problemOf(error);
+      if (problem?.status === 409 && problem.body.record) {
+        setConflict(problem.body.record as TransactionRow);
         return;
       }
       // Errors are never only a toast: they stay in the panel and in the notification history.
-      for (const m of error instanceof ApiError ? error.messages : [])
-        notify({ ...m, target: m.target ?? id }, 'Transactions');
+      for (const m of problem?.messages ?? []) notify({ ...m, target: m.target ?? id }, 'Transactions');
     },
   });
 
@@ -149,7 +149,7 @@ export function TransactionPanel({ id, user, businessDate, onSaved, onClose }: T
     return (
       <Shell title={`Transaction ${id}`} heading={heading} onClose={onClose}>
         <ErrorPanel
-          messages={error instanceof ApiError ? error.messages : []}
+          messages={problemOf(error)?.messages ?? []}
           onRetry={() => {
             void record.refetch();
             void permissions.refetch();
@@ -209,6 +209,7 @@ export function TransactionPanel({ id, user, businessDate, onSaved, onClose }: T
         ? (edit?.explanation ?? 'Your role cannot edit transactions.')
         : null;
 
+  const saveProblem = problemOf(save.error);
   const banner: UiState | null = conflict
     ? {
         kind: 'conflict',
@@ -216,8 +217,8 @@ export function TransactionPanel({ id, user, businessDate, onSaved, onClose }: T
         at: new Date().toISOString(),
         resolve: [REVIEW, KEEP],
       }
-    : save.error instanceof ApiError && save.error.status !== 409
-      ? { kind: 'blockingError', messages: save.error.messages }
+    : saveProblem && saveProblem.status !== 409
+      ? { kind: 'blockingError', messages: saveProblem.messages }
       : readOnly
         ? { kind: 'permissionLimited', reason: readOnly }
         : null;

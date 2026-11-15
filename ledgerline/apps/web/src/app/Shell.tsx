@@ -37,7 +37,7 @@ import { GlobalSearch } from './GlobalSearch';
 import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 import { PreferencesMenu } from './PreferencesMenu';
 import { RoleSwitcher } from './RoleSwitcher';
-import { ErrorPanel, LoadingPanel } from './StatePanel';
+import { ErrorPanel, LoadingPanel } from '@ledgerline/compositions';
 
 export function Shell() {
   const { userId, theme, density, railCollapsed, setUser, setTheme, setDensity, toggleRail } = useSession();

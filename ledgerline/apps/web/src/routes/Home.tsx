@@ -3,7 +3,7 @@ import { Badge } from '@ledgerline/ui';
 import { useQuery } from '@tanstack/react-query';
 import { useOutletContext } from 'react-router';
 import { ApiError, fetchPermissions, type Me } from '../api/client';
-import { ErrorPanel, LoadingPanel } from '../app/StatePanel';
+import { ErrorPanel, LoadingPanel } from '@ledgerline/compositions';
 
 function groupBy(permissions: Permission[]): [string, Permission[]][] {
   const groups = new Map<string, Permission[]>();

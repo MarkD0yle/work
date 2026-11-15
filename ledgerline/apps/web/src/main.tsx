@@ -3,12 +3,23 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StrictMode, type ComponentType } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router';
+import { configureServices } from '@ledgerline/compositions';
+import { track, type AnalyticsEvent } from './analytics';
+import { api } from './api/client';
 import { Shell } from './app/Shell';
 import { flags } from './flags';
 import './index.css';
 import { DomainPlaceholder } from './routes/DomainPlaceholder';
 import { Home } from './routes/Home';
 import { Start } from './routes/Start';
+import { useSession } from './state/session';
+
+// Compositions call the API and report analytics through the app, never the other way round.
+configureServices({
+  request: api,
+  track: (event, properties) => track(event as AnalyticsEvent, properties),
+  setDensity: (density) => useSession.getState().setDensity(density),
+});
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } },

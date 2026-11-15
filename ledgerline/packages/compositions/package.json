@@ -4,14 +4,17 @@
   "version": "0.1.0",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./transactions": "./src/transactions/index.ts"
   },
   "dependencies": {
     "@ledgerline/contracts": "workspace:*",
-    "@ledgerline/ui": "workspace:*"
+    "@ledgerline/ui": "workspace:*",
+    "lucide-react": "^1.73.0"
   },
   "peerDependencies": {
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "@tanstack/react-query": "^5.107.1"
   }
 }

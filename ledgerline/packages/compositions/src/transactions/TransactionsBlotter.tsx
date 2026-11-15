@@ -38,22 +38,22 @@ import {
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, type Ref } from 'react';
 import {
-  api,
-  ApiError,
   createView,
   deleteView,
   fetchPermissions,
   fetchViews,
+  post,
+  problemOf,
   recentEntities,
   rememberEntity,
   searchEntities,
+  setDensity,
+  track,
   updateView,
   type Me,
-} from '../../api/client';
-import { ErrorPanel, LoadingPanel } from '../../app/StatePanel';
-import { TransactionPanel } from '../../routes/TransactionPanel';
-import { useSession } from '../../state/session';
-import { track } from '../../analytics';
+} from '../services';
+import { ErrorPanel, LoadingPanel } from '../state-panels';
+import { TransactionPanel } from './TransactionPanel';
 import { transactionActions } from './actions';
 import {
   ASSET_CLASSES,
@@ -120,10 +120,7 @@ export function TransactionsBlotter(props: BlotterProps) {
   if (views.isPending) return <LoadingPanel label="Loading views…" />;
   if (views.error) {
     return (
-      <ErrorPanel
-        messages={views.error instanceof ApiError ? views.error.messages : []}
-        onRetry={() => void views.refetch()}
-      />
+      <ErrorPanel messages={problemOf(views.error)?.messages ?? []} onRetry={() => void views.refetch()} />
     );
   }
   // Keyed by user: a different user has different views, scope and defaults.
@@ -142,7 +139,6 @@ function Blotter({
   const { user } = me;
   const queryClient = useQueryClient();
   const { notify } = useNotifications();
-  const setDensity = useSession((s) => s.setDensity);
   const density = useDensity();
   const grid = useRef<LLGridHandle>(null);
   const permissions = useQuery({ queryKey: ['permissions', user.id], queryFn: fetchPermissions });
@@ -174,7 +170,7 @@ function Blotter({
   // A view that sets a density applies it once, when the screen opens on that view.
   useEffect(() => {
     if (start.state.density) setDensity(start.state.density);
-  }, [start, setDensity]);
+  }, [start]);
 
   const current: ViewState = useMemo(() => ({ ...gridView, filters, density }), [gridView, filters, density]);
   const diff = useMemo(() => diffView(saved, comparable(current, saved)), [saved, current]);
@@ -182,29 +178,26 @@ function Blotter({
 
   useEffect(() => onLocation?.(viewId, diff), [onLocation, viewId, diff]);
 
-  const applyView = useCallback(
-    (view: SavedView | undefined, extra: ViewDiff = {}) => {
-      const migrated = view
-        ? migrateView(view, viewSchema)
-        : { state: defaultViewState(viewSchema), dropped: [] as string[] };
-      const state = applyViewDiff(migrated.state, extra);
-      setViewId(view?.id ?? null);
-      setSaved(migrated.state);
-      setDropped(migrated.dropped);
-      setFilters(state.filters);
-      if (state.density) setDensity(state.density);
-      grid.current?.applyViewState(gridPart(state));
-      track('view.applied', {
-        gridId: GRID_ID,
-        viewId: view?.id ?? null,
-        ownership: view?.ownership ?? 'none',
-      });
-    },
-    [setDensity],
-  );
+  const applyView = useCallback((view: SavedView | undefined, extra: ViewDiff = {}) => {
+    const migrated = view
+      ? migrateView(view, viewSchema)
+      : { state: defaultViewState(viewSchema), dropped: [] as string[] };
+    const state = applyViewDiff(migrated.state, extra);
+    setViewId(view?.id ?? null);
+    setSaved(migrated.state);
+    setDropped(migrated.dropped);
+    setFilters(state.filters);
+    if (state.density) setDensity(state.density);
+    grid.current?.applyViewState(gridPart(state));
+    track('view.applied', {
+      gridId: GRID_ID,
+      viewId: view?.id ?? null,
+      ownership: view?.ownership ?? 'none',
+    });
+  }, []);
 
   const fail = (error: unknown) => {
-    for (const m of error instanceof ApiError ? error.messages : []) notify(m, 'Views');
+    for (const m of problemOf(error)?.messages ?? []) notify(m, 'Views');
   };
   const reloadViews = () => queryClient.invalidateQueries({ queryKey: ['views', GRID_ID, user.id] });
   const currentView = views.find((v) => v.id === viewId);
@@ -276,12 +269,7 @@ function Blotter({
   const dataSource = useMemo<LLDataSource<TransactionRow>>(
     () => ({
       kind: 'server',
-      query: (query: GridQuery) =>
-        api<GridResponse<TransactionRow>>('/transactions/query', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(query),
-        }),
+      query: (query: GridQuery) => post<GridResponse<TransactionRow>>('/transactions/query', query),
     }),
     [],
   );

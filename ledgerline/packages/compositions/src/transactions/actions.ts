@@ -1,5 +1,5 @@
 import type { ActionContext, ActionDef, BulkResult, Permission, TransactionRow } from '@ledgerline/contracts';
-import { post } from '../../api/client';
+import { post } from '../services';
 
 const bulk = (actionId: string) => (ids: string[], inputs?: Record<string, unknown>) =>
   post<BulkResult>('/transactions/bulk', {

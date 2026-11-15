@@ -14,8 +14,8 @@ import {
   type Me,
   type WorkspaceInput,
 } from '../api/client';
-import { ErrorPanel, LoadingPanel } from '../app/StatePanel';
-import type { BlotterHandle } from '../features/transactions/TransactionsBlotter';
+import { ErrorPanel, LoadingPanel } from '@ledgerline/compositions';
+import type { BlotterHandle } from '@ledgerline/compositions/transactions';
 import { useWorkspaceChannel, type WorkspaceMessage } from '../features/workspaces/channel';
 import { EditWorkspace } from '../features/workspaces/EditWorkspace';
 import { PanelContent, panelTitle } from '../features/workspaces/panels';

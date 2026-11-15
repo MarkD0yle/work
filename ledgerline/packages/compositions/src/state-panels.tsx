@@ -2,7 +2,7 @@ import type { Message } from '@ledgerline/contracts';
 import { Button } from '@ledgerline/ui';
 import { CircleAlert, LoaderCircle } from 'lucide-react';
 
-/** Placeholder state surfaces until the UiState components land in Milestone 1. */
+/** Whole-panel loading and error states for a composition that cannot show its content yet. */
 export function LoadingPanel({ label }: { label: string }) {
   return (
     <div role="status" className="flex items-center gap-2 p-6 text-muted-foreground">
