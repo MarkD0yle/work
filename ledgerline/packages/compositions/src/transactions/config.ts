@@ -15,6 +15,9 @@ const TYPE_LABELS: Record<string, string> = {
   fee: 'Fee',
 };
 
+/** How far a trade price may sit from the vendor price before it is a breach. The API warns at the same level (LL-VAL-0207). */
+export const PRICE_TOLERANCE_PCT = '5';
+
 /** Every column in this grid uses the natural sign convention; conventions are never mixed in one grid. */
 export const columns: LLColumnDef<TransactionRow>[] = [
   {
@@ -82,6 +85,18 @@ export const columns: LLColumnDef<TransactionRow>[] = [
     value: (r) => r.price,
   },
   {
+    // Inline delta column (SPEC 7.1): the trade price against the vendor price, without leaving the grid.
+    field: 'priceVsVendor',
+    header: 'Price vs vendor',
+    type: 'delta',
+    width: 170,
+    hiddenByDefault: true,
+    referenceLabel: 'vendor',
+    tolerancePct: PRICE_TOLERANCE_PCT,
+    value: (r) => (r.price.value === null ? undefined : r.price),
+    reference: (r) => r.vendorPrice,
+  },
+  {
     field: 'amount',
     header: 'Amount',
     type: 'financial',
@@ -108,6 +123,7 @@ export const viewSchema: ViewSchema = {
   version: 2,
   columns: columns.map((c) => c.field),
   renames: { 2: { portfolioId: 'portfolio', securityId: 'security' } },
+  hiddenByDefault: columns.filter((c) => c.hiddenByDefault).map((c) => c.field),
 };
 
 /** Names for filter fields that are not columns, used in filter tags. */

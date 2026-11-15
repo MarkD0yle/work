@@ -15,7 +15,7 @@ import { badgeVariants } from '../components/badge';
 import { formatFinancial } from '../financial/format';
 import { provenanceSummary } from '../financial/provenance';
 import { cn } from '../lib/cn';
-import { displayText, formatBusinessDate } from './copy';
+import { deltaOf, displayText, formatBusinessDate } from './copy';
 import type { LLColumnDef } from './types';
 
 /** Renders a lucide icon to an SVG element once; cells clone it. */
@@ -98,6 +98,22 @@ export function cellElement<Row>(column: LLColumnDef<Row>, row: Row): HTMLElemen
   switch (column.type) {
     case 'financial':
       return financialCellElement(column.value(row));
+    case 'delta': {
+      const d = deltaOf(column, row);
+      const wrap = el('span', 'tabular flex w-full min-w-0 items-center justify-end gap-1.5 font-mono');
+      wrap.dataset.slot = 'delta-cell';
+      wrap.dataset.level = d.level ?? 'none';
+      wrap.title = d.ariaLabel;
+      // The visible text and the spoken text differ ("+1.25% Within" vs a full sentence), so the cell is one labelled image.
+      wrap.setAttribute('role', 'img');
+      wrap.setAttribute('aria-label', d.ariaLabel);
+      wrap.append(el('span', d.display === 'none' ? 'text-muted-foreground' : 'truncate', d.text));
+      if (d.level && d.label) {
+        const tone = d.level === 'breach' ? 'critical' : d.level === 'near' ? 'warning' : 'neutral';
+        wrap.append(el('span', cn(badgeVariants({ status: tone }), 'font-sans'), d.label));
+      }
+      return wrap;
+    }
     case 'date': {
       const date = column.value(row);
       if (date.value !== null) return el('span', 'tabular', formatBusinessDate(date));

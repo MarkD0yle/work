@@ -17,6 +17,8 @@ export interface ViewSchema {
    * a view saved before version 2 has `securityId` where the grid now has `security`.
    */
   renames?: Record<number, Record<string, string>>;
+  /** Columns that start hidden: optional extras the user turns on from the Columns menu. */
+  hiddenByDefault?: string[];
 }
 
 export interface MigratedView {
@@ -52,7 +54,9 @@ export function migrateView(
   const seen = new Set<string>();
   const columns = keep(view.state.columns).filter((c) => !seen.has(c.field) && seen.add(c.field));
   // Columns added to the grid since the view was saved appear at the end, visible.
-  for (const field of schema.columns) if (!seen.has(field)) columns.push({ field, visible: true });
+  // Optional extras stay hidden until the user asks for them.
+  for (const field of schema.columns)
+    if (!seen.has(field)) columns.push({ field, visible: !schema.hiddenByDefault?.includes(field) });
 
   const grouping = view.state.grouping?.flatMap((field) => {
     const next = rename(field);
@@ -80,7 +84,11 @@ export function migrateView(
 
 /** The grid's own default: every column visible in default order, nothing else. "Restore default" never means empty. */
 export function defaultViewState(schema: ViewSchema): ViewState {
-  return { columns: schema.columns.map((field) => ({ field, visible: true })), sort: [], filters: [] };
+  return {
+    columns: schema.columns.map((field) => ({ field, visible: !schema.hiddenByDefault?.includes(field) })),
+    sort: [],
+    filters: [],
+  };
 }
 
 /** One canonical form, so two states that mean the same thing compare equal. */

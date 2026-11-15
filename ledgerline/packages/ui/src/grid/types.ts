@@ -24,6 +24,8 @@ interface ColumnBase {
   pinned?: 'left' | 'right';
   /** Rows can be grouped by this column (Enterprise). The server must be able to group on the field. */
   groupable?: boolean;
+  /** Starts hidden. The user turns it on from the Columns menu. */
+  hiddenByDefault?: boolean;
   /** Restricted columns cannot be copied; the reason is shown to the user. */
   restricted?: { reason: string };
 }
@@ -69,7 +71,22 @@ export interface BooleanColumn<Row> extends ColumnBase {
   value: (row: Row) => boolean | null;
 }
 
+/**
+ * An inline comparison beside a financial column: this value against another source or the prior day,
+ * as a percentage, marked against a tolerance (SPEC 7.1). It is worked out in the browser, so it cannot be sorted.
+ */
+export interface DeltaColumn<Row> extends ColumnBase {
+  type: 'delta';
+  value: (row: Row) => FinancialValue | undefined;
+  reference: (row: Row) => FinancialValue | undefined;
+  /** What the value is compared with, in lower case: "vendor", "prior day". */
+  referenceLabel: string;
+  /** Tolerance as a percentage, as a decimal string: "5" means 5%. */
+  tolerancePct: string;
+}
+
 export type LLColumnDef<Row> =
+  | DeltaColumn<Row>
   | FinancialColumn<Row>
   | DateColumn<Row>
   | StatusColumn<Row>

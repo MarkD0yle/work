@@ -40,6 +40,7 @@ export { useDensity } from './lib/use-density';
 // Financial fields and cells (SPEC 7.5)
 export { FinancialCell, type FinancialCellProps } from './financial/financial-cell';
 export { FinancialInput, type FinancialInputProps } from './financial/financial-input';
+export { formatDelta, type FormattedDelta, type ToleranceLevel } from './financial/delta';
 export { formatFinancial, rawFinancial, type FormattedFinancial } from './financial/format';
 export { parseFinancialInput, type ParseResult } from './financial/parse';
 export { displayPrecision, minorUnits, registryPrecision, storagePrecision } from './financial/registry';
@@ -159,3 +160,19 @@ export {
 } from './components/context-menu';
 
 // The data grid (SPEC 7.1) is a separate entry, `@ledgerline/ui/grid`, so screens without a grid do not load the grid engine.
+export {
+  BatchGrid,
+  type BatchColumn,
+  type BatchEdit,
+  type BatchGridProps,
+  type BatchRow,
+} from './batch/batch-grid';
+export { parseDelimited } from './batch/tabular';
+export { Tabs, TabsContent, TabsList, TabsTrigger } from './components/tabs';
+export {
+  GLOSSARY,
+  GlossaryProvider,
+  GlossaryTerm,
+  GlossaryText,
+  type GlossaryProviderProps,
+} from './glossary/glossary';
