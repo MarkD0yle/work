@@ -49,7 +49,7 @@ for (const theme of THEMES) {
         await page.goto(route);
         await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
         if (route === '/profile') await expect(page.getByRole('table')).toBeVisible();
-        if (route === '/jobs') {
+        if (route === '/jobs' || route === '/accounting' || route === '/market-data') {
           // Rows fade in as they load; wait for them to settle before measuring contrast.
           await expect(page.locator('.ag-row').first()).toBeVisible();
           await page.waitForTimeout(500);
@@ -275,6 +275,81 @@ for (const theme of THEMES) {
     await expect(confirm.getByRole('table', { name: 'Preview of changes' })).toBeVisible();
     await expectNoSeriousViolations(page);
     await confirm.getByRole('button', { name: 'Cancel' }).click();
+  });
+
+  test(`close, exceptions, approvals, audit and price review, ${theme}`, async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 1200 });
+    await page.addInitScript((t) => {
+      localStorage.setItem(
+        'll-session',
+        JSON.stringify({
+          state: { userId: 'u-cleo', theme: t, density: null, railCollapsed: false },
+          version: 0,
+        }),
+      );
+    }, theme);
+    const settle = async () => {
+      await expect(page.locator('.ag-row').first()).toBeVisible();
+      await page.waitForTimeout(500);
+    };
+    const openFirst = async (column: string, label: string) => {
+      await page.locator(`.ag-row[row-index="0"] [col-id="${column}"]`).first().click();
+      await page.keyboard.press('Enter');
+      const detail = page.getByRole('complementary', { name: label });
+      await expect(detail).toBeVisible();
+      return detail;
+    };
+
+    // Close console: overview, then a blocked portfolio's checklist, books and history.
+    await page.goto('/accounting');
+    await page.getByRole('button', { name: /^Blocked only/ }).click();
+    await settle();
+    await expectNoSeriousViolations(page);
+    const close = await openFirst('cutoff', 'Close detail');
+    await expect(close.getByRole('table', { name: 'Close checklist' })).toBeVisible();
+    await expectNoSeriousViolations(page);
+    await close.getByRole('tab', { name: 'Books' }).click();
+    await expect(close.locator('[data-slot="comparison"]')).toBeVisible();
+    await expectNoSeriousViolations(page);
+
+    // Exception queue: the list, one exception, the resolve form and the rules.
+    await page.goto('/accounting/exceptions');
+    await settle();
+    const exception = await openFirst('type', 'Exception detail');
+    await expect(exception.getByRole('region', { name: 'Thread' })).toBeVisible();
+    await expectNoSeriousViolations(page);
+    await exception.getByRole('button', { name: 'Resolve' }).click();
+    await expect(page.locator('[data-slot="exception-action"]')).toBeVisible();
+    await expectNoSeriousViolations(page);
+    await page.keyboard.press('Escape');
+    await page.getByRole('button', { name: 'Recurring-break rules' }).click();
+    await expect(page.locator('[data-slot="break-rules"]')).toBeVisible();
+    await expectNoSeriousViolations(page);
+    await page.keyboard.press('Escape');
+
+    // Approvals: a decided request, with what changed.
+    await page.goto('/accounting/approvals');
+    await page.getByRole('button', { name: 'Waiting', exact: true }).click();
+    await settle();
+    await openFirst('reason', 'Approval detail');
+    await expectNoSeriousViolations(page);
+
+    // Audit history: the list and one event.
+    await page.goto('/accounting/audit');
+    await settle();
+    await openFirst('action', 'Audit event');
+    await expectNoSeriousViolations(page);
+
+    // Price review: prices with the prior-day column, and the tolerance rules.
+    await page.goto('/market-data');
+    await settle();
+    await page.getByRole('tab', { name: 'Prices' }).click();
+    await expect(page.locator('[data-slot="delta-cell"]').first()).toBeVisible();
+    await page.waitForTimeout(500);
+    await expectNoSeriousViolations(page);
+    await page.getByRole('tab', { name: 'Tolerance rules' }).click();
+    await expect(page.getByRole('table', { name: 'Tolerance rules' })).toBeVisible();
+    await expectNoSeriousViolations(page);
   });
 }
 

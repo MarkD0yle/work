@@ -1029,10 +1029,18 @@ export function LLGrid<Row>({
     const groupLabel = (field: string | undefined, key: string | null | undefined) => {
       const column = columns.find((c) => c.field === field);
       if (key == null || key === '') return '(none)';
+      // A column whose cells show a name for a stored code names its groups the same way.
+      if (column?.groupLabel) return column.groupLabel(key);
       if (column?.type === 'status') return column.statuses[key]?.label ?? key;
       if (column?.type === 'date') return formatBusinessDate({ value: key, basis: column.dateBasis });
       return key;
     };
+    /** The name of a group, in the group column: the same words its cells would show. */
+    const GroupName = (p: { value?: unknown; node?: IRowNode<Row> | null }) => (
+      <span data-slot="group-label">
+        {groupLabel(p.node?.rowGroupColumn?.getColId(), p.value as string | null)}
+      </span>
+    );
     return {
       getRowId: (params: { data: Row; parentKeys?: string[] }) =>
         // While rows shift during a reload, the grid asks for the id of a placeholder that has no data yet.
@@ -1074,6 +1082,8 @@ export function LLGrid<Row>({
               sortable: false,
               valueFormatter: (p: { value: unknown; node: IRowNode<Row> | null }) =>
                 groupLabel(p.node?.rowGroupColumn?.getColId(), p.value as string | null),
+              // Without this the grid borrows the grouped column's own cell renderer, which draws nothing on a group row.
+              cellRendererParams: { innerRenderer: GroupName },
             },
             getChildCount: (data: unknown) => (isGroupRow(data) ? data.count : 0),
             suppressGroupChangesColumnVisibility: true,

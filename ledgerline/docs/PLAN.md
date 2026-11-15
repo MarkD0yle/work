@@ -79,15 +79,15 @@ Session prompt template:
 
 ## Milestone 6 — Exception-heavy proof: Close, Exceptions, Comparison, Audit, Price Review
 
-- [ ] 6.1 Comparison component (SPEC 7.9) including investment book vs accounting book.
-- [ ] 6.2 Audit timeline and grid with evidence (SPEC 7.10).
-- [ ] 6.3 Exception Queue (SPEC 8.2) with thread, evidence, owner, age and SLA, root-cause categories, recurring-break rules, group similar, bulk assign, bulk evidence, bulk resolve.
-- [ ] 6.4 API close checks generating exceptions (SPEC 8.3 table).
-- [ ] 6.5 Period Close Console: portfolio overview with cutoff countdown, checklist, close per type, multi-portfolio close job, block override with second approver, reopen with reason, sign-off, close package export (PDF, XLSX).
-- [ ] 6.6 Price Review: tolerance rules screen with impact preview, failed-rule display, holiday-aware stale checks, bulk accept, accept conditionally with challenge, override.
-- [ ] 6.7 Approval Queue (SPEC 8.5) for overrides, reopens and close-block overrides, with segregation of duties.
+- [x] 6.1 Comparison component (SPEC 7.9) including investment book vs accounting book.
+- [x] 6.2 Audit timeline and grid with evidence (SPEC 7.10).
+- [x] 6.3 Exception Queue (SPEC 8.2) with thread, evidence, owner, age and SLA, root-cause categories, recurring-break rules, group similar, bulk assign, bulk evidence, bulk resolve.
+- [x] 6.4 API close checks generating exceptions (SPEC 8.3 table). *All ten checks report from open exceptions. One check generates new ones so far: cash to custodian. See DECISIONS.md.*
+- [x] 6.5 Period Close Console: portfolio overview with cutoff countdown, checklist, close per type, multi-portfolio close job, block override with second approver, reopen with reason, sign-off, close package export (PDF, XLSX).
+- [x] 6.6 Price Review: tolerance rules screen with impact preview, failed-rule display, holiday-aware stale checks, bulk accept, accept conditionally with challenge, override.
+- [x] 6.7 Approval Queue (SPEC 8.5) for overrides, reopens and close-block overrides, with segregation of duties.
 
-**Exit gate:** journey: Cleo opens the close console for 3 portfolios, sees blocked close with named exceptions, Dev resolves 2 price exceptions, Rafa applies a recurring-break rule and attaches one statement to 10 breaks, Cleo closes 2 portfolios in one job, overrides the block on the third with a second approver, signs off and downloads the close package, then reopens one with a reason. All actions visible in audit.
+**Exit gate (passed, `e2e/milestone6.e2e.ts`):** journey: Cleo opens the close console for 3 portfolios, sees blocked close with named exceptions, Dev resolves 2 price exceptions, Rafa applies a recurring-break rule and attaches one statement to 10 breaks, Cleo closes 2 portfolios in one job, overrides the block on the third with a second approver, signs off and downloads the close package, then reopens one with a reason. All actions visible in audit.
 
 ## Milestone 7 — Admin and hardening
 

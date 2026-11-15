@@ -71,43 +71,60 @@ Bulk action ids: `transaction.post`, `transaction.reverse`, `transaction.delete`
 ### Market data
 | Method | Path | Purpose |
 | --- | --- | --- |
-| POST | `/prices/query` | Grid query with tolerance status per price |
-| GET/PUT | `/prices/tolerances` | Tolerance rules by asset class, currency, source (versioned, audited) |
-| POST | `/prices/tolerances/impact` | Proposed rules → count of exceptions that would appear or clear |
-| POST | `/prices/bulk-resolve` | `{ ids, resolution, reason }` |
-| POST | `/prices/:id/resolve` | `{ resolution: 'accept' \| 'acceptConditionally' \| 'override', value?, challengeRef?, reason }` |
+| POST | `/prices/query` | Grid query → `PriceRow`: price, prior-day price, stored tolerance result and, when it fails, the `failedRule` (rule id, threshold, actual). Fields: `securityId`, `security`, `assetClass`, `priceDate`, `price`, `priorPrice`, `currency`, `source`, `toleranceStatus` |
+| GET | `/prices/tolerances` | `ToleranceRule[]` |
+| PUT | `/prices/tolerances` | `{ rules: [{ id, threshold, holidayAware? }] }`. Needs `tolerance.edit`. Each changed rule gets a new version and an audit event; the latest prices are then judged again |
+| POST | `/prices/tolerances/impact` | Same body, saves nothing → `ToleranceImpact`: how many of the latest prices would start failing (`appear`) or stop failing (`clear`) |
+
+How a price is judged: no price fails the `missing` rule; a move over the `dayOverDay` threshold is a variance; an unchanged price is stale, unless the rule is holiday-aware and the security's market was closed on the previous weekday (business rule 10). Price exceptions are resolved through `/exceptions/bulk`; there is no separate price-resolve endpoint.
 
 ### Cash, positions, reconciliation
 | Method | Path | Purpose |
 | --- | --- | --- |
-| POST | `/positions/query` | Grid query |
-| POST | `/cash/query` | Grid query |
-| POST | `/comparisons` | `{ left: Source, right: Source, keys, tolerances }` → aligned rows with deltas |
+| POST | `/comparisons` | `{ kind: "books", portfolioId }` → `Comparison`: investment book against accounting book per security, with units and a tolerance (built) |
+| POST | `/positions/query` | Grid query (not built) |
+| POST | `/cash/query` | Grid query (not built) |
 
 ### Exceptions
 | Method | Path | Purpose |
 | --- | --- | --- |
-| POST | `/exceptions/query` | Grid query |
+| POST | `/exceptions/query` | Grid query, oldest first by default. Fields: `id`, `type`, `severity` (sorts high to low), `status`, `portfolioId`, `portfolio`, `periodEnd`, `detectedAt`, `dueBy`, `ownerId`, `owner`, `rootCauseCategory`, `matchedRuleId`, `record`. Price exceptions carry `failedRule` |
 | GET | `/exceptions/:id` | Detail with thread and evidence |
-| POST | `/exceptions/:id/thread` | Add comment |
-| POST | `/exceptions/:id/evidence` | Attach evidence (multipart) |
-| POST | `/exceptions/bulk` | Assign, resolve, accept, override, escalate, attach evidence |
-| GET/POST | `/exceptions/rules` | Recurring-break rules: match pattern, root-cause category, proposed resolution |
+| POST | `/exceptions/:id/thread` | `{ text }` adds a comment (audited) |
+| POST | `/exceptions/bulk` | `{ actionId, ids, inputs }` → `BulkResult`. Up to 1,000 ids. Closed exceptions are skipped with the reason |
+| GET/POST | `/exceptions/rules` | Recurring-break rules. POST `{ name, match: { type, counterparty?, portfolioIds?, maxAmount? }, rootCauseCategory }`. Needs `exception.rules` |
 | PUT/DELETE | `/exceptions/rules/:id` | Update, delete (audited) |
+| POST | `/exceptions/rules/:id/apply` | Tags open, untagged exceptions the rule describes as proposals → `{ tagged }`. Resolves nothing |
 | GET | `/exceptions/root-causes` | Team-maintained root-cause categories |
+
+Bulk action ids and what `inputs` must carry:
+
+| Action | Needs | Result |
+| --- | --- | --- |
+| `exception.assign` | `ownerId` | Owner set; `new` becomes `inProgress` |
+| `exception.resolve` | `note`, `rootCauseCategory` | `resolved` |
+| `exception.accept` | `note` | `resolved`, root cause "Accepted: …" |
+| `exception.acceptConditionally` | `note`, `challengeRef` | `acceptedConditionally`, with the challenge as evidence |
+| `exception.override` | `note` | `overridden` |
+| `exception.escalate` | | Severity up one step; `waitingOnOthers` |
+| `exception.attachEvidence` | `evidence: { name }` | The same evidence id on every exception. The file's content is not stored by the mock |
+| `exception.acceptProposal` | | Resolves with the root cause the rule proposed. Exceptions with no proposal are skipped |
+
+A missing input is a 422 naming the field. Every action writes one audit event per exception, with the note, plus one for the batch.
 
 ### Periods and close
 | Method | Path | Purpose |
 | --- | --- | --- |
 | GET | `/periods?portfolioId=` | `AccountingPeriod[]`, newest first |
 | GET | `/calendars/:market` | `MarketCalendar`: holidays for a calendar code (e.g. `US`), for business-day rules |
-| GET | `/periods/:id/checklist` | Close checks with status and exception counts |
-| POST | `/periods/close` | `{ portfolioIds, periodEnd, closeTypes }` → `{ jobId }` |
-| POST | `/periods/reopen` | `{ periodId, closeTypes, reason }` (creates an approval request) |
-| GET | `/periods/overview?periodEnd=` | All owned portfolios: cutoff, checks passed, blocking counts, status per close type, sign-off |
-| POST | `/periods/:id/override-block` | `{ reason }` → approval request |
-| POST | `/periods/:id/signoff` | `{ note }` |
-| POST | `/periods/:id/package` | → `{ jobId }`; outputs PDF and XLSX close package |
+| GET | `/periods/overview?periodEnd=&scope=` | `PeriodOverviewRow[]`: cutoff, checks passed, blocking count, status per close type, override status, sign-off. Default period is the latest that is not closed. `scope=mine` (default) is the portfolios the user controls; a user who controls none, or `scope=all`, gets every portfolio |
+| GET | `/periods/:id/checklist` | `CloseChecklist`: the ten checks, the blocking exceptions by name, and any override, reopen or sign-off |
+| POST | `/periods/close` | `{ portfolioIds, periodEnd, closeTypes? }` → 202 `Job` (`periodClose`), one result per portfolio. A portfolio with an open high-severity exception fails with `LL-CLS-0001`, naming up to five, unless a block override was approved. Needs `period.close` |
+| POST | `/periods/:id/override-block` | `{ reason }` → 201 `ApprovalRequest` (pending). Needs `period.overrideBlock`. 409 when nothing is blocking or one is already waiting |
+| POST | `/periods/reopen` | `{ periodId, closeTypes?, reason }` → 201 `ApprovalRequest` (pending). Needs `period.reopen`. Nothing reopens until a second person approves |
+| POST | `/periods/:id/signoff` | `{ note? }` → `CloseSignOff`. Needs `period.signoff`; 409 unless every close type is closed |
+| POST | `/periods/:id/package` | → 202 `Job` with two outputs: a PDF and an XLSX close package. 409 before sign-off |
+| POST | `/periods/checks/run` | `{ periodEnd, portfolioIds? }` → `{ created, proposed }`. Runs the cash-to-custodian check: each unapplied receipt or outstanding wire becomes a cash break once. New breaks are offered to the recurring-break rules |
 
 ### Views and workspaces
 | Method | Path | Purpose |
@@ -154,8 +171,9 @@ Import rules for transactions:
 ### Approvals
 | Method | Path | Purpose |
 | --- | --- | --- |
-| POST | `/approvals/query` | Queue for the current approver |
-| POST | `/approvals/decide` | `{ ids, decision: 'approve' \| 'reject', note }` |
+| POST | `/approvals/query` | Grid query. Approvers see every request; everyone else sees the ones they made. Fields: `id`, `actionId`, `status`, `makerId`, `maker`, `requestedAt`, `record` |
+| POST | `/approvals/:id/decide` | `{ decision: "approve" \| "reject", note? }`. Needs `approval.decide`. The maker gets a 403 `LL-APR-0001` (segregation of duties). A rejection needs a note. Approving a reopen reopens the period at once; approving a block override lets the close job through |
+| POST | `/approvals/decide` | `{ ids, decision, note? }` → `BulkResult`. A request the caller made fails on its row with `LL-APR-0001` |
 
 ### Client
 | Method | Path | Purpose |
@@ -165,7 +183,7 @@ Import rules for transactions:
 ### Audit
 | Method | Path | Purpose |
 | --- | --- | --- |
-| POST | `/audit/query` | Grid query |
+| POST | `/audit/query` | Grid query, newest first. Fields: `id`, `action`, `recordType`, `recordId`, `actorId`, `actor`, `actorType`, `at`, `effectiveDate`, `batchId`. Needs `audit.view` (built) |
 | GET | `/audit/record/:type/:id` | Timeline for one record: `AuditEvent[]`, newest first. Needs `audit.view` (built) |
 
 ## Business rules the mock must enforce

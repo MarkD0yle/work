@@ -37,7 +37,9 @@ class DomCell<Row> implements ICellRendererComp<Row> {
     if (isGroupRow(params.data)) this.gui.replaceChildren();
     else
       this.gui.replaceChildren(
-        params.data === undefined ? placeholderElement() : cellElement(params.llColumn, params.data),
+        params.data === undefined || params.data === null
+          ? placeholderElement()
+          : cellElement(params.llColumn, params.data),
       );
   }
 }

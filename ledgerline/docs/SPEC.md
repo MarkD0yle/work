@@ -307,8 +307,8 @@ Side-by-side and delta views: basis vs basis (e.g. GAAP vs tax), previous vs cur
 - Each side shows source, effective date, update time, override provenance.
 
 **Acceptance**
-- [ ] A tolerance breach is identifiable without colour.
-- [ ] Zero and missing never render the same.
+- [x] A tolerance breach is identifiable without colour.
+- [x] Zero and missing never render the same.
 
 ### 7.10 Audit History — Milestone 6
 
@@ -321,8 +321,8 @@ Record timeline plus a filterable grid, from `AuditEvent`.
 - Data-changing actions write audit from their first release, even before this UI ships.
 
 **Acceptance**
-- [ ] Every proof-journey action that changes data produces an event with before and after.
-- [ ] Agent events show the user they acted on behalf of.
+- [x] Every proof-journey action that changes data produces an event with before and after.
+- [x] Agent events show the user they acted on behalf of.
 
 ### 7.11 Jobs, Processing and Results — Milestone 5
 
@@ -383,11 +383,11 @@ Each exception has type, severity, record, portfolio, detected by, owner (person
 - **Bulk evidence:** attach one custodian statement to many exceptions.
 
 **Acceptance**
-- [ ] A user can filter to "mine, high severity, new" and bulk-assign.
-- [ ] A saved recurring-break rule tags next month's matching exceptions as proposals; none resolve without a person.
-- [ ] One file can be attached to 50 exceptions in one action.
-- [ ] Every resolution writes audit with a note.
-- [ ] Evidence and thread stay with the exception; no email needed.
+- [x] A user can filter to "mine, high severity, new" and bulk-assign.
+- [x] A saved recurring-break rule tags next month's matching exceptions as proposals; none resolve without a person.
+- [x] One file can be attached to 50 exceptions in one action.
+- [x] Every resolution writes audit with a note.
+- [x] Evidence and thread stay with the exception; no email needed.
 
 ### 8.3 Period Close Console
 
@@ -413,11 +413,11 @@ Per portfolio and period: close checklist, exception counts, close status per cl
 | GL to accounting reports | Mapping breaks |
 
 **Acceptance**
-- [ ] Close is blocked while any high-severity exception is open; the block names them. A controller with the `period.overrideBlock` permission can close anyway with a reason; the override needs a second approver and is audited.
-- [ ] The overview shows all owned portfolios with cutoff countdown and blocking counts on one screen.
-- [ ] Sign-off produces a downloadable close package.
-- [ ] Closing many portfolios runs as one job with per-portfolio results.
-- [ ] Reopen requires a reason and the reopen permission; both are audited.
+- [x] Close is blocked while any high-severity exception is open; the block names them. A controller with the `period.overrideBlock` permission can close anyway with a reason; the override needs a second approver and is audited.
+- [x] The overview shows all owned portfolios with cutoff countdown and blocking counts on one screen.
+- [x] Sign-off produces a downloadable close package.
+- [x] Closing many portfolios runs as one job with per-portfolio results.
+- [x] Reopen requires a reason and the reopen permission; both are audited.
 
 ### 8.4 Price Review
 
@@ -428,8 +428,8 @@ Per portfolio and period: close checklist, exception counts, close status per cl
 - Vendor-vs-vendor and prior-day deltas are inline delta columns (7.1), not a separate screen.
 
 **Acceptance**
-- [ ] Changing a tolerance re-evaluates today's prices and shows how many exceptions appear or clear before saving.
-- [ ] Each price exception names the rule, threshold and actual move.
+- [x] Changing a tolerance re-evaluates today's prices and shows how many exceptions appear or clear before saving.
+- [x] Each price exception names the rule, threshold and actual move.
 
 ### 8.5 Approval Queue
 
@@ -440,8 +440,8 @@ Maker-checker for overrides, reopens, close-block overrides and any action with 
 - The maker cannot approve their own request (segregation of duties).
 
 **Acceptance**
-- [ ] A self-approval attempt is blocked with a segregation-of-duties explanation.
-- [ ] Rejected requests return to the maker with the note.
+- [x] A self-approval attempt is blocked with a segregation-of-duties explanation.
+- [x] Rejected requests return to the maker with the note.
 
 ### 8.6 Client Home
 

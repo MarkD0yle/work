@@ -26,6 +26,8 @@ interface ColumnBase {
   pinned?: 'left' | 'right';
   /** Rows can be grouped by this column (Enterprise). The server must be able to group on the field. */
   groupable?: boolean;
+  /** The name to show for a group, when the server groups on a stored code ("cashBreak") and cells show a name ("Cash break"). */
+  groupLabel?: (key: string) => string;
   /** Starts hidden. The user turns it on from the Columns menu. */
   hiddenByDefault?: boolean;
   /** Restricted columns cannot be copied; the reason is shown to the user. */

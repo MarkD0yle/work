@@ -49,6 +49,7 @@ export const columns: LLColumnDef<TransactionRow>[] = [
     width: 132,
     groupable: true,
     value: (r) => TYPE_LABELS[r.type] ?? r.type,
+    groupLabel: (key) => TYPE_LABELS[key] ?? key,
   },
   {
     field: 'tradeDate',

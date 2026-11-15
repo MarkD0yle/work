@@ -42,6 +42,7 @@ const columns: LLColumnDef<PriceRow>[] = [
     width: 130,
     groupable: true,
     value: (p) => ASSET[p.assetClass] ?? p.assetClass,
+    groupLabel: (key) => ASSET[key] ?? key,
   },
   {
     field: 'priceDate',

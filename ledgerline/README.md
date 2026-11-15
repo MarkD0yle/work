@@ -29,7 +29,7 @@ pnpm storybook    # http://localhost:6006
 
 Open Claude Code in this folder and prompt:
 
-> Read CLAUDE.md, docs/SPEC.md and docs/PLAN.md. Implement Milestone 6. Plan first, listing the acceptance criteria you will test. Stop at the exit gate and report.
+> Read CLAUDE.md, docs/SPEC.md and docs/PLAN.md. Implement Milestone 7. Plan first, listing the acceptance criteria you will test. Stop at the exit gate and report.
 
 ## Files
 

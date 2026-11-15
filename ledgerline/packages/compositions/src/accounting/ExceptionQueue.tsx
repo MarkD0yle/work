@@ -329,6 +329,7 @@ export function ExceptionQueue({
         width: 160,
         groupable: true,
         value: (x) => EXCEPTION_TYPES[x.type],
+        groupLabel: (key) => EXCEPTION_TYPES[key as ExceptionType] ?? key,
       },
       {
         field: 'record',
@@ -1035,7 +1036,7 @@ function BreakRulesDialog({
               <Button
                 variant="secondary"
                 disabled={!canEdit || busy !== null}
-                aria-label={`Apply ${rule.name}`}
+                aria-label={`Apply now: ${rule.name}`}
                 onClick={() =>
                   void act(rule.id, async () => {
                     const { tagged } = await applyBreakRule(rule.id);
@@ -1049,7 +1050,7 @@ function BreakRulesDialog({
               <Button
                 variant="ghost"
                 disabled={!canEdit || busy !== null}
-                aria-label={`Delete ${rule.name}`}
+                aria-label={`Delete: ${rule.name}`}
                 onClick={() =>
                   void act(rule.id, async () => {
                     await deleteBreakRule(rule.id);

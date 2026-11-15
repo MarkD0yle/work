@@ -143,6 +143,10 @@ test.describe('saved views', () => {
     await expect(page.locator('.ag-header-cell[col-id="amount"]')).toHaveAttribute('aria-sort', 'descending');
     await expect(page.getByRole('button', { name: /Group.*1/ })).toBeVisible();
     await expect(page.locator('.ag-row-group').first()).toBeVisible();
+    // A group row names its group, as the cells do: the status label, not the stored code.
+    await expect(page.locator('.ag-row-group [data-slot="group-label"]').first()).toHaveText(
+      /^(Unposted|Posted|Reversed)$/,
+    );
     // Opening a group loads its records, sorted as the view says.
     const leaf = lastQuery(
       page,

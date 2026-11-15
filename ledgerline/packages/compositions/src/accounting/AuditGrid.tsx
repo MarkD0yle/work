@@ -48,6 +48,7 @@ export function AuditGrid({ me }: { me: Me }) {
         width: 240,
         groupable: true,
         value: (e) => describeAction(e.action, ACTION_LABELS),
+        groupLabel: (key) => describeAction(key, ACTION_LABELS),
       },
       {
         field: 'recordType',
