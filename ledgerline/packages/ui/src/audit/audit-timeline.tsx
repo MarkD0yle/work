@@ -30,6 +30,8 @@ export function describeAction(action: string, labels: Record<string, string> = 
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 const humanise = (field: string) => {
+  // An action id used as a field name ("report.run") is shown as it is: it is what support will search for.
+  if (field.includes('.')) return field;
   const words = field.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase();
   return words.charAt(0).toUpperCase() + words.slice(1);
 };

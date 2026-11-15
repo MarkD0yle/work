@@ -1,4 +1,5 @@
 import type {
+  ActionDef,
   EntityRef,
   FilterCondition,
   GridQuery,
@@ -85,6 +86,7 @@ const GRID_JOBS: GridJobs = {
   },
 };
 const EMPTY_PERMISSIONS: Permission[] = [];
+const NO_ACTIONS: ActionDef<TransactionRow>[] = [];
 const onAction = (event: Record<string, unknown>) => track('action.invoked', { gridId: GRID_ID, ...event });
 
 export interface BlotterHandle {
@@ -439,7 +441,8 @@ function Blotter({
             initialView={gridPart(start.state)}
             onViewChange={setGridView}
             onRowOpen={openRow}
-            actions={actions}
+            // External clients read and export only: no entry, import, post or reverse is offered (SPEC 8.6).
+            actions={user.segment === 'client' ? NO_ACTIONS : actions}
             jobs={GRID_JOBS}
             permissions={permissions.data ?? EMPTY_PERMISSIONS}
             noun={NOUN}

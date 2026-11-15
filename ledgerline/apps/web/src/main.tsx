@@ -9,6 +9,7 @@ import { api, download, openStream } from './api/client';
 import { Shell } from './app/Shell';
 import { flags } from './flags';
 import './index.css';
+import { Admin } from './routes/Admin';
 import { DomainPlaceholder } from './routes/DomainPlaceholder';
 import { Home } from './routes/Home';
 import { Reports } from './routes/Reports';
@@ -69,6 +70,11 @@ const router = createBrowserRouter([
         lazy: gridRoute(async () => (await import('./routes/MarketData')).MarketData),
       },
       { path: 'reports', element: <Reports /> },
+      { path: 'admin', element: <Admin /> },
+      {
+        path: 'home',
+        lazy: gridRoute(async () => (await import('./routes/ClientHomePage')).ClientHomePage),
+      },
       { path: ':domain', element: <DomainPlaceholder /> },
     ],
   },

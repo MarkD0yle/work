@@ -12,6 +12,8 @@ import type {
   Comparison,
   ExceptionRecord,
   PeriodOverviewRow,
+  PositionRow,
+  Statement,
   PriceRow,
   RecurringBreakRule,
   ToleranceImpact,
@@ -238,3 +240,21 @@ export const saveTolerances = (rules: ToleranceEdit[]) =>
 
 // ── Audit ──
 export const queryAudit = (query: GridQuery) => post<GridResponse<AuditEvent>>('/audit/query', query);
+
+// ── Admin ──
+export const fetchAdminUsers = () => request<User[]>('/admin/users');
+export const updateAdminUser = (
+  id: string,
+  input: { blotterScope?: string[] | null; defaultDensity?: User['defaultDensity'] },
+) => put<User>(`/admin/users/${encodeURIComponent(id)}`, input);
+export const fetchUserPermissions = (id: string) =>
+  request<Permission[]>(`/admin/users/${encodeURIComponent(id)}/permissions`);
+export const updateUserPermissions = (
+  id: string,
+  changes: { action: string; accessLevel: Permission['accessLevel'] }[],
+) => put<Permission[]>(`/admin/users/${encodeURIComponent(id)}/permissions`, { changes });
+
+// ── Client home ──
+export const queryPositions = (query: GridQuery) =>
+  post<GridResponse<PositionRow>>('/positions/query', query);
+export const fetchStatements = () => request<Statement[]>('/statements');

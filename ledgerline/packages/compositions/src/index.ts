@@ -5,3 +5,4 @@ export { JobDetail, type JobDetailProps } from './jobs/JobDetail';
 export { JobTray, type JobTrayProps } from './jobs/JobTray';
 export { connectJobs, markJobSeen, noteJob, onJobFinished, useJobs, watchJob } from './jobs/job-store';
 export { ReportsList } from './reports/ReportsList';
+export { AdminConsole } from './admin/AdminConsole';

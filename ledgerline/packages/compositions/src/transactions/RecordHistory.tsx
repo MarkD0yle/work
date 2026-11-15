@@ -36,6 +36,8 @@ export const ACTION_LABELS: Record<string, string> = {
   'approval.approve': 'Approved',
   'approval.reject': 'Rejected',
   'tolerance.update': 'Tolerance changed',
+  'admin.user.update': 'Scope or display changed',
+  'admin.permission.update': 'Access level changed',
 };
 export const FIELD_LABELS: Record<string, string> = {
   portfolioId: 'Portfolio',

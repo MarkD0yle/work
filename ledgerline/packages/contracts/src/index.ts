@@ -693,3 +693,26 @@ export interface Comparison {
   tolerancePct: string;
   rows: ComparisonRow[];
 }
+
+// ─────────────────────────────────────────────────────────────
+// Client home (added in Milestone 7)
+// ─────────────────────────────────────────────────────────────
+
+export interface PositionRow {
+  id: string;
+  portfolio: EntityRef;
+  security: EntityRef;
+  assetClass: string;
+  quantity: FinancialValue;
+  marketValue: FinancialValue;
+  asOf: BusinessDate;
+}
+
+export interface Statement {
+  id: string;
+  portfolio: EntityRef;
+  periodEnd: string;
+  name: string;
+  /** Path, under the API base, to download the PDF. */
+  url: string;
+}

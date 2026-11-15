@@ -8,7 +8,9 @@ import { SEED_TODAY } from './db/seed';
 import { HttpError } from './lib/http';
 import { registerEntityRoutes } from './routes/entities';
 import { JobRunner } from './jobs/runner';
+import { registerAdminRoutes } from './routes/admin';
 import { registerApprovalRoutes } from './routes/approvals';
+import { registerClientRoutes } from './routes/client';
 import { registerCloseRoutes } from './routes/close';
 import { registerEntryRoutes } from './routes/entry';
 import { registerExceptionRoutes } from './routes/exceptions';
@@ -205,6 +207,8 @@ export function buildApp(db: Db, clock: Clock = defaultClock): FastifyInstance {
   registerCloseRoutes(app, db, API_BASE, clock, jobs);
   registerApprovalRoutes(app, db, API_BASE, clock);
   registerPriceRoutes(app, db, API_BASE, clock);
+  registerAdminRoutes(app, db, API_BASE, clock);
+  registerClientRoutes(app, db, API_BASE, clock);
 
   // Every handler is registered by now: pick up anything left unfinished by the last run.
   jobs.resume();
