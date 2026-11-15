@@ -313,10 +313,23 @@ test.describe('transactions grid', () => {
   test('rows with warnings carry a marker that explains the warning', async ({ page }) => {
     await openGrid(page);
     await page.getByRole('searchbox', { name: 'Quick search transactions' }).fill('T-00000');
+    // Narrow to one warned row, so the marker is certainly in view (the grid also renders rows off screen).
+    await expect(page.locator('[data-slot="row-marker"]').first()).toBeAttached();
+    const warnedId = await page
+      .locator('[data-slot="row-marker"]')
+      .first()
+      .locator('xpath=ancestor::*[@row-id][1]')
+      .getAttribute('row-id');
+    await page.getByRole('searchbox', { name: 'Quick search transactions' }).fill(warnedId as string);
+    await expect(page.locator('[data-slot="status-bar"]')).toContainText('1 row');
     const marker = page.locator('[data-slot="row-marker"]').first();
     await expect(marker).toHaveAccessibleName(/^Warning: /);
-    await marker.hover();
-    await expect(page.getByRole('tooltip')).toContainText(/LL-VAL-\d{4}/);
+    // The grid may redraw the row once more after the search lands, so hover until the tooltip holds.
+    await expect(async () => {
+      await page.mouse.move(0, 0);
+      await marker.hover();
+      await expect(page.getByRole('tooltip')).toContainText(/LL-VAL-\d{4}/, { timeout: 1500 });
+    }).toPass();
   });
 
   test('density changes row height from tokens', async ({ page }) => {

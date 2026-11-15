@@ -1,53 +1,45 @@
-import type { ColDef, ICellRendererParams } from 'ag-grid-community';
+import type { ColDef, ICellRendererComp, ICellRendererParams } from 'ag-grid-community';
 import type { Message } from '@ledgerline/contracts';
-import { Badge } from '../components/badge';
-import { FinancialCell } from '../financial/financial-cell';
 import { RowMarker } from '../state/row-marker';
-import { displayText, formatBusinessDate } from './copy';
+import { cellElement, placeholderElement } from './dom-cells';
 import type { LLColumnDef } from './types';
 
-/** Rows not loaded yet (infinite and server-side models) have no data: show a quiet placeholder. */
-const Placeholder = () => (
-  <span className="text-muted-foreground" aria-label="Loading">
-    …
-  </span>
-);
+interface DomCellParams<Row> extends ICellRendererParams<Row> {
+  llColumn: LLColumnDef<Row>;
+}
 
-function renderCell<Row>(column: LLColumnDef<Row>, row: Row) {
-  switch (column.type) {
-    case 'financial':
-      return <FinancialCell value={column.value(row)} inGrid />;
-    case 'date': {
-      const date = column.value(row);
-      return date.value === null ? (
-        <span className="text-muted-foreground" aria-label="No date">
-          —
-        </span>
-      ) : (
-        <span className="tabular">{formatBusinessDate(date)}</span>
-      );
-    }
-    case 'status': {
-      const value = column.value(row);
-      const status = column.statuses[value];
-      return <Badge status={status?.tone ?? 'neutral'}>{status?.label ?? value}</Badge>;
-    }
-    case 'entity': {
-      const entity = column.value(row);
-      return entity ? (
-        <span className="flex min-w-0 items-baseline gap-2" title={`${entity.label} (${entity.id})`}>
-          <span className="truncate">{entity.label}</span>
-          <span className="shrink-0 font-mono text-2xs text-muted-foreground">{entity.id}</span>
-        </span>
-      ) : (
-        <span aria-label="None" />
-      );
-    }
-    case 'text':
-      return <span className={column.mono ? 'font-mono' : undefined}>{column.value(row) ?? ''}</span>;
-    case 'boolean':
-      return <span>{displayText(column, row)}</span>;
+/**
+ * One plain-DOM renderer for every data column. AG Grid treats a class with `getGui` as a native
+ * component, so no React tree is created per cell.
+ */
+class DomCell<Row> implements ICellRendererComp<Row> {
+  private gui = document.createElement('div');
+
+  init(params: DomCellParams<Row>): void {
+    this.gui.className = 'flex h-full w-full min-w-0 items-center';
+    this.draw(params);
   }
+
+  getGui(): HTMLElement {
+    return this.gui;
+  }
+
+  refresh(params: DomCellParams<Row>): boolean {
+    this.draw(params);
+    return true;
+  }
+
+  private draw(params: DomCellParams<Row>): void {
+    // Rows not loaded yet (infinite and server-side models) have no data: show a quiet placeholder.
+    this.gui.replaceChildren(
+      params.data === undefined ? placeholderElement() : cellElement(params.llColumn, params.data),
+    );
+  }
+}
+
+/** The row marker keeps its React tooltip. One stable component, so the grid never remounts it between redraws. */
+function MarkerCell<Row>(params: ICellRendererParams<Row> & { llMessages: (row: Row) => Message[] }) {
+  return params.data === undefined ? null : <RowMarker messages={params.llMessages(params.data)} />;
 }
 
 const DEFAULT_WIDTH: Record<LLColumnDef<unknown>['type'], number> = {
@@ -76,6 +68,8 @@ export function headerText<Row>(column: LLColumnDef<Row>): string {
   return column.header;
 }
 
+export const MESSAGES_COLUMN = '__messages';
+
 export function toColDefs<Row>(
   columns: LLColumnDef<Row>[],
   rowMessages?: (row: Row) => Message[],
@@ -86,17 +80,16 @@ export function toColDefs<Row>(
     width: column.width ?? DEFAULT_WIDTH[column.type],
     sortable: column.sortable ?? true,
     resizable: true,
-    suppressMovable: false,
     ...(column.pinned ? { pinned: column.pinned } : {}),
     // Financial columns right-align in tabular figures; alignment is a property of the kind, not the cell.
     ...(column.type === 'financial' ? { type: 'rightAligned', cellClass: 'll-cell-financial' } : {}),
-    cellRenderer: (params: ICellRendererParams<Row>) =>
-      params.data === undefined ? <Placeholder /> : renderCell(column, params.data),
+    cellRenderer: DomCell,
+    cellRendererParams: { llColumn: column },
   }));
   if (!rowMessages) return defs;
   return [
     {
-      colId: '__messages',
+      colId: MESSAGES_COLUMN,
       headerName: 'Messages',
       headerClass: 'll-header-icon-only',
       width: 44,
@@ -104,8 +97,13 @@ export function toColDefs<Row>(
       sortable: false,
       resizable: false,
       suppressMovable: true,
-      cellRenderer: (params: ICellRendererParams<Row>) =>
-        params.data === undefined ? null : <RowMarker messages={rowMessages(params.data)} />,
+      lockVisible: true,
+      // Only rows that have messages mount the (React) marker; every other row stays an empty cell.
+      cellRendererSelector: (params: ICellRendererParams<Row>) =>
+        params.data !== undefined && rowMessages(params.data).length
+          ? { component: MarkerCell, params: { llMessages: rowMessages } }
+          : undefined,
+      valueGetter: () => '',
     },
     ...defs,
   ];

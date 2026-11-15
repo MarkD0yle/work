@@ -1,5 +1,7 @@
 import type { BusinessDate, FinancialValue, Message, UiState } from '@ledgerline/contracts';
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { useState } from 'react';
+import type { FilterCondition } from '@ledgerline/contracts';
 import { NotificationProvider } from '../state/notifications';
 import { LLGrid } from './ll-grid';
 import type { LLColumnDef, LLDataSource } from './types';
@@ -209,3 +211,26 @@ export const Stale: Story = {
 export const ClientRole: Story = {
   render: () => grid({ features: { selection: false, copy: true, quickSearch: true } }),
 };
+
+function Filtered() {
+  const [filters, setFilters] = useState<FilterCondition[]>([
+    { field: 'status', op: 'eq', value: 'unposted' },
+    { field: 'tradeDate', op: 'relative', period: 'yesterday' },
+  ]);
+  return (
+    <LLGrid
+      gridId="story-filtered"
+      label="Transactions"
+      columns={columns}
+      rowId={rowId}
+      dataSource={client}
+      features={features}
+      filters={filters}
+      onFiltersChange={setFilters}
+      onDensityChange={() => undefined}
+    />
+  );
+}
+
+/** Every active filter is a removable tag; the toolbar also offers columns and density. */
+export const FilterTags: Story = { render: () => <Filtered /> };

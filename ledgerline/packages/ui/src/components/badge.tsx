@@ -2,7 +2,8 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import type { ComponentProps } from 'react';
 import { cn } from '../lib/cn';
 
-const badgeVariants = cva(
+/** Exported so plain-DOM grid cells get exactly the same classes as the React component. */
+export const badgeVariants = cva(
   'inline-flex h-5 w-fit shrink-0 items-center gap-1 rounded-sm border px-1.5 text-2xs font-medium whitespace-nowrap [&_svg]:size-3',
   {
     variants: {

@@ -122,7 +122,7 @@ Each capability: purpose, rules, acceptance criteria. Acceptance criteria become
 
 The central workspace. AG Grid wrapped; apps never import AG Grid.
 
-**Anatomy:** toolbar (view selector, quick search, filter tags, density, columns, export) · selection bar (selected, eligible, ineligible counts, actions) · header · body with typed cells · status bar (row count, aggregates of selected range, last refreshed, stale warning) · state overlay.
+**Anatomy:** toolbar (view selector, quick search, filter tags, density, columns, export; the view selector arrives with Saved Views in Milestone 2 and export with Jobs in Milestone 5) · selection bar (selected, eligible, ineligible counts, actions) · header · body with typed cells · status bar (row count, aggregates of selected range, last refreshed, stale warning) · state overlay.
 
 **Props (minimum):** `gridId`, `columns: LLColumnDef[]`, `dataSource` (client or server), `rowId`, `features` (role-based feature set), `selection`, `editing`, `actions: ActionDef[]`, `permissions`, `density`, `onStateChange`.
 
@@ -143,7 +143,7 @@ The central workspace. AG Grid wrapped; apps never import AG Grid.
 **Keyboard:** arrows move; Space selects; Shift extends; Ctrl/Cmd+A selects all in view (not all server rows); Enter or F2 edits; Escape cancels then clears; Ctrl/Cmd+C copies; Shift+F10 opens actions.
 
 **Acceptance**
-- [ ] 100,000 server-side rows: first paint under 1.5s, smooth scroll (Enterprise only). *First paint passes on Community (0.6–1.2s on 250,000 rows). Smooth scroll not yet proven; see DECISIONS.md.*
+- [x] 100,000 server-side rows: first paint under 1.5s, smooth scroll (Enterprise only). *Measured on 250,000 rows in headless Chromium: first paint about 0.4s; 60 frames a second at normal scroll speed; about 50 during a very fast flick. Not yet checked on real user hardware. See DECISIONS.md.*
 - [x] A financial column never shows more or fewer decimals than its registry entry.
 - [x] Refresh keeps focus, selection and scroll.
 - [x] Every keyboard interaction works with no mouse.

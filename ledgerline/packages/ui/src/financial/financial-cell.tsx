@@ -20,7 +20,7 @@ export interface FinancialCellProps {
   className?: string;
 }
 
-function ProvenanceDetails({ value }: { value: FinancialValue }) {
+export function ProvenanceDetails({ value }: { value: FinancialValue }) {
   const p = value.provenance;
   const rows: [string, string][] = [['Origin', originLabel(p.origin)]];
   if (p.source) rows.push(['Source', p.source]);

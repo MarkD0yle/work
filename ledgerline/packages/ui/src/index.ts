@@ -30,6 +30,7 @@ export {
   DropdownMenuTrigger,
 } from './components/dropdown-menu';
 export { Separator } from './components/separator';
+export { toast, Toaster } from './components/toaster';
 export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './components/tooltip';
 
 export { Input, Label, Textarea } from './components/input';

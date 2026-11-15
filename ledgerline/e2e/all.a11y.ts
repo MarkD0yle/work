@@ -54,6 +54,27 @@ for (const theme of THEMES) {
   });
 }
 
+for (const theme of THEMES) {
+  test(`transactions with the detail panel and filter tags open, ${theme}`, async ({ page }) => {
+    await page.addInitScript((t) => {
+      localStorage.setItem(
+        'll-session',
+        JSON.stringify({
+          state: { userId: 'u-ada', theme: t, density: null, railCollapsed: false },
+          version: 0,
+        }),
+      );
+    }, theme);
+    await page.goto('/transactions');
+    await page.getByRole('searchbox', { name: 'Quick search transactions' }).fill('TREASURY');
+    await expect(page.getByRole('list', { name: 'Active filters' })).toBeVisible();
+    await page.locator('.ag-row[row-index="0"] [col-id="type"]').first().dblclick();
+    const panel = page.getByRole('complementary', { name: 'Transaction detail' });
+    await expect(panel.getByLabel('Amount', { exact: true })).toBeVisible();
+    await expectNoSeriousViolations(page);
+  });
+}
+
 interface StoryIndex {
   entries: Record<string, { id: string; title: string; name: string; type: string }>;
 }

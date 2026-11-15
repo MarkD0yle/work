@@ -130,7 +130,8 @@ export const transactions = sqliteTable(
   (t) => [
     index('transactions_portfolio').on(t.portfolioId),
     index('transactions_security').on(t.securityId),
-    index('transactions_trade_date').on(t.tradeDate),
+    // Covers the default grid order (trade date, then id), so paging walks the index without sorting.
+    index('transactions_trade_date').on(t.tradeDate, t.id),
     index('transactions_status').on(t.status, t.tradeDate),
   ],
 );

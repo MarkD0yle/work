@@ -1,8 +1,16 @@
 import type { GridQuery, GridResponse, TransactionRow } from '@ledgerline/contracts';
-import { gridFeatures, LLGrid, type LLColumnDef, type LLDataSource } from '@ledgerline/ui/grid';
-import { useMemo } from 'react';
+import {
+  gridFeatures,
+  LLGrid,
+  type LLColumnDef,
+  type LLDataSource,
+  type LLGridHandle,
+} from '@ledgerline/ui/grid';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useOutletContext } from 'react-router';
 import { api, type Me } from '../api/client';
+import { useSession } from '../state/session';
+import { TransactionPanel } from './TransactionPanel';
 
 const TYPE_LABELS: Record<string, string> = {
   buy: 'Buy',
@@ -87,9 +95,12 @@ const columns: LLColumnDef<TransactionRow>[] = [
 const rowId = (row: TransactionRow) => row.id;
 const rowMessages = (row: TransactionRow) => (row.warning ? [row.warning] : []);
 
-/** Milestone 1: the read-only transactions grid on seeded data. Views, actions and editing arrive in later milestones. */
+/** The transactions grid on seeded data. Opening a row shows its detail panel, where financial values can be edited. */
 export function Transactions() {
   const { user } = useOutletContext<Me>();
+  const setDensity = useSession((s) => s.setDensity);
+  const grid = useRef<LLGridHandle>(null);
+  const [openId, setOpenId] = useState<string | null>(null);
   const dataSource = useMemo<LLDataSource<TransactionRow>>(
     () => ({
       kind: 'server',
@@ -105,28 +116,52 @@ export function Transactions() {
     [user.id],
   );
   const features = useMemo(() => gridFeatures(user.segment), [user.segment]);
+  const openRow = useCallback((row: TransactionRow) => setOpenId(row.id), []);
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3 p-4">
-      <header className="shrink-0">
-        <h1 className="text-xl font-semibold tracking-tight">Transactions</h1>
-        {user.blotterScope ? (
-          <p className="text-muted-foreground">
-            Showing only your portfolios: {user.blotterScope.join(', ')}. Other records are outside your
-            account scope.
-          </p>
-        ) : null}
-      </header>
-      <LLGrid
-        key={user.id}
-        gridId="transactions"
-        label="Transactions"
-        columns={columns}
-        dataSource={dataSource}
-        rowId={rowId}
-        rowMessages={rowMessages}
-        features={features}
-      />
+    <div className="flex h-full min-h-0">
+      <div className="flex min-w-0 flex-1 flex-col gap-3 p-4">
+        <header className="shrink-0">
+          <h1 className="text-xl font-semibold tracking-tight">Transactions</h1>
+          {user.blotterScope ? (
+            <p className="text-muted-foreground">
+              Showing only your portfolios: {user.blotterScope.join(', ')}. Other records are outside your
+              account scope.
+            </p>
+          ) : (
+            <p className="text-muted-foreground">
+              Press Enter on a row, or double-click it, to open the transaction.
+            </p>
+          )}
+        </header>
+        <LLGrid
+          key={user.id}
+          ref={grid}
+          gridId="transactions"
+          label="Transactions"
+          columns={columns}
+          dataSource={dataSource}
+          rowId={rowId}
+          rowMessages={rowMessages}
+          features={features}
+          onRowOpen={openRow}
+          onDensityChange={setDensity}
+        />
+      </div>
+      {openId ? (
+        <TransactionPanel
+          key={`${user.id}-${openId}`}
+          id={openId}
+          user={user}
+          onSaved={() => grid.current?.refresh()}
+          onClose={() => {
+            const id = openId;
+            setOpenId(null);
+            // Focus goes back to the row the panel was opened from.
+            setTimeout(() => grid.current?.focusRow(id), 0);
+          }}
+        />
+      ) : null}
     </div>
   );
 }

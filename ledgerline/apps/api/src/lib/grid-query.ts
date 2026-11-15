@@ -106,8 +106,8 @@ export function buildGridQuery(
     fields: Record<string, FieldSpec>;
     /** Builds the quick-search clause; pushes its own params. */
     quickSearch: (term: string, params: unknown[]) => string;
-    defaultSort: string;
-    /** Unique column appended to every sort so paging is stable. */
+    defaultSort: { sql: string; dir: 'ASC' | 'DESC' };
+    /** Unique column appended to every sort so paging is stable. It follows the first sort's direction, so one index can serve both. */
     tieBreak: string;
     today: string;
     /** Extra clauses applied before user filters, e.g. blotter scope. */
@@ -129,14 +129,16 @@ export function buildGridQuery(
   const term = query.quickSearch?.trim();
   if (term) clauses.push(`(${options.quickSearch(term, params)})`);
 
-  const sort = (query.sort ?? []).map((s) => {
+  const requested = (query.sort ?? []).map((s) => {
     const spec = options.fields[s.field] ?? unknownField(s.field, options.fields);
-    return `${expr(spec)} ${s.dir === 'desc' ? 'DESC' : 'ASC'}`;
+    return { sql: expr(spec), dir: s.dir === 'desc' ? ('DESC' as const) : ('ASC' as const) };
   });
+  const sort = requested.length ? requested : [options.defaultSort];
+  const tieDir = (sort[0] as (typeof sort)[number]).dir;
 
   return {
     where: clauses.length ? `WHERE ${clauses.join(' AND ')}` : '',
-    orderBy: `ORDER BY ${[...(sort.length ? sort : [options.defaultSort]), options.tieBreak].join(', ')}`,
+    orderBy: `ORDER BY ${[...sort.map((x) => `${x.sql} ${x.dir}`), `${options.tieBreak} ${tieDir}`].join(', ')}`,
     params,
     limit: Math.min(query.endRow - query.startRow, MAX_PAGE),
     offset: query.startRow,

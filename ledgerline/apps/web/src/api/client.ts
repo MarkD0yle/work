@@ -5,6 +5,8 @@ export class ApiError extends Error {
   constructor(
     readonly status: number,
     readonly messages: Message[],
+    /** The full error body. A 409 carries the current `record`; a 403 carries the `permission`. */
+    readonly body: Record<string, unknown> = {},
   ) {
     super(messages[0]?.text ?? `Request failed (${status})`);
   }
@@ -32,7 +34,11 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const body: unknown = await response.json().catch(() => null);
   if (!response.ok) {
     const messages = (body as { messages?: Message[] } | null)?.messages;
-    throw new ApiError(response.status, messages?.length ? messages : [UNREACHABLE]);
+    throw new ApiError(
+      response.status,
+      messages?.length ? messages : [UNREACHABLE],
+      (body as Record<string, unknown> | null) ?? {},
+    );
   }
   return body as T;
 }

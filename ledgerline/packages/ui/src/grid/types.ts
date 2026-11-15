@@ -116,8 +116,16 @@ export interface LLGridProps<Row> {
   dataSource: LLDataSource<Row>;
   rowId: (row: Row) => string;
   features: LLGridFeatures;
-  /** Filters applied on top of quick search. Each one must be visible to the user as a tag (owned by the caller). */
+  /**
+   * Filters applied on top of quick search. The grid shows every one as a removable tag: there are no hidden filters.
+   * Removing a tag calls `onFiltersChange`; without that callback the tags are shown but cannot be removed.
+   */
   filters?: NonNullable<GridQuery['filters']>;
+  onFiltersChange?: (filters: NonNullable<GridQuery['filters']>) => void;
+  /** Opens a row (Enter, F2 or double-click), e.g. in a detail panel. */
+  onRowOpen?: (row: Row) => void;
+  /** When given, the toolbar offers a density control. The app owns the setting so it applies everywhere. */
+  onDensityChange?: (density: 'compact' | 'standard' | 'comfortable') => void;
   /** Messages for a row. Rows with messages get a marker in the first column. */
   rowMessages?: (row: Row) => Message[];
   /** State imposed from outside, e.g. stale or permission-limited. Overrides the grid's own state. */

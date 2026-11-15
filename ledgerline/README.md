@@ -2,7 +2,7 @@
 
 A web workbench for investment accounting operations, built from eleven reusable capabilities instead of hundreds of bespoke screens.
 
-**Status:** Milestone 0 (foundations and tooling) is complete. Milestones 1 to 7 are not started. See `docs/PLAN.md`.
+**Status:** Milestones 0 (foundations) and 1 (grid, financial fields, state and validation) are complete. Milestones 2 to 7 are not started. See `docs/PLAN.md`.
 
 ## Run it
 
@@ -29,7 +29,7 @@ pnpm storybook    # http://localhost:6006
 
 Open Claude Code in this folder and prompt:
 
-> Read CLAUDE.md, docs/SPEC.md and docs/PLAN.md. Implement Milestone 1. Plan first, listing the acceptance criteria you will test. Stop at the exit gate and report.
+> Read CLAUDE.md, docs/SPEC.md and docs/PLAN.md. Implement Milestone 2. Plan first, listing the acceptance criteria you will test. Stop at the exit gate and report.
 
 ## Files
 

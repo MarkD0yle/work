@@ -59,10 +59,6 @@ const SELECT = `
   FROM transactions t
   JOIN portfolios p ON p.id = t.portfolio_id
   LEFT JOIN securities s ON s.id = t.security_id`;
-const FROM_COUNT = `
-  FROM transactions t
-  JOIN portfolios p ON p.id = t.portfolio_id
-  LEFT JOIN securities s ON s.id = t.security_id`;
 
 interface Raw {
   id: string;
@@ -198,8 +194,8 @@ export function registerTransactionRoutes(
     const scope = scopeFor(request.user);
     const built = buildGridQuery(query, {
       fields: FIELDS,
-      defaultSort: 't.trade_date DESC',
-      tieBreak: 't.id ASC',
+      defaultSort: { sql: 't.trade_date', dir: 'DESC' },
+      tieBreak: 't.id',
       today: clock.today,
       ...(scope ? { scope } : {}),
       quickSearch: (term, params) => {
@@ -209,12 +205,26 @@ export function registerTransactionRoutes(
         return `t.id LIKE ? ESCAPE '\\' OR s.description LIKE ? ESCAPE '\\' OR p.name LIKE ? ESCAPE '\\' OR s.ticker = ? OR s.isin = ? OR s.cusip = ? OR s.sedol = ?`;
       },
     });
-    const rows = sqlite
-      .prepare(`${SELECT} ${built.where} ${built.orderBy} LIMIT ? OFFSET ?`)
-      .all(...built.params, built.limit, built.offset) as Raw[];
-    const total = sqlite
-      .prepare(`SELECT count(*) AS n ${FROM_COUNT} ${built.where}`)
-      .get(...built.params) as { n: number };
+    // Page by id first, then fetch the full rows for that page only. The id query joins a table only when a
+    // filter, search or sort actually needs it, so deep pages walk an index instead of 200,000 joined rows.
+    const clauses = `${built.where} ${built.orderBy}`;
+    const from = `FROM transactions t${/\bp\./.test(clauses) ? ' JOIN portfolios p ON p.id = t.portfolio_id' : ''}${
+      /\bs\./.test(clauses) ? ' LEFT JOIN securities s ON s.id = t.security_id' : ''
+    }`;
+    const ids = sqlite
+      .prepare(`SELECT t.id ${from} ${built.where} ${built.orderBy} LIMIT ? OFFSET ?`)
+      .pluck()
+      .all(...built.params, built.limit, built.offset) as string[];
+    const byId = new Map(
+      (ids.length
+        ? (sqlite.prepare(`${SELECT} WHERE t.id IN (${ids.map(() => '?').join(', ')})`).all(...ids) as Raw[])
+        : []
+      ).map((raw) => [raw.id, raw]),
+    );
+    const rows = ids.flatMap((id) => byId.get(id) ?? []);
+    const total = sqlite.prepare(`SELECT count(*) AS n ${from} ${built.where}`).get(...built.params) as {
+      n: number;
+    };
     return { rows: rows.map(toRow), totalRows: total.n, asOf: clock.now() };
   });
 
