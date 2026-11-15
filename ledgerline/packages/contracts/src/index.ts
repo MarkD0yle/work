@@ -219,6 +219,8 @@ export interface Job {
   progress?: { done: number; total: number };
   outputs?: { name: string; format: 'csv' | 'xlsx' | 'pdf' | 'delimited'; url: string }[];
   result?: BulkResult;
+  /** Row counts. Lists and live updates carry these instead of `result`, which can hold thousands of ids. */
+  counts?: { succeeded: number; failed: number; skipped: number };
   inputs: Record<string, unknown>;
   scheduledFor?: string;
   log?: { at: string; level: 'info' | 'warn' | 'error'; text: string }[];

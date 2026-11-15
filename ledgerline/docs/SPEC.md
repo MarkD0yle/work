@@ -204,10 +204,10 @@ One selection pattern for portfolios, securities, issuers, accounts, banks, mana
 - One audit event per row plus one for the batch (shared `batchId`).
 
 **Acceptance**
-- [ ] 500 selected with 40 ineligible shows 460 eligible and the 40 grouped by reason before submit.
-- [ ] Partial results: filter to failures and retry in two clicks.
-- [ ] Closing the browser mid-run loses nothing; results recoverable from the job tray.
-- [ ] Retrying a posted row cannot post it twice.
+- [x] 500 selected with 40 ineligible shows 460 eligible and the 40 grouped by reason before submit.
+- [x] Partial results: filter to failures and retry in two clicks.
+- [x] Closing the browser mid-run loses nothing; results recoverable from the job tray.
+- [x] Retrying a posted row cannot post it twice.
 
 ### 7.5 Financial Fields and Cells — Milestone 1
 
@@ -336,8 +336,8 @@ Reports, exports, data requests, large bulk actions, imports and close processin
 - Jobs persist across API restart.
 
 **Acceptance**
-- [ ] A job submitted, browser closed, shows its result on next sign-in.
-- [ ] Retry needs no re-entry of inputs.
+- [x] A job submitted, browser closed, shows its result on next sign-in.
+- [x] Retry needs no re-entry of inputs.
 
 ## 8. Compositions (`packages/compositions`)
 

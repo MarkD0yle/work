@@ -68,14 +68,14 @@ Session prompt template:
 
 ## Milestone 5 — Bulk Actions and Jobs
 
-- [ ] 5.1 Eligibility evaluation and risk-scaled confirm dialog (SPEC 7.4).
-- [ ] 5.2 Preview: automatic when rows have warnings or for new-user roles; one click otherwise.
-- [ ] 5.3 Inline run ≤200 rows; job above. Results panel with succeeded, failed, skipped.
-- [ ] 5.4 Remediation: filter to failures, retry failed only, export results.
-- [ ] 5.5 Jobs: tray, grid, detail, SSE progress, retry, cancel, persistence across API restart.
-- [ ] 5.6 Reports run as jobs with downloadable output.
+- [x] 5.1 Eligibility evaluation and risk-scaled confirm dialog (SPEC 7.4).
+- [x] 5.2 Preview: automatic when rows have warnings or for new-user roles; one click otherwise.
+- [x] 5.3 Inline run ≤200 rows; job above. Results panel with succeeded, failed, skipped.
+- [x] 5.4 Remediation: filter to failures, retry failed only, export results.
+- [x] 5.5 Jobs: tray, grid, detail, SSE progress, retry, cancel, persistence across API restart.
+- [x] 5.6 Reports run as jobs with downloadable output.
 
-**Exit gate:** SPEC acceptance for 7.4 and 7.11 pass. Journey: Ada bulk-posts 500 transactions, ~10 fail, she retries after fixing, closes the browser mid-run once and recovers results.
+**Exit gate (passed, `e2e/milestone5.e2e.ts`):** SPEC acceptance for 7.4 and 7.11 pass. Journey: Ada bulk-posts 500 transactions, ~10 fail, she retries after fixing, closes the browser mid-run once and recovers results.
 
 ## Milestone 6 — Exception-heavy proof: Close, Exceptions, Comparison, Audit, Price Review
 

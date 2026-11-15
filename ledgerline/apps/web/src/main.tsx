@@ -5,12 +5,13 @@ import { createRoot } from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router';
 import { configureServices } from '@ledgerline/compositions';
 import { track, type AnalyticsEvent } from './analytics';
-import { api } from './api/client';
+import { api, download, openStream } from './api/client';
 import { Shell } from './app/Shell';
 import { flags } from './flags';
 import './index.css';
 import { DomainPlaceholder } from './routes/DomainPlaceholder';
 import { Home } from './routes/Home';
+import { Reports } from './routes/Reports';
 import { Start } from './routes/Start';
 import { useSession } from './state/session';
 
@@ -19,6 +20,8 @@ configureServices({
   request: api,
   track: (event, properties) => track(event as AnalyticsEvent, properties),
   setDensity: (density) => useSession.getState().setDensity(density),
+  openStream,
+  download,
 });
 
 const queryClient = new QueryClient({
@@ -53,6 +56,11 @@ const router = createBrowserRouter([
         path: 'transactions',
         lazy: gridRoute(async () => (await import('./routes/Transactions')).Transactions),
       },
+      {
+        path: 'jobs',
+        lazy: gridRoute(async () => (await import('./routes/Jobs')).Jobs),
+      },
+      { path: 'reports', element: <Reports /> },
       { path: ':domain', element: <DomainPlaceholder /> },
     ],
   },

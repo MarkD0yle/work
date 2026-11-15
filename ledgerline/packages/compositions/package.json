@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./transactions": "./src/transactions/index.ts"
+    "./transactions": "./src/transactions/index.ts",
+    "./jobs": "./src/jobs/index.ts"
   },
   "dependencies": {
     "@ledgerline/contracts": "workspace:*",

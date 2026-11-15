@@ -260,6 +260,7 @@ export const job = z.object({
     )
     .exactOptional(),
   result: bulkResult.exactOptional(),
+  counts: z.object({ succeeded: z.number(), failed: z.number(), skipped: z.number() }).exactOptional(),
   inputs: unknownRecord,
   scheduledFor: z.string().exactOptional(),
   log: z

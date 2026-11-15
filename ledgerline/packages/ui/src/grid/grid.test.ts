@@ -198,8 +198,11 @@ describe('server-side adapter', () => {
 describe('role feature sets', () => {
   it('keeps full capability for every internal role and limits clients to read and copy', () => {
     for (const segment of ['superUser', 'operator', 'newUser', 'approver', 'admin'] as const) {
-      expect(gridFeatures(segment)).toEqual({ selection: true, copy: true, quickSearch: true });
+      expect(gridFeatures(segment)).toMatchObject({ selection: true, copy: true, quickSearch: true });
     }
-    expect(gridFeatures('client')).toEqual({ selection: false, copy: true, quickSearch: true });
+    expect(gridFeatures('client')).toMatchObject({ selection: false, copy: true, quickSearch: true });
+    // Only users flagged as new are taken through the preview before every confirm.
+    expect(gridFeatures('newUser').previewFirst).toBe(true);
+    expect(gridFeatures('superUser').previewFirst).toBe(false);
   });
 });

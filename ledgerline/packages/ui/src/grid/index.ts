@@ -7,6 +7,7 @@ export { LLGrid } from './ll-grid';
 export { enableGridEnterprise, isGridEnterprise } from './modules';
 export {
   gridFeatures,
+  type GridJobs,
   type GridViewState,
   type LLColumnDef,
   type LLDataSource,

@@ -44,6 +44,33 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   return body as T;
 }
 
+/** Fetches a file as the signed-in user and hands it to the browser to save. */
+export async function download(path: string, fallbackName: string): Promise<void> {
+  const userId = useSession.getState().userId;
+  let response: Response;
+  try {
+    response = await fetch(`/api/v1${path}`, { headers: userId ? { 'X-LL-User': userId } : {} });
+  } catch {
+    throw new ApiError(0, [UNREACHABLE]);
+  }
+  if (!response.ok) {
+    const body = (await response.json().catch(() => null)) as { messages?: Message[] } | null;
+    throw new ApiError(response.status, body?.messages?.length ? body.messages : [UNREACHABLE], body ?? {});
+  }
+  const name =
+    /filename="([^"]+)"/.exec(response.headers.get('Content-Disposition') ?? '')?.[1] ?? fallbackName;
+  const url = URL.createObjectURL(await response.blob());
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = name;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+/** The job progress stream. The browser cannot send headers on an event stream, so the user travels in the query. */
+export const openStream = (path: string) =>
+  new EventSource(`/api/v1${path}?user=${encodeURIComponent(useSession.getState().userId ?? '')}`);
+
 export const fetchUsers = () => api<User[]>('/users');
 export const fetchMe = () => api<Me>('/me');
 

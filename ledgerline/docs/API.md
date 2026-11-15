@@ -62,9 +62,9 @@ Response:
 | GET | `/transactions/:id` | Detail with financial values and provenance |
 | POST | `/transactions` | Create. Body `TransactionCreate`: `{ portfolioId, securityId?, type, tradeDate, settleDate?, quantity?, price?, amount?, acknowledgedWarnings?, cloneOf? }`. Errors are a 422 with one message per field (`target` names the field). Warnings are a 422 with `needsAcknowledgement: [codes]`; send the codes back in `acknowledgedWarnings` to save through them. Saved as unposted; the amount of a buy, sell, repo or maturity is calculated. Audit action `transaction.create` or `transaction.clone`, with the acknowledgement as a note. Returns 201 `{ record, auditEventIds }` |
 | PATCH | `/transactions/:id` | Edit (If-Match). Body `{ changes?: { quantity?, price?, amount? }, dates?: { tradeDate?, settleDate? }, reason? }`. A trade date in a period that is closed or closing for transactions is a 422 naming the period and who can reopen it; a settle date before the trade date is a 422. Unposted records only. Changing a calculated value is an override: needs `transaction.override` and a reason. Returns `{ record, auditEventIds }` |
-| POST | `/transactions/eligibility` | `{ actionId, ids }` → per-row `Permission` |
-| POST | `/transactions/preview` | `{ actionId, ids, inputs }` → `PreviewRow[]` |
-| POST | `/transactions/bulk` | `{ actionId, ids, inputs?, reason? }` → `BulkResult` inline. At most 200 ids for now (more is a 400 until jobs arrive in Milestone 5). Each row succeeds, fails with a message, or is skipped with a reason. A row already in the target state is skipped, so a retry cannot repeat it. Writes one audit event per row plus one for the batch, sharing `batchId` (returned as `jobId`) |
+| POST | `/transactions/eligibility` | `{ actionId, ids }` → `{ id, permission }[]`. A row that would be skipped is `allowed: false` with the reason (built) |
+| POST | `/transactions/preview` | `{ actionId, ids }` → `PreviewRow[]` for the eligible rows: `before`, `after`, and `warnings` holding anything that would make the row fail plus the row's own warning. Changes nothing (built) |
+| POST | `/transactions/bulk` | `{ actionId, ids, inputs?, reason? }` → `BulkResult`. Up to 200 ids run inline (200). More run as a job: the answer is 202 with `{ jobId, status: "queued" }` and empty lists; follow the job for the result. More than 5,000 is a 400. Posting a buy, sell, repo or maturity with no settlement date fails with `LL-VAL-0119`. Each row succeeds, fails with a message, or is skipped with a reason. A row already in the target state is skipped, so a retry cannot repeat it. Writes one audit event per row plus one for the batch, sharing `batchId` (returned as `jobId`) |
 
 Bulk action ids: `transaction.post`, `transaction.reverse`, `transaction.delete` (built), `transaction.override` (Milestone 5; single-record override goes through PATCH).
 
@@ -120,11 +120,20 @@ Bulk action ids: `transaction.post`, `transaction.reverse`, `transaction.delete`
 ### Jobs
 | Method | Path | Purpose |
 | --- | --- | --- |
-| POST | `/jobs/query` | Grid query |
-| GET | `/jobs/:id` | Detail with log, outputs, results |
-| POST | `/jobs/:id/retry` | Retry failed rows with original inputs |
-| POST | `/jobs/:id/cancel` | Cancel |
-| GET | `/jobs/stream` | Server-sent events for job progress |
+| POST | `/jobs/query` | Grid query. Fields: `id`, `type`, `status`, `name`, `submittedAt`, `submittedBy` (user id). Rows carry `counts` instead of `result`, and `inputs.rowCount` instead of `inputs.ids`. A client sees only their own jobs |
+| GET | `/jobs/:id` | Detail: inputs, log, outputs, full `result` and `counts` |
+| POST | `/jobs/:id/retry` | 202 with a new job that uses the original inputs. For row jobs it runs only the rows that failed or were never reached. 409 when nothing failed or the job is still running. Submitter or administrator only |
+| POST | `/jobs/:id/cancel` | Stops a queued or running job. Rows already done stay done; the rest are untouched. 409 when it has finished |
+| GET | `/jobs/:id/outputs/:idx` | Downloads an output file |
+| GET | `/jobs/stream?user=<id>` | Server-sent events: one `job` event per change to one of that user's jobs (light form, with `counts`). The user is in the query only here, because a browser event stream cannot send headers |
+
+How jobs run: in the API process, in chunks (`LL_JOB_CHUNK`, default 50 items) with a pause between chunks (`LL_JOB_TICK_MS`, default 150). The job row is saved after every chunk. On start-up, queued and running jobs carry on from the items not yet done, so nothing is done twice. A job runs as its submitter, with their permissions and scope at the time each chunk runs. Its id is the `batchId` on every audit event it writes.
+
+### Reports
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET | `/reports` | The reports the user can run. Needs `report.run` |
+| POST | `/reports/:id/run` | `{ asOf?, portfolioIds? }` → 202 `Job`. The job leaves one CSV output. A user with a blotter scope gets only their portfolios |
 
 ### Import
 | Method | Path | Purpose |
@@ -158,12 +167,6 @@ Import rules for transactions:
 | --- | --- | --- |
 | POST | `/audit/query` | Grid query |
 | GET | `/audit/record/:type/:id` | Timeline for one record: `AuditEvent[]`, newest first. Needs `audit.view` (built) |
-
-### Reports (mock)
-| Method | Path | Purpose |
-| --- | --- | --- |
-| GET | `/reports` | Report definitions |
-| POST | `/reports/:id/run` | `{ params }` → `{ jobId }`; output is CSV/XLSX generated from SQLite |
 
 ## Business rules the mock must enforce
 

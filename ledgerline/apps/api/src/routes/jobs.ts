@@ -65,6 +65,25 @@ const REPORTS: Record<string, { header: string[]; sql: string; dated: string | n
   },
 };
 
+/** A job without its row-by-row result and log: counts only. Used in lists and live updates. */
+export function lighten(job: Job): Job {
+  const { result, log: _log, inputs, ...light } = job;
+  const { ids, ...rest } = inputs as { ids?: unknown[] } & Record<string, unknown>;
+  return {
+    ...light,
+    inputs: ids ? { ...rest, rowCount: ids.length } : rest,
+    ...(result
+      ? {
+          counts: {
+            succeeded: result.succeeded.length,
+            failed: result.failed.length,
+            skipped: result.skipped.length,
+          },
+        }
+      : {}),
+  };
+}
+
 export function registerJobRoutes(
   app: FastifyInstance,
   db: Db,
@@ -202,15 +221,28 @@ export function registerJobRoutes(
     };
     // The list carries counts, not every row result: a 5,000-row job would make the list heavy. Detail has them all.
     return {
-      rows: rows.map(rowToJob).map(({ log: _log, ...job }) => job),
+      rows: rows.map(rowToJob).map(lighten),
       totalRows: total.n,
       asOf: clock.now(),
     };
   });
 
-  app.get<{ Params: { id: string } }>(`${base}/jobs/:id`, async (request): Promise<Job> =>
-    find(request.user, request.params.id),
-  );
+  app.get<{ Params: { id: string } }>(`${base}/jobs/:id`, async (request): Promise<Job> => {
+    const job = find(request.user, request.params.id);
+    const result = job.result;
+    return {
+      ...job,
+      ...(result
+        ? {
+            counts: {
+              succeeded: result.succeeded.length,
+              failed: result.failed.length,
+              skipped: result.skipped.length,
+            },
+          }
+        : {}),
+    };
+  });
 
   app.post<{ Params: { id: string } }>(`${base}/jobs/:id/cancel`, async (request): Promise<Job> => {
     const job = find(request.user, request.params.id);
@@ -317,11 +349,7 @@ export function registerJobRoutes(
     reply.raw.write(': connected\n\n');
     const send = (job: Job) => {
       if (job.submittedBy.id !== userId) return;
-      const { result, log: _log, ...light } = job;
-      const counts = result
-        ? { succeeded: result.succeeded.length, failed: result.failed.length, skipped: result.skipped.length }
-        : undefined;
-      reply.raw.write(`event: job\ndata: ${JSON.stringify({ ...light, ...(counts ? { counts } : {}) })}\n\n`);
+      reply.raw.write(`event: job\ndata: ${JSON.stringify(lighten(job))}\n\n`);
     };
     const unsubscribe = jobs.subscribe(send);
     const beat = setInterval(() => reply.raw.write(': keep-alive\n\n'), 20_000);

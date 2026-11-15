@@ -125,7 +125,14 @@ export { detectIdentifier, shouldSearch, type IdentifierKind } from './picker/id
 
 // Action registry (SPEC 7.8)
 export { ActionBar, ActionLabel, ActionMenuItems, type ActionBarProps } from './actions/action-bar';
-export { ConfirmDialog, type ConfirmDialogProps, type Noun } from './actions/confirm-dialog';
+export { BulkResultPanel, bulkResultCsv, type BulkResultPanelProps } from './actions/bulk-results';
+export {
+  ConfirmDialog,
+  confirmPhrase,
+  TYPED_CONFIRM_ROWS,
+  type ConfirmDialogProps,
+  type Noun,
+} from './actions/confirm-dialog';
 export {
   formatShortcut,
   groupIneligible,

@@ -223,14 +223,20 @@ test.describe('action registry', () => {
       .toBe(row.id);
   });
 
-  test('Delete is irreversible: it says so, needs no typing, and removes the record', async ({ page }) => {
+  test('Delete is irreversible: it says so, asks for the action to be typed, and removes the record', async ({
+    page,
+  }) => {
     const [row] = (await pick(page, 'unposted', 7)) as [Row];
     await openOn(page, 'u-ada', [row.id]);
     await focusRow(page, row.id);
     await page.keyboard.press('Delete');
     const dialog = page.getByRole('dialog', { name: 'Delete 1 transaction?' });
     await expect(dialog.locator('[data-slot="confirm-consequence"]')).toHaveText('This cannot be undone.');
-    await dialog.getByRole('button', { name: 'Delete 1 transaction' }).click();
+    // It cannot be undone, so confirmation is scaled up: the action and count are typed (SPEC 7.4).
+    const confirm = dialog.getByRole('button', { name: 'Delete 1 transaction' });
+    await expect(confirm).toBeDisabled();
+    await dialog.getByLabel(/to confirm/).fill('delete 1');
+    await confirm.click();
     await expect(page.locator('[data-sonner-toast]').filter({ hasText: 'Delete: done' })).toBeVisible();
     await expect(statusBar(page)).toContainText('0 rows');
     expect(await statusOf(page, row.id)).toBe('gone');
@@ -376,17 +382,16 @@ test.describe('command palette and shell', () => {
     await expect(sheet).toBeVisible();
   });
 
-  test('the job tray says what will appear there; actions are recorded as analytics events', async ({
-    page,
-  }) => {
+  test('the job tray lists the user’s jobs; actions are recorded as analytics events', async ({ page }) => {
     const events: string[] = [];
     page.on('console', (m) => {
       if (m.text().startsWith('[analytics]')) events.push(m.text());
     });
     const [row] = (await pick(page, 'unposted', 9)) as [Row];
     await openOn(page, 'u-ada', [row.id]);
-    await page.getByRole('button', { name: 'Jobs' }).click();
-    await expect(page.getByRole('dialog', { name: 'Jobs' })).toContainText('No jobs yet');
+    await page.locator('[data-slot="job-tray-button"]').click();
+    // Ada's seeded export failed before she signed in: it is waiting in the tray.
+    await expect(page.getByRole('dialog', { name: 'Jobs' })).toContainText('Transaction register export');
     await page.keyboard.press('Escape');
 
     await focusRow(page, row.id);

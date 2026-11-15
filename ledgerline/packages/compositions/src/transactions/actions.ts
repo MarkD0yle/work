@@ -1,4 +1,11 @@
-import type { ActionContext, ActionDef, BulkResult, Permission, TransactionRow } from '@ledgerline/contracts';
+import type {
+  ActionContext,
+  ActionDef,
+  BulkResult,
+  Permission,
+  PreviewRow,
+  TransactionRow,
+} from '@ledgerline/contracts';
 import { post } from '../services';
 
 const bulk = (actionId: string) => (ids: string[], inputs?: Record<string, unknown>) =>
@@ -7,6 +14,9 @@ const bulk = (actionId: string) => (ids: string[], inputs?: Record<string, unkno
     ids,
     ...(typeof inputs?.reason === 'string' ? { reason: inputs.reason } : {}),
   });
+
+const preview = (actionId: string) => (ids: string[]) =>
+  post<PreviewRow[]>('/transactions/preview', { actionId, ids });
 
 /** Looks the action up in the user's permissions. A missing entry is a denial with a reason, never a silent allow. */
 const permitted =
@@ -68,6 +78,7 @@ export const createTransactionActions = (
     ),
     agentRequiresConfirmation: true,
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    preview: preview('transaction.post'),
     execute: bulk('transaction.post'),
   },
   {
@@ -92,6 +103,7 @@ export const createTransactionActions = (
       properties: { reason: { type: 'string', description: 'Optional note recorded in the audit history.' } },
       additionalProperties: false,
     },
+    preview: preview('transaction.reverse'),
     execute: bulk('transaction.reverse'),
   },
   {
@@ -110,6 +122,7 @@ export const createTransactionActions = (
     ),
     agentRequiresConfirmation: true,
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    preview: preview('transaction.delete'),
     execute: bulk('transaction.delete'),
   },
   // These three only open a screen; nothing changes until the user saves there.

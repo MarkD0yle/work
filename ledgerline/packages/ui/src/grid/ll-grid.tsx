@@ -27,6 +27,7 @@ import {
   type Ref,
 } from 'react';
 import { ActionBar, ActionMenuItems } from '../actions/action-bar';
+import { BulkResultPanel, bulkResultCsv } from '../actions/bulk-results';
 import { formatShortcut, matchesShortcut, resolveActions, type ResolvedAction } from '../actions/registry';
 import { useActionRunner, type ActionOutcome } from '../actions/use-action-runner';
 import { useCommandSource } from '../command/command-context';
@@ -64,11 +65,19 @@ import { SectionBanner } from '../state/section-banner';
 import { StateOverlay } from '../state/state-overlay';
 import { headerText, MESSAGES_COLUMN, toColDefs } from './cells';
 import { buildClipboard, formatBusinessDate } from './copy';
-import { createInfiniteDatasource, createServerSideDatasource, type QueryContext } from './datasource';
+import {
+  createInfiniteDatasource,
+  createServerSideDatasource,
+  toGridQuery,
+  type QueryContext,
+} from './datasource';
 import { ensureGridModules, isGridEnterprise } from './modules';
 import { groupRowId, isGroupRow, recordOf } from './grouping';
 import { llGridTheme } from './theme';
 import type { GridViewState, LLColumnDef, LLGridHandle, LLGridProps, LLGridState } from './types';
+
+/** The most rows "Select all matching" will take. It matches the most one bulk run can carry. */
+const SELECT_ALL_LIMIT = 5000;
 
 const OP_WORDS: Record<FilterCondition['op'], string> = {
   eq: 'is',
@@ -162,6 +171,7 @@ export function LLGrid<Row>({
   filters,
   onFiltersChange,
   onRowOpen,
+  jobs,
   onDensityChange,
   initialView,
   onViewChange,
@@ -195,6 +205,25 @@ export function LLGrid<Row>({
   /** Result of the last action that did not fully succeed. It stays until dismissed: partial success is never a toast. */
   const [actionState, setActionState] = useState<UiState | null>(null);
   const [announcement, setAnnouncement] = useState('');
+  /** "Select all matching": every row the current filters match, loaded or not. Valid only for the filters it was taken under. */
+  const [allMatching, setAllMatching] = useState<{ key: string; rows: Row[] } | null>(null);
+  const [selectingAll, setSelectingAll] = useState(false);
+  /** The last bulk run that left rows failed or skipped. It stays until dismissed: partial success is never a toast. */
+  const [lastRun, setLastRun] = useState<{
+    def: ActionDef<Row>;
+    result: BulkResult;
+    inputs?: Record<string, unknown>;
+  } | null>(null);
+  /** A run that went to the job queue and has not finished yet. */
+  const [running, setRunning] = useState<{
+    jobId: string;
+    label: string;
+    done: number;
+    total: number;
+  } | null>(null);
+  const [retrying, setRetrying] = useState(false);
+  /** Set while this component selects rows itself, so that does not count as the user changing the selection. */
+  const selectingRows = useRef(false);
   /** Counts grid instances: AG Grid is rebuilt when density changes, and each build needs its datasource. */
   const [gridVersion, setGridVersion] = useState(0);
   /** The one provenance popover for the whole grid, anchored to the cell that asked for it. */
@@ -572,9 +601,11 @@ export function LLGrid<Row>({
     return [...open, ...(actions ?? []), ...copies, refreshAction];
   }, [actions, features.copy, noun.one, canOpen]);
 
+  const matchKey = JSON.stringify([filters ?? [], quickSearch]);
+  const everyMatch = allMatching && allMatching.key === matchKey ? allMatching.rows : null;
   const targets = useMemo(
-    () => (selected.length ? selected : focusedRow !== undefined ? [focusedRow] : []),
-    [selected, focusedRow],
+    () => everyMatch ?? (selected.length ? selected : focusedRow !== undefined ? [focusedRow] : []),
+    [everyMatch, selected, focusedRow],
   );
   const resolved = useMemo(
     () => resolveActions(definitions, { selection: targets, state: ui, permissions: permissions ?? [] }),
@@ -584,8 +615,80 @@ export function LLGrid<Row>({
   const rowActions = resolved.filter((a) => a.def.appliesTo !== 'none');
   const gridActions = resolved.filter((a) => a.def.appliesTo === 'none');
 
+  /** Shows the outcome of a finished run, inline or from a job, and reloads the rows. */
+  const settle = useCallback(
+    (def: ActionDef<Row>, result: BulkResult, requested: number, inputs?: Record<string, unknown>) => {
+      const [ok, failed, skipped] = [result.succeeded.length, result.failed.length, result.skipped.length];
+      onAction?.({ actionId: def.id, requested, succeeded: ok, failed, skipped, error: false });
+      setRunning(null);
+      setAllMatching(null);
+      if (failed + skipped === 0 && result.status !== 'cancelled') {
+        setActionState(null);
+        setLastRun(null);
+        toast(`${def.label}: done`, `${count(ok)} ${ok === 1 ? noun.one : noun.many}`);
+      } else {
+        // Partial success is a first-class outcome: three counts and the next steps in a panel that stays.
+        setActionState(null);
+        setLastRun({ def, result, ...(inputs ? { inputs } : {}) });
+        const { notify, label: source } = notifyRef.current;
+        if (failed + skipped <= 10) {
+          for (const f of result.failed) notify?.({ ...f.message, target: f.message.target ?? f.id }, source);
+          for (const sk of result.skipped)
+            notify?.(
+              {
+                code: 'LL-BLK-0003',
+                severity: 'info',
+                level: 'row',
+                text: `${def.label} skipped ${sk.id}.`,
+                fix: sk.reason,
+                target: sk.id,
+              },
+              source,
+            );
+        } else {
+          // A long list of rows would bury every other notification: one summary, with the detail in the results panel.
+          notify?.(
+            {
+              code: 'LL-BLK-0004',
+              severity: failed ? 'error' : 'info',
+              level: 'operation',
+              text: `${def.label}: ${count(ok)} succeeded, ${count(failed)} failed, ${count(skipped)} skipped.`,
+              fix: 'The reasons are in the results panel above the grid. Export the results for the full list.',
+            },
+            source,
+          );
+        }
+      }
+      refreshRef.current();
+    },
+    [noun, onAction],
+  );
+
+  const jobWatch = useRef<(() => void) | null>(null);
+  useEffect(() => () => jobWatch.current?.(), []);
+  /** Follows a run that went to the job queue until it finishes. The user is free to leave meanwhile. */
+  const follow = useCallback(
+    (def: ActionDef<Row>, queued: BulkResult, requested: number, inputs?: Record<string, unknown>) => {
+      jobWatch.current?.();
+      setRunning({ jobId: queued.jobId, label: def.label, done: 0, total: requested });
+      setLastRun(null);
+      if (!jobs) return;
+      jobWatch.current = jobs.watch(queued.jobId, (update) => {
+        if (update.result && update.status !== 'queued' && update.status !== 'running') {
+          jobWatch.current?.();
+          jobWatch.current = null;
+          settle(def, update.result, requested, inputs);
+        } else if (update.progress) {
+          const { done, total } = update.progress;
+          setRunning((prev) => (prev && prev.jobId === queued.jobId ? { ...prev, done, total } : prev));
+        }
+      });
+    },
+    [jobs, settle],
+  );
+
   const onDone = useCallback(
-    ({ action, result, error: failure }: ActionOutcome<Row>) => {
+    ({ action, result, error: failure, inputs }: ActionOutcome<Row>) => {
       const requested = action.eligible.length;
       if (failure) {
         for (const m of failure) notifyRef.current.notify?.(m, notifyRef.current.label);
@@ -605,38 +708,89 @@ export function LLGrid<Row>({
         const row = action.eligible[0];
         if (row !== undefined) openRef.current?.(row);
       }
-      const [ok, failed, skipped] = [result.succeeded.length, result.failed.length, result.skipped.length];
-      onAction?.({ actionId: action.def.id, requested, succeeded: ok, failed, skipped, error: false });
-      if (result.jobId === 'local') return;
-      if (failed + skipped === 0) {
-        setActionState(null);
-        toast(`${action.def.label}: done`, `${count(ok)} ${ok === 1 ? noun.one : noun.many}`);
-      } else {
-        // Partial success is a first-class outcome: three counts in a banner, and every row's reason in the notification panel.
-        setActionState({ kind: 'partialSuccess', succeeded: ok, failed, skipped, jobId: result.jobId });
-        for (const f of result.failed)
-          notifyRef.current.notify?.(
-            { ...f.message, target: f.message.target ?? f.id },
-            notifyRef.current.label,
-          );
-        for (const sk of result.skipped) {
-          notifyRef.current.notify?.(
-            {
-              code: 'LL-BLK-0003',
-              severity: 'info',
-              level: 'row',
-              text: `${action.def.label} skipped ${sk.id}.`,
-              fix: sk.reason,
-              target: sk.id,
-            },
-            notifyRef.current.label,
-          );
-        }
+      if (result.jobId === 'local') {
+        onAction?.({
+          actionId: action.def.id,
+          requested,
+          succeeded: result.succeeded.length,
+          failed: 0,
+          skipped: 0,
+          error: false,
+        });
+        return;
       }
-      refreshRef.current();
+      if (result.status === 'queued' || result.status === 'running')
+        follow(action.def, result, requested, inputs);
+      else settle(action.def, result, requested, inputs);
     },
-    [noun, onAction],
+    [onAction, follow, settle],
   );
+
+  /** Retry runs the same action on the failed rows only. Rows that already went through are never sent again. */
+  const retryFailed = useCallback(async () => {
+    if (!lastRun) return;
+    const { def, result, inputs } = lastRun;
+    const failedIds = result.failed.map((f) => f.id);
+    setRetrying(true);
+    try {
+      const next =
+        result.jobId.startsWith('J-') && jobs
+          ? await jobs.retry(result.jobId)
+          : await def.execute(failedIds, inputs);
+      if (next.status === 'queued' || next.status === 'running') follow(def, next, failedIds.length, inputs);
+      else settle(def, next, failedIds.length, inputs);
+    } catch (problem) {
+      const messages = (problem as { messages?: Message[] } | null)?.messages ?? [];
+      for (const m of messages) notifyRef.current.notify?.(m, notifyRef.current.label);
+      setActionState({ kind: 'blockingError', messages });
+    } finally {
+      setRetrying(false);
+    }
+  }, [lastRun, jobs, follow, settle]);
+
+  /** Loads every row the current filters match, so an action can run on all of them, not only the rows scrolled into view. */
+  const selectAllMatching = useCallback(async () => {
+    if (!serverQuery || totalRows === null) return;
+    setSelectingAll(true);
+    try {
+      const rows: Row[] = [];
+      const sortModel = sort.map((x) => ({ colId: x.field, sort: x.dir }));
+      for (let startRow = 0; startRow < Math.min(totalRows, SELECT_ALL_LIMIT); startRow += 1000) {
+        const page = await serverQuery(
+          toGridQuery({ startRow, endRow: startRow + 1000, sortModel }, context.current),
+        );
+        rows.push(...page.rows);
+        if (page.rows.length < 1000) break;
+      }
+      setAllMatching({ key: JSON.stringify([context.current.filters, context.current.quickSearch]), rows });
+      selectingRows.current = true;
+      api.current?.forEachNode((node) => {
+        if (recordOf(node.data) !== undefined && !node.isSelected()) node.setSelected(true);
+      });
+      setTimeout(() => {
+        selectingRows.current = false;
+      }, 0);
+      setAnnouncement(
+        `All ${count(rows.length)} matching ${rows.length === 1 ? noun.one : noun.many} selected.`,
+      );
+    } catch (problem) {
+      const messages = (problem as { messages?: Message[] } | null)?.messages ?? [];
+      for (const m of messages) notifyRef.current.notify?.(m, notifyRef.current.label);
+    } finally {
+      setSelectingAll(false);
+    }
+  }, [serverQuery, totalRows, sort, noun]);
+
+  const exportResults = useCallback(() => {
+    if (!lastRun) return;
+    const url = URL.createObjectURL(new Blob([bulkResultCsv(lastRun.result)], { type: 'text/csv' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${lastRun.def.id}-${lastRun.result.jobId}-results.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }, [lastRun]);
+
   // When the confirm step closes, focus goes back to the grid cell the user was on, however the action was started.
   const onConfirmClosed = useCallback(() => {
     setTimeout(() => {
@@ -645,7 +799,20 @@ export function LLGrid<Row>({
       if (grid && focused) grid.setFocusedCell(focused.rowIndex, focused.column);
     }, 0);
   }, []);
-  const { run, dialog: confirmDialog } = useActionRunner<Row>({ rowId, noun, onDone, onConfirmClosed });
+  // The preview opens by itself for users flagged as new, and whenever a row to be changed carries a warning.
+  const autoPreview = useCallback(
+    (action: ResolvedAction<Row>) =>
+      Boolean(features.previewFirst) ||
+      Boolean(rowMessages && action.eligible.some((row) => rowMessages(row).length > 0)),
+    [features.previewFirst, rowMessages],
+  );
+  const { run, dialog: confirmDialog } = useActionRunner<Row>({
+    rowId,
+    noun,
+    onDone,
+    onConfirmClosed,
+    autoPreview,
+  });
 
   const runById = useCallback(
     (actionId: string, onRow?: Row) => {
@@ -868,7 +1035,12 @@ export function LLGrid<Row>({
     };
     return {
       getRowId: (params: { data: Row; parentKeys?: string[] }) =>
-        isGroupRow(params.data) ? groupRowId(params.parentKeys, params.data) : rowId(params.data),
+        // While rows shift during a reload, the grid asks for the id of a placeholder that has no data yet.
+        params.data === null || params.data === undefined
+          ? '__ll-placeholder'
+          : isGroupRow(params.data)
+            ? groupRowId(params.parentKeys, params.data)
+            : rowId(params.data),
       suppressOverlays: ['loading', 'noRows'] as ('loading' | 'noRows')[],
       ...(client
         ? {}
@@ -1106,8 +1278,29 @@ export function LLGrid<Row>({
           data-slot="selection-bar"
           className="flex h-(--ll-control-height) shrink-0 items-center gap-3 rounded-md border bg-muted px-(--ll-padding-x)"
         >
-          <span className="font-medium">{count(selected.length)} selected</span>
-          <Button variant="ghost" onClick={() => api.current?.deselectAll()}>
+          <span className="font-medium" data-slot="selection-count">
+            {everyMatch
+              ? `All ${count(everyMatch.length)} matching ${everyMatch.length === 1 ? noun.one : noun.many} selected`
+              : `${count(selected.length)} selected`}
+          </span>
+          {server && !everyMatch && totalRows !== null && totalRows > selected.length ? (
+            totalRows > SELECT_ALL_LIMIT ? (
+              <span className="text-xs text-muted-foreground">
+                To select every match, narrow the filters to {count(SELECT_ALL_LIMIT)} rows or fewer.
+              </span>
+            ) : (
+              <Button variant="ghost" disabled={selectingAll} onClick={() => void selectAllMatching()}>
+                {selectingAll ? 'Selecting…' : `Select all ${count(totalRows)} matching`}
+              </Button>
+            )
+          ) : null}
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setAllMatching(null);
+              api.current?.deselectAll();
+            }}
+          >
             Clear selection
           </Button>
           <ActionBar
@@ -1119,6 +1312,39 @@ export function LLGrid<Row>({
         </div>
       ) : null}
 
+      {running ? (
+        <p
+          role="status"
+          data-slot="job-running"
+          className="shrink-0 rounded-md border border-info/40 bg-info/10 px-3 py-2"
+        >
+          <span className="font-medium">
+            {running.label} is running as a job: {count(running.done)} of {count(running.total)} done.
+          </span>{' '}
+          You can leave this screen. The result will be here and under Jobs ({running.jobId}).
+        </p>
+      ) : null}
+      {lastRun ? (
+        <BulkResultPanel
+          className="shrink-0"
+          label={lastRun.def.label}
+          noun={noun}
+          result={lastRun.result}
+          retrying={retrying}
+          onExport={exportResults}
+          onDismiss={() => setLastRun(null)}
+          {...(lastRun.result.failed.length ? { onRetry: () => void retryFailed() } : {})}
+          {...(onFiltersChange && lastRun.result.failed.length
+            ? {
+                onShowFailures: () =>
+                  onFiltersChange([
+                    ...(filters ?? []).filter((f) => !(f.field === 'id' && f.op === 'in')),
+                    { field: 'id', op: 'in', value: lastRun.result.failed.map((f) => f.id) },
+                  ]),
+              }
+            : {})}
+        />
+      ) : null}
       {actionState ? (
         <SectionBanner
           state={actionState}
@@ -1163,6 +1389,8 @@ export function LLGrid<Row>({
                   const nodes = e.api.getSelectedNodes();
                   lastView.current.ids = nodes.flatMap((n) => (n.id ? [n.id] : []));
                   setSelected(nodes.flatMap((n) => recordOf(n.data) ?? []));
+                  // Changing the selection by hand ends "all matching": the user is now choosing rows one by one.
+                  if (!selectingRows.current) setAllMatching(null);
                 }}
                 onBodyScrollEnd={(e) => {
                   lastView.current.firstRow = e.api.getFirstDisplayedRowIndex();

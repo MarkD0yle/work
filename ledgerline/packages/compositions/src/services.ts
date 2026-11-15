@@ -14,6 +14,9 @@ import type {
   ImportMapping,
   ImportRequest,
   ImportRowResult,
+  Job,
+  GridQuery,
+  GridResponse,
   MarketCalendar,
   Message,
   MutationResult,
@@ -31,6 +34,10 @@ export interface Services {
   track: (event: string, properties?: Record<string, unknown>) => void;
   /** Applies a density chosen on a screen (from a saved view or the grid menu). */
   setDensity: (density: ContractDensity) => void;
+  /** Opens a server-sent event stream as the signed-in user. */
+  openStream: (path: string) => EventSource;
+  /** Fetches a file as the signed-in user and hands it to the browser to save. */
+  download: (path: string, fallbackName: string) => Promise<void>;
 }
 
 let services: Services | null = null;
@@ -46,6 +53,18 @@ export const request = <T>(path: string, init?: RequestInit) => wired().request<
 export const track = (event: string, properties: Record<string, unknown> = {}) =>
   wired().track(event, properties);
 export const setDensity = (density: ContractDensity) => wired().setDensity(density);
+export const openStream = (path: string) => wired().openStream(path);
+export const download = (path: string, fallbackName: string) => wired().download(path, fallbackName);
+
+/** Saves text the browser already holds (an exported result list) as a file. */
+export function saveText(name: string, text: string, type = 'text/csv'): void {
+  const url = URL.createObjectURL(new Blob([text], { type }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = name;
+  link.click();
+  URL.revokeObjectURL(url);
+}
 
 /** The parts of a failed API call that screens show. Null when the error is not from the API. */
 export interface Problem {
@@ -125,3 +144,17 @@ export const validateImport = (input: ImportRequest) => post<ImportRowResult[]>(
 export const commitImport = (input: ImportCommit) => post<BulkResult>('/imports/commit', input);
 export const fetchImportMapping = (targetType: ImportMapping['targetType']) =>
   request<ImportMapping | null>(`/imports/mappings/${targetType}`);
+
+// ── Jobs and reports ──
+export const queryJobs = (query: GridQuery) => post<GridResponse<Job>>('/jobs/query', query);
+export const fetchJob = (id: string) => request<Job>(`/jobs/${encodeURIComponent(id)}`);
+export const retryJob = (id: string) => post<Job>(`/jobs/${encodeURIComponent(id)}/retry`, {});
+export const cancelJob = (id: string) => post<Job>(`/jobs/${encodeURIComponent(id)}/cancel`, {});
+export interface ReportDef {
+  id: string;
+  name: string;
+  description: string;
+}
+export const fetchReports = () => request<ReportDef[]>('/reports');
+export const runReport = (id: string, input: { asOf?: string; portfolioIds?: string[] }) =>
+  post<Job>(`/reports/${encodeURIComponent(id)}/run`, input);

@@ -17,8 +17,9 @@ export const isGroupRow = (data: unknown): data is GroupRow =>
   typeof data === 'object' && data !== null && '__llGroup' in data;
 
 /** The record in a grid row, or undefined for a group row or a row that has not loaded. */
-export const recordOf = <Row>(data: Row | undefined): Row | undefined =>
-  isGroupRow(data) ? undefined : data;
+export const recordOf = <Row>(data: Row | null | undefined): Row | undefined =>
+  // While a block reloads, the grid can hand out a row whose data is null: that is not a record either.
+  data === null || data === undefined || isGroupRow(data) ? undefined : data;
 
 /** Stable, unique id for a group row: its path of group values. */
 export const groupRowId = (parentKeys: readonly string[] | undefined, group: GroupRow): string =>

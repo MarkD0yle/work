@@ -32,6 +32,7 @@ import {
 import {
   gridFeatures,
   LLGrid,
+  type GridJobs,
   type GridViewState,
   type LLDataSource,
   type LLGridHandle,
@@ -46,6 +47,7 @@ import {
   post,
   problemOf,
   request,
+  retryJob,
   recentEntities,
   rememberEntity,
   searchEntities,
@@ -54,6 +56,7 @@ import {
   updateView,
   type Me,
 } from '../services';
+import { noteJob, watchJob } from '../jobs/job-store';
 import { ErrorPanel, LoadingPanel } from '../state-panels';
 import { ImportDialog } from './import/ImportDialog';
 import { TransactionForm } from './TransactionForm';
@@ -72,6 +75,15 @@ import {
 } from './config';
 
 const NOUN = { one: 'transaction', many: 'transactions' };
+/** Lets the grid follow a bulk run that went to the job queue, and retry it. */
+const GRID_JOBS: GridJobs = {
+  watch: watchJob,
+  retry: async (jobId) => {
+    const job = await retryJob(jobId);
+    noteJob(job);
+    return { jobId: job.id, status: 'queued', succeeded: [], failed: [], skipped: [] };
+  },
+};
 const EMPTY_PERMISSIONS: Permission[] = [];
 const onAction = (event: Record<string, unknown>) => track('action.invoked', { gridId: GRID_ID, ...event });
 
@@ -428,6 +440,7 @@ function Blotter({
             onViewChange={setGridView}
             onRowOpen={openRow}
             actions={actions}
+            jobs={GRID_JOBS}
             permissions={permissions.data ?? EMPTY_PERMISSIONS}
             noun={NOUN}
             onAction={onAction}

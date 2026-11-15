@@ -28,6 +28,7 @@ const routes = [
   '/cash',
   '/accounting',
   '/reports',
+  '/jobs',
   '/admin',
   '/unknown',
 ];
@@ -48,6 +49,11 @@ for (const theme of THEMES) {
         await page.goto(route);
         await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
         if (route === '/profile') await expect(page.getByRole('table')).toBeVisible();
+        if (route === '/jobs') {
+          // Rows fade in as they load; wait for them to settle before measuring contrast.
+          await expect(page.locator('.ag-row').first()).toBeVisible();
+          await page.waitForTimeout(500);
+        }
         await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
         await expectNoSeriousViolations(page);
       });
@@ -225,6 +231,50 @@ for (const theme of THEMES) {
     await panel.getByRole('tab', { name: 'History' }).click();
     await expect(panel.getByRole('tabpanel')).toBeVisible();
     await expectNoSeriousViolations(page);
+  });
+
+  test(`jobs and bulk: tray, job detail, typed confirm with preview, ${theme}`, async ({ page }) => {
+    await page.addInitScript((t) => {
+      localStorage.setItem(
+        'll-session',
+        JSON.stringify({
+          state: { userId: 'u-ada', theme: t, density: null, railCollapsed: false },
+          version: 0,
+        }),
+      );
+    }, theme);
+    await page.goto('/transactions?view=V-transactions-default');
+    await expect(page.locator('[data-slot="status-bar"]')).toContainText(/\d rows/);
+
+    // Job tray with a finished, unopened job; then that job in full.
+    await page.locator('[data-slot="job-tray-button"]').click();
+    const tray = page.locator('[data-slot="job-tray"]');
+    await expect(tray.locator('[data-job-id]').first()).toBeVisible();
+    await expectNoSeriousViolations(page);
+    await tray.locator('[data-job-id="J-000002"]').click();
+    await expect(page.locator('[data-slot="job-detail"]').getByRole('region', { name: 'Log' })).toBeVisible();
+    await expectNoSeriousViolations(page);
+    await page.keyboard.press('Escape');
+
+    // An irreversible action: typed confirmation, with the preview opened.
+    await page.getByRole('button', { name: 'Warnings only' }).click();
+    await expect(page.getByRole('list', { name: 'Active filters' })).toContainText('Warning');
+    await page.locator('.ag-row[row-index="0"] [col-id="id"]').first().click();
+    await page.keyboard.press('Space');
+    await page.getByRole('button', { name: /^Select all [\d,]+ matching$/ }).click();
+    await expect(page.locator('[data-slot="selection-count"]')).toContainText(
+      'matching transactions selected',
+    );
+    await expectNoSeriousViolations(page);
+    await page
+      .getByRole('group', { name: 'Actions for selected transactions' })
+      .getByRole('button', { name: 'Post' })
+      .click();
+    const confirm = page.getByRole('dialog', { name: /^Post [\d,]+ transactions?\?$/ });
+    // Rows with warnings open the preview by themselves.
+    await expect(confirm.getByRole('table', { name: 'Preview of changes' })).toBeVisible();
+    await expectNoSeriousViolations(page);
+    await confirm.getByRole('button', { name: 'Cancel' }).click();
   });
 }
 
