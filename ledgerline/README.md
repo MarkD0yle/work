@@ -2,7 +2,7 @@
 
 A web workbench for investment accounting operations, built from eleven reusable capabilities instead of hundreds of bespoke screens.
 
-**Status:** Milestone 0 (foundations and tooling) is complete. Milestones 1 to 7 are not started. See `docs/PLAN.md`.
+**Status:** Milestones 0 to 3 are complete: foundations; grid, financial fields and state; saved views, workspaces, entity picker and dates; shell, action registry and command palette. Milestones 4 to 7 are not started. See `docs/PLAN.md`.
 
 ## Run it
 
@@ -29,7 +29,7 @@ pnpm storybook    # http://localhost:6006
 
 Open Claude Code in this folder and prompt:
 
-> Read CLAUDE.md, docs/SPEC.md and docs/PLAN.md. Implement Milestone 1. Plan first, listing the acceptance criteria you will test. Stop at the exit gate and report.
+> Read CLAUDE.md, docs/SPEC.md and docs/PLAN.md. Implement Milestone 4. Plan first, listing the acceptance criteria you will test. Stop at the exit gate and report.
 
 ## Files
 
@@ -48,7 +48,8 @@ Open Claude Code in this folder and prompt:
 
 | Variable | Effect |
 | --- | --- |
-| `VITE_AG_GRID_LICENSE` | Enables AG Grid Enterprise features (grouping, server-side model, Excel export) |
+| `VITE_AG_GRID_ENTERPRISE` | AG Grid Enterprise is on by default. Set `false` to run on Community |
+| `VITE_AG_GRID_LICENSE` | Licence key. Without one, Enterprise shows AG Grid's watermark: fine for a design concept, not for production |
 | `SEED_SCALE` | `small` (default, about 1s) for dev; `full` (1M securities, 250k transactions, about 1 min) for performance tests |
 | `LL_DB_PATH` | SQLite file. Default `apps/api/data/ledgerline.sqlite` |
 | `LL_API_PORT` | API port. Default `4310` |

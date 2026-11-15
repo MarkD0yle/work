@@ -23,36 +23,36 @@ Session prompt template:
 
 ## Milestone 1 — Grid, Financial Fields, State and Validation
 
-- [ ] 1.1 Precision registry and formatting utilities with `decimal.js`. Unit tests for every kind, currencies USD/EUR/GBP/JPY, both sign conventions, shorthand parsing.
-- [ ] 1.2 `FinancialCell` and `FinancialInput` (SPEC 7.5). Override flow with reason. Provenance popover. Null reasons.
-- [ ] 1.3 `UiState` renderer components: `StateOverlay`, `SectionBanner`, `FieldMessage`, `RowMarker`. Stories for all 15 kinds.
-- [ ] 1.4 Notification panel with session history and jump-to-target.
-- [ ] 1.5 `LLGrid` wrapper: AG Grid theme from tokens, column types, typed cells, density, selection, status bar, state overlay, Enterprise feature switch by env.
-- [ ] 1.6 Server-side data source adapter for the `/…/query` contract.
-- [ ] 1.7 Keyboard model and screen-reader announcements (SPEC 7.1).
-- [ ] 1.8 Transactions grid route, read-only, on seeded data.
+- [x] 1.1 Precision registry and formatting utilities with `decimal.js`. Unit tests for every kind, currencies USD/EUR/GBP/JPY, both sign conventions, shorthand parsing.
+- [x] 1.2 `FinancialCell` and `FinancialInput` (SPEC 7.5). Override flow with reason. Provenance popover. Null reasons.
+- [x] 1.3 `UiState` renderer components: `StateOverlay`, `SectionBanner`, `FieldMessage`, `RowMarker`. Stories for all 15 kinds.
+- [x] 1.4 Notification panel with session history and jump-to-target.
+- [x] 1.5 `LLGrid` wrapper: AG Grid theme from tokens, column types, typed cells, density, selection, status bar, state overlay, Enterprise feature switch by env.
+- [x] 1.6 Server-side data source adapter for the `/…/query` contract.
+- [x] 1.7 Keyboard model and screen-reader announcements (SPEC 7.1).
+- [x] 1.8 Transactions grid route, read-only, on seeded data.
 
-**Exit gate:** SPEC acceptance for 7.1 (except views), 7.5 and 7.7 pass in tests. 100k-row scroll check documented (Enterprise) or noted as blocked by licence in DECISIONS.md.
+**Exit gate (passed 2026-11-14, on AG Grid Community; see DECISIONS.md for the two caveats):** SPEC acceptance for 7.1 (except views), 7.5 and 7.7 pass in tests. 100k-row scroll check documented (Enterprise) or noted as blocked by licence in DECISIONS.md.
 
 ## Milestone 2 — Views, Workspaces, Entity Picker, Dates
 
-- [ ] 2.1 Filter model, filter tags, task chips, quick search, Clear all, Restore default.
-- [ ] 2.2 Saved views CRUD with ownership rules, URL state, `schemaVersion` migration.
-- [ ] 2.3 Workspaces: panels, single and tabs layouts, groups, load at startup, pop-out windows kept in sync (BroadcastChannel). Team default workspaces and views per role.
-- [ ] 2.4 Entity Picker in three modes (inline, sheet with criteria and multi-select, global search). Identifier detection. Restricted records. Recent items.
-- [ ] 2.5 `BusinessDateInput` with basis label, shortcuts, calendars, business-day rules. `PeriodPicker` with state.
+- [x] 2.1 Filter model, filter tags, task chips, quick search, Clear all, Restore default.
+- [x] 2.2 Saved views CRUD with ownership rules, URL state, `schemaVersion` migration.
+- [x] 2.3 Workspaces: panels, single and tabs layouts, groups, load at startup, pop-out windows kept in sync (BroadcastChannel). Team default workspaces and views per role.
+- [x] 2.4 Entity Picker in three modes (inline, sheet with criteria and multi-select, global search). Identifier detection. Restricted records. Recent items.
+- [x] 2.5 `BusinessDateInput` with basis label, shortcuts, calendars, business-day rules. `PeriodPicker` with state.
 
-**Exit gate:** SPEC acceptance for 7.2, 7.3, 7.6 pass.
+**Exit gate (passed 2026-11-15):** SPEC acceptance for 7.2, 7.3, 7.6 pass.
 
 ## Milestone 3 — Shell and Action Registry
 
-- [ ] 3.1 App shell: left rail, top bar, job tray placeholder, notification toggle, user menu (theme, density).
-- [ ] 3.2 `ActionDef` registry hooks: toolbar, selection bar, context menu all render from one list.
-- [ ] 3.3 Command palette: navigation, views, entities, actions in context. Shortcut sheet on `?`.
-- [ ] 3.4 Disabled-with-reason pattern for actions and records.
-- [ ] 3.5 Analytics event sink (console in dev).
+- [x] 3.1 App shell: left rail, top bar, job tray placeholder, notification toggle, user menu (theme, density).
+- [x] 3.2 `ActionDef` registry hooks: toolbar, selection bar, context menu all render from one list.
+- [x] 3.3 Command palette: navigation, views, entities, actions in context. Shortcut sheet on `?`.
+- [x] 3.4 Disabled-with-reason pattern for actions and records.
+- [x] 3.5 Analytics event sink (console in dev).
 
-**Exit gate:** SPEC acceptance for 7.8 pass. All domains reachable without a mouse.
+**Exit gate (passed 2026-11-15):** SPEC acceptance for 7.8 pass. All domains reachable without a mouse.
 
 ## Milestone 4 — High-volume proof: Transaction Workbench and Import
 
@@ -62,7 +62,7 @@ Session prompt template:
 - [ ] 4.4 Quick paste into batch grid with last mapping, then the Spreadsheet Import Wizard for files (SPEC 8.1).
 - [ ] 4.6 Clone row, fill-down and inline delta columns (SPEC 7.1).
 - [ ] 4.7 Glossary tooltips and plain-language-first messages for new users (SPEC 7.7).
-- [ ] 4.5 Inline single-record post and reverse (bulk comes in M5).
+- [x] 4.5 Inline single-record post and reverse (bulk comes in M5). *Done early in Milestone 3, with Delete, so the action registry had real actions; see DECISIONS.md.*
 
 **Exit gate:** a Playwright journey: Ada finds yesterday's unposted trades with a saved view, quick-pastes 50 corrections, fixes 2 row errors, clones a trade and fills down a field, and posts 1 record with a single confirm. Ben sees Reverse disabled with a reason.
 

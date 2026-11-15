@@ -31,7 +31,7 @@ Read these before any work:
 | Web app | React 19, Vite, React Router | React 19 is required by current shadcn/ui components (ref as a prop) |
 | Server state | TanStack Query | No global store for server data |
 | Client state | Zustand only for UI state (selection, panels) | |
-| Grid engine | AG Grid (Enterprise if `VITE_AG_GRID_LICENSE` is set, Community otherwise) | Only imported inside `packages/ui/src/grid` |
+| Grid engine | AG Grid Enterprise, unlicensed (watermark) while Ledgerline is a design concept. Community with `VITE_AG_GRID_ENTERPRISE=false` | Only imported inside `packages/ui/src/grid`. Register only the Enterprise modules a milestone uses. A licence is required before production |
 | Primitives | shadcn/ui (Radix UI + Tailwind) | Component source lives in `packages/ui/src/components`; apps never import Radix directly |
 | Styling | Tailwind CSS v4, themed only through CSS variables from `packages/tokens` | No raw colours or pixel sizes in components; no CSS-in-JS runtime |
 | Decimal maths | `decimal.js` | Never use JS `number` for money, price, units or rates |
@@ -64,8 +64,9 @@ e2e/                   # Playwright journeys and axe checks
 
 - `contracts` imports nothing.
 - `tokens` imports nothing.
-- `ui` imports `contracts`, `tokens`, AG Grid, Radix (through shadcn/ui components).
+- `ui` imports `contracts`, `tokens`, AG Grid, Radix (through shadcn/ui components). Only `packages/ui/src/financial` may format or parse financial numbers.
 - `compositions` imports `ui`, `contracts`.
+- The grid is imported from `@ledgerline/ui/grid`, never from the main `@ledgerline/ui` entry, and grid screens are loaded on demand. This keeps the grid engine out of the initial bundle.
 - `apps/web` imports `compositions`, `ui`, `contracts`. **Never** `ag-grid-*` or `@radix-ui/*` directly.
 - `apps/api` imports `contracts` only from the frontend packages.
 - Add ESLint `no-restricted-imports` rules for all of the above in milestone 0.

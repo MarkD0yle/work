@@ -11,6 +11,9 @@ This is the contract the UI depends on. In this build it is implemented by `apps
 - Errors: `{ messages: Message[] }` with HTTP 400 (validation), 403 (permission, includes `Permission` with explanation), 409 (conflict or stale version), 422 (business rule, e.g. closed period).
 - Optimistic concurrency: mutable records carry `version`; writes send `If-Match: <version>`. Mismatch returns 409 with the current record.
 - Every mutation returns the audit event ids it wrote.
+- Relative date filters (`today`, `yesterday`, …) resolve against the engine's business date, not the caller's clock. `yesterday` is the previous business day. In the mock the engine date is the seed date (`LL_TODAY` overrides it).
+- Grid queries: sort and filter fields come from a per-endpoint whitelist; an unknown field is a 400. A page is at most 1,000 rows.
+- Grouping: when `groupBy` is longer than `groupKeys`, the response is a group level: `rows` is empty and `groups` holds `{ field, key, count }` per value, ordered by value, with `totalRows` the number of groups. `groupKeys` pin the levels already opened; when they cover every `groupBy` field, records are returned as usual.
 
 ## Server-side grid query
 
@@ -39,15 +42,16 @@ Response:
 ### Session and permissions
 | Method | Path | Purpose |
 | --- | --- | --- |
-| GET | `/me` | Current user, role, default density, workspaces to load at startup |
+| GET | `/me` | Current user, role, default density, workspaces to load at startup (the user's own before the team default), and `businessDate`: the engine's business date, which date shortcuts and relative filters count from |
 | GET | `/me/permissions` | `Permission[]` for every action, with explanations |
 | GET | `/users` | Seeded users (dev role switcher) |
 
 ### Entities
 | Method | Path | Purpose |
 | --- | --- | --- |
-| GET | `/entities/search?kind=&q=&scope=&includeInactive=` | Entity Picker search; exact identifier matches first; restricted records returned with `restricted: { reason }` |
-| GET | `/entities/recent?kind=` | Last 10 used |
+| GET | `/entities/search?kind=&q=&scope=&includeInactive=&type=&currency=` | Entity Picker search → `EntitySearchResult[]` (at most 50). Exact identifier matches first, with `matchedOn`. Restricted records returned with `restricted: { reason }`. `scope=held` limits securities to held ones. `type` and `currency` are criteria; with either, `q` may be empty. Searchable kinds: portfolio, security, manager, report (others: 400) |
+| GET | `/entities/recent?kind=` | Last 10 used, most recent first |
+| POST | `/entities/recent` | `{ kind, id }` records a pick (204) |
 | POST | `/portfolios/query` · `/securities/query` | Grid queries |
 | GET | `/portfolios/:id` · `/securities/:id` | Detail |
 
@@ -57,12 +61,12 @@ Response:
 | POST | `/transactions/query` | Grid query |
 | GET | `/transactions/:id` | Detail with financial values and provenance |
 | POST | `/transactions` | Create (validates; may return warnings to acknowledge) |
-| PATCH | `/transactions/:id` | Edit (If-Match) |
+| PATCH | `/transactions/:id` | Edit (If-Match). Body `{ changes?: { quantity?, price?, amount? }, dates?: { tradeDate?, settleDate? }, reason? }`. A trade date in a period that is closed or closing for transactions is a 422 naming the period and who can reopen it; a settle date before the trade date is a 422. Unposted records only. Changing a calculated value is an override: needs `transaction.override` and a reason. Returns `{ record, auditEventIds }` |
 | POST | `/transactions/eligibility` | `{ actionId, ids }` → per-row `Permission` |
 | POST | `/transactions/preview` | `{ actionId, ids, inputs }` → `PreviewRow[]` |
-| POST | `/transactions/bulk` | `{ actionId, ids, inputs, reason }` → `BulkResult` inline (≤200) or `{ jobId }` |
+| POST | `/transactions/bulk` | `{ actionId, ids, inputs?, reason? }` → `BulkResult` inline. At most 200 ids for now (more is a 400 until jobs arrive in Milestone 5). Each row succeeds, fails with a message, or is skipped with a reason. A row already in the target state is skipped, so a retry cannot repeat it. Writes one audit event per row plus one for the batch, sharing `batchId` (returned as `jobId`) |
 
-Bulk action ids: `transaction.post`, `transaction.reverse`, `transaction.delete`, `transaction.override`.
+Bulk action ids: `transaction.post`, `transaction.reverse`, `transaction.delete` (built), `transaction.override` (Milestone 5; single-record override goes through PATCH).
 
 ### Market data
 | Method | Path | Purpose |
@@ -95,7 +99,8 @@ Bulk action ids: `transaction.post`, `transaction.reverse`, `transaction.delete`
 ### Periods and close
 | Method | Path | Purpose |
 | --- | --- | --- |
-| GET | `/periods?portfolioId=` | `AccountingPeriod[]` |
+| GET | `/periods?portfolioId=` | `AccountingPeriod[]`, newest first |
+| GET | `/calendars/:market` | `MarketCalendar`: holidays for a calendar code (e.g. `US`), for business-day rules |
 | GET | `/periods/:id/checklist` | Close checks with status and exception counts |
 | POST | `/periods/close` | `{ portfolioIds, periodEnd, closeTypes }` → `{ jobId }` |
 | POST | `/periods/reopen` | `{ periodId, closeTypes, reason }` (creates an approval request) |
@@ -107,10 +112,10 @@ Bulk action ids: `transaction.post`, `transaction.reverse`, `transaction.delete`
 ### Views and workspaces
 | Method | Path | Purpose |
 | --- | --- | --- |
-| GET/POST | `/views?gridId=` | List, create |
-| PUT/DELETE | `/views/:id` | Update (owner only), delete |
-| GET/POST | `/workspaces` | List, create |
-| PUT/DELETE | `/workspaces/:id` | Update, delete |
+| GET/POST | `/views?gridId=` | List (default, then shared, then the caller's personal views; never other people's personal views), create |
+| PUT/DELETE | `/views/:id` | Update and delete: owner or administrator only (403 otherwise, telling the user to save a copy). `owner` in the body reassigns ownership. The default view cannot be deleted |
+| GET/POST | `/workspaces` | List (the caller's own plus their team's defaults), create |
+| PUT/DELETE | `/workspaces/:id` | Update, delete: owner or administrator only |
 
 ### Jobs
 | Method | Path | Purpose |

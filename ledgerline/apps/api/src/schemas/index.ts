@@ -300,6 +300,7 @@ export const savedView = z.object({
   name: z.string(),
   ownership: z.enum(['personal', 'shared', 'default']),
   owner: actorRef,
+  defaultForTeam: z.string().exactOptional(),
   state: z.object({
     columns: z.array(
       z.object({
@@ -479,3 +480,70 @@ export const gridQuery = z.object({
 });
 
 export const errorBody = z.object({ messages: z.array(message), permission: permission.exactOptional() });
+
+// ── Transactions ──
+export const transactionStatus = z.enum(['unposted', 'posted', 'reversed']);
+export const transactionFinancialField = z.enum(['quantity', 'price', 'amount']);
+
+export const transactionRow = z.object({
+  id: z.string(),
+  portfolio: entityRef,
+  security: entityRef.nullable(),
+  type: z.string(),
+  tradeDate: businessDate,
+  settleDate: businessDate,
+  quantity: financialValue,
+  price: financialValue,
+  amount: financialValue,
+  currency: z.string(),
+  status: transactionStatus,
+  warning: message.exactOptional(),
+  version: z.number().int(),
+});
+
+export const transactionPatch = z.object({
+  changes: z.partialRecord(transactionFinancialField, decimalString).exactOptional(),
+  reason: z.string().exactOptional(),
+  dates: z
+    .object({ tradeDate: isoDate.exactOptional(), settleDate: isoDate.nullable().exactOptional() })
+    .exactOptional(),
+});
+
+export const gridGroup = z.object({ field: z.string(), key: z.string().nullable(), count: z.number().int() });
+
+// ── Entity search and calendars ──
+export const entitySearchResult = z.object({
+  ref: entityRef,
+  description: z.string(),
+  type: z.string(),
+  currency: z.string().exactOptional(),
+  status: z.enum(['active', 'inactive']),
+  parent: z.string().exactOptional(),
+  matchedOn: z.string().exactOptional(),
+  restricted: z.object({ reason: z.string() }).exactOptional(),
+});
+
+export const marketCalendar = z.object({
+  market: z.string(),
+  holidays: z.array(z.object({ date: isoDate, name: z.string() })),
+});
+
+/** Bodies for creating and updating views and workspaces. The server sets id, owner and timestamps. */
+export const savedViewInput = savedView
+  .pick({ gridId: true, name: true, ownership: true, state: true, schemaVersion: true })
+  .extend({
+    defaultForTeam: z.string().exactOptional(),
+    /** Reassigns the owner (owner or administrator only). */
+    owner: actorRef.exactOptional(),
+  });
+export const workspaceInput = workspace
+  .omit({ id: true, owner: true })
+  .extend({ owner: actorRef.exactOptional() });
+
+/** Body of POST /…/bulk. */
+export const bulkRequest = z.object({
+  actionId: z.string(),
+  ids: z.array(z.string()).min(1),
+  inputs: unknownRecord.exactOptional(),
+  reason: z.string().exactOptional(),
+});

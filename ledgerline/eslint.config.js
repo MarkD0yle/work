@@ -110,7 +110,8 @@ export default defineConfig([
   })),
   {
     files: ['packages/ui/src/**', 'packages/compositions/src/**'],
-    ignores: ['**/*.test.{ts,tsx}', '**/*.stories.tsx'],
+    // packages/ui/src/financial is the one place allowed to format: it owns the precision registry and uses decimal.js.
+    ignores: ['**/*.test.{ts,tsx}', '**/*.stories.tsx', 'packages/ui/src/financial/**'],
     rules: { 'no-restricted-syntax': ['error', ...FINANCIAL_MATHS] },
   },
 ]);

@@ -21,7 +21,7 @@ Read these first. They are risks, not solved problems.
 | 1 | The API is a mock. The real accounting engine may not expose these endpoints. | The UI can be finished while integration is impossible. | `docs/API.md` is written as the contract to negotiate with the backend owner. Keep it stable. |
 | 2 | No capability has been tested with real users. | Assumptions harden into standards. | Every capability starts at `Hypothesis`. Research protocol in §11. |
 | 3 | The foundation design system is a stand-in (`packages/tokens` + shadcn/ui on Radix and Tailwind). | An enterprise design system may replace it later. | All primitives are wrapped in `packages/ui`. Swapping the foundation changes one package. |
-| 4 | AG Grid Enterprise needs a paid licence. | Without it: no row grouping, server-side row model, Excel export or range selection. | Grid works on Community; Enterprise features switch on when the licence key exists. The 100k-row target needs Enterprise. |
+| 4 | AG Grid Enterprise needs a paid licence. | Without it: no row grouping, server-side row model, Excel export or range selection. | Decided 2026-11-15: use Enterprise unlicensed, with AG Grid's watermark, while Ledgerline is a design concept. A licence must be bought before production. Community still works as a fallback and is tested. |
 | 5 | Approval volume is unknown. | If approval is heavier than assumed, the queue becomes a bottleneck. | Approval Queue is core in milestone 6 (8.5). Measure queue time from day one. |
 | 7 | The end-user review in §15 is simulated, not observed. | It reflects the spec author's assumptions about users. | Every §15 change is tagged `Hypothesis` and is the first thing tested in research. |
 | 6 | Scope is large. | Breadth ships, no journey works end to end. | Build order is gated by proof journeys (§10). |
@@ -84,7 +84,7 @@ packages/contracts ── shared types (imported by every layer above tokens, an
 
 - `apps/api` is a Fastify service with SQLite. It mimics the accounting engine: validation, posting, jobs, periods, audit.
 - The AG Grid theme is generated from `packages/tokens`. A token change reaches every grid.
-- Feature flags live in `apps/web/src/flags.ts`, read from env. Flags: `agGridEnterprise`, `assistant`, `approvals`.
+- Feature flags live in `apps/web/src/flags.ts`, read from env. Flags: `agGridEnterprise` (on by default), `assistant`, `approvals`.
 
 ## 5. Foundations (`packages/tokens`)
 
@@ -122,7 +122,7 @@ Each capability: purpose, rules, acceptance criteria. Acceptance criteria become
 
 The central workspace. AG Grid wrapped; apps never import AG Grid.
 
-**Anatomy:** toolbar (view selector, quick search, filter tags, density, columns, export) · selection bar (selected, eligible, ineligible counts, actions) · header · body with typed cells · status bar (row count, aggregates of selected range, last refreshed, stale warning) · state overlay.
+**Anatomy:** toolbar (view selector, quick search, filter tags, density, columns, export; the view selector arrives with Saved Views in Milestone 2 and export with Jobs in Milestone 5) · selection bar (selected, eligible, ineligible counts, actions) · header · body with typed cells · status bar (row count, aggregates of selected range, last refreshed, stale warning) · state overlay.
 
 **Props (minimum):** `gridId`, `columns: LLColumnDef[]`, `dataSource` (client or server), `rowId`, `features` (role-based feature set), `selection`, `editing`, `actions: ActionDef[]`, `permissions`, `density`, `onStateChange`.
 
@@ -143,12 +143,12 @@ The central workspace. AG Grid wrapped; apps never import AG Grid.
 **Keyboard:** arrows move; Space selects; Shift extends; Ctrl/Cmd+A selects all in view (not all server rows); Enter or F2 edits; Escape cancels then clears; Ctrl/Cmd+C copies; Shift+F10 opens actions.
 
 **Acceptance**
-- [ ] 100,000 server-side rows: first paint under 1.5s, smooth scroll (Enterprise only).
-- [ ] A financial column never shows more or fewer decimals than its registry entry.
-- [ ] Refresh keeps focus, selection and scroll.
-- [ ] Every keyboard interaction works with no mouse.
-- [ ] Lint fails if `ag-grid-*` is imported outside `packages/ui/src/grid`.
-- [ ] Row and column counts announced to screen readers, including server totals.
+- [x] 100,000 server-side rows: first paint under 1.5s, smooth scroll (Enterprise only). *Measured on 250,000 rows in headless Chromium: first paint about 0.4s; 60 frames a second at normal scroll speed; about 50 during a very fast flick. Not yet checked on real user hardware. See DECISIONS.md.*
+- [x] A financial column never shows more or fewer decimals than its registry entry.
+- [x] Refresh keeps focus, selection and scroll.
+- [x] Every keyboard interaction works with no mouse.
+- [x] Lint fails if `ag-grid-*` is imported outside `packages/ui/src/grid`.
+- [x] Row and column counts announced to screen readers, including server totals.
 
 ### 7.2 Saved Views and Workspaces — Milestone 2
 
@@ -167,11 +167,11 @@ The central workspace. AG Grid wrapped; apps never import AG Grid.
 - Shared views and workspaces have a reassignable owner.
 
 **Acceptance**
-- [ ] Active filter count on screen equals conditions applied to the query.
-- [ ] A saved view restores columns, sort, filters, search, grouping and density exactly.
-- [ ] A user cannot overwrite a shared view they do not own.
-- [ ] Views survive a column rename through `schemaVersion` migration.
-- [ ] A workspace marked load-at-startup opens on sign-in with all its panels.
+- [x] Active filter count on screen equals conditions applied to the query.
+- [x] A saved view restores columns, sort, filters, search, grouping and density exactly.
+- [x] A user cannot overwrite a shared view they do not own.
+- [x] Views survive a column rename through `schemaVersion` migration.
+- [x] A workspace marked load-at-startup opens on sign-in with all its panels.
 
 ### 7.3 Entity Picker — Milestone 2
 
@@ -185,9 +185,9 @@ One selection pattern for portfolios, securities, issuers, accounts, banks, mana
 - Inactive records hidden by default with a "Show inactive" toggle. Last 10 recent items shown.
 
 **Acceptance**
-- [ ] Pasting a known ISIN selects the security in one step.
-- [ ] p95 search under 500ms on a 1M-row seeded universe (API index required).
-- [ ] Restricted records expose their reason on focus and to screen readers.
+- [x] Pasting a known ISIN selects the security in one step.
+- [x] p95 search under 500ms on a 1M-row seeded universe (API index required). *Measured: p95 2ms, max 47ms, on 1,000,000 securities.*
+- [x] Restricted records expose their reason on focus and to screen readers.
 
 ### 7.4 Bulk Action System — Milestone 5
 
@@ -233,10 +233,10 @@ One input and one display cell per financial kind.
 - Null displays by `nullReason`: missing `—`, unavailable `n/a` with tooltip, not applicable blank with aria label. Zero is `0.00`.
 
 **Acceptance**
-- [ ] `1.5m` in a USD amount saves as `"1500000.00"`.
-- [ ] JPY amounts never show decimals.
-- [ ] An override cannot save without a reason; audit holds before and after.
-- [ ] Missing, unavailable, not applicable and zero render differently.
+- [x] `1.5m` in a USD amount saves as `"1500000.00"`.
+- [x] JPY amounts never show decimals.
+- [x] An override cannot save without a reason; audit holds before and after.
+- [x] Missing, unavailable, not applicable and zero render differently.
 
 ### 7.6 Date and Period Fields — Milestone 2
 
@@ -249,9 +249,9 @@ One input and one display cell per financial kind.
 - Close types are explicit: transaction, valuation, bank account, general ledger.
 
 **Acceptance**
-- [ ] `t+2` on a Friday trade resolves to Tuesday using the portfolio's calendar.
-- [ ] An API value of `9999-12-31` renders as "No date" (converted at the boundary).
-- [ ] Posting into a closed period is blocked; the message names the period and the reopen role.
+- [x] `t+2` on a Friday trade resolves to Tuesday using the portfolio's calendar.
+- [x] An API value of `9999-12-31` renders as "No date" (converted at the boundary).
+- [x] Posting into a closed period is blocked; the message names the period and the reopen role. *Proven for entering a trade date in a closed period; the Post action itself arrives in Milestone 4 and must reuse the same rule.*
 
 ### 7.7 State and Validation System — Milestone 1
 
@@ -276,9 +276,9 @@ Implements `UiState` and `Message`. Every other capability depends on it.
 - Stale data shows as-of and a refresh action. It never refreshes over unsaved edits; that is a conflict state.
 
 **Acceptance**
-- [ ] All 15 `UiState` kinds have stories in light and dark.
-- [ ] New blocking errors announced via an assertive live region; warnings polite.
-- [ ] Clicking a notification-panel message focuses its field or row.
+- [x] All 15 `UiState` kinds have stories in light and dark.
+- [x] New blocking errors announced via an assertive live region; warnings polite.
+- [x] Clicking a notification-panel message focuses its field or row.
 
 ### 7.8 Action Registry and Contextual Actions — Milestone 3
 
@@ -292,9 +292,9 @@ One `ActionDef[]` per grid or record feeds the toolbar, selection bar, context m
 - Each action declares `description`, `inputSchema` and `agentRequiresConfirmation` so an assistant can call it later through the same permissions and audit.
 
 **Acceptance**
-- [ ] The same action has the same label and shortcut in toolbar, menu and palette.
-- [ ] Every right-click action is reachable by keyboard.
-- [ ] A unit test asserts every registered action has a description and an explicit `agentRequiresConfirmation`.
+- [x] The same action has the same label and shortcut in toolbar, menu and palette.
+- [x] Every right-click action is reachable by keyboard.
+- [x] A unit test asserts every registered action has a description and an explicit `agentRequiresConfirmation`.
 
 ### 7.9 Comparison — Milestone 6
 

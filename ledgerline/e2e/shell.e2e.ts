@@ -2,13 +2,13 @@ import { expect, test } from '@playwright/test';
 
 test.describe('Milestone 0 shell', () => {
   test('signs in as the first seeded user and applies their default density', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/profile');
     await expect(page.getByRole('heading', { name: 'Signed in as Ada' })).toBeVisible();
     await expect(page.locator('html')).toHaveAttribute('data-density', 'compact');
   });
 
   test('the role switcher changes the user the API sees', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/profile');
     await expect(page.getByRole('heading', { name: 'Signed in as Ada' })).toBeVisible();
 
     const meAsBen = page.waitForRequest(
@@ -27,7 +27,7 @@ test.describe('Milestone 0 shell', () => {
   });
 
   test('the chosen user survives a reload', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/profile');
     await page.getByRole('button', { name: /Switch user/ }).click();
     await page.getByRole('menuitemradio', { name: /Cleo/ }).click();
     await expect(page.getByRole('heading', { name: 'Signed in as Cleo' })).toBeVisible();
@@ -36,7 +36,7 @@ test.describe('Milestone 0 shell', () => {
   });
 
   test('theme and density switch from the keyboard only', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/profile');
     await expect(page.getByRole('heading', { name: /Signed in as/ })).toBeVisible();
     const prefs = page.getByRole('button', { name: 'Display preferences' });
     await prefs.focus();
@@ -55,12 +55,11 @@ test.describe('Milestone 0 shell', () => {
   });
 
   test('every domain in the rail is reachable and says it is a placeholder', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/profile');
     const rail = page.getByRole('navigation', { name: 'Domains' });
     for (const name of [
       'Portfolios',
       'Securities',
-      'Transactions',
       'Market Data',
       'Cash',
       'Accounting',
@@ -75,7 +74,7 @@ test.describe('Milestone 0 shell', () => {
 
   test('an API failure shows what happened and what to do, never a blank screen', async ({ page }) => {
     await page.route('**/api/v1/users', (route) => route.abort());
-    await page.goto('/');
+    await page.goto('/profile');
     const alert = page.getByRole('alert');
     await expect(alert).toContainText('The Ledgerline API did not respond.');
     await expect(alert).toContainText('LL-NET-0001');

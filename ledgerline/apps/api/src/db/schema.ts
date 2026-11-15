@@ -22,9 +22,11 @@ import type {
   JobStatus,
   JobType,
   PeriodState,
+  Provenance,
   RecurringBreakRule,
   SavedView,
   ToleranceRule,
+  TransactionFinancialField,
   Workspace,
 } from '@ledgerline/contracts';
 import { index, integer, primaryKey, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
@@ -121,12 +123,15 @@ export const transactions = sqliteTable(
     origin: text('origin').$type<'entered' | 'imported' | 'calculated'>().notNull(),
     createdBy: text('created_by').notNull(),
     createdAt: text('created_at').notNull(),
+    /** Provenance of overridden fields, keyed by field name. */
+    overrides: json<Partial<Record<TransactionFinancialField, Provenance>>>('overrides'),
     version: integer('version').notNull(),
   },
   (t) => [
     index('transactions_portfolio').on(t.portfolioId),
     index('transactions_security').on(t.securityId),
-    index('transactions_trade_date').on(t.tradeDate),
+    // Covers the default grid order (trade date, then id), so paging walks the index without sorting.
+    index('transactions_trade_date').on(t.tradeDate, t.id),
     index('transactions_status').on(t.status, t.tradeDate),
   ],
 );
@@ -258,13 +263,26 @@ export const views = sqliteTable(
     name: text('name').notNull(),
     ownership: text('ownership').$type<SavedView['ownership']>().notNull(),
     owner: json<ActorRef>('owner').notNull(),
-    /** Role the view is the team default for, when ownership is 'default'. */
-    defaultForRole: text('default_for_role'),
+    /** Team whose members start on this view. */
+    defaultForTeam: text('default_for_team'),
     state: json<SavedView['state']>('state').notNull(),
     schemaVersion: integer('schema_version').notNull(),
     updatedAt: text('updated_at').notNull(),
   },
   (t) => [index('views_grid').on(t.gridId)],
+);
+
+/** Last entities each user picked, for the Entity Picker's recent list. */
+export const entityRecents = sqliteTable(
+  'entity_recents',
+  {
+    userId: text('user_id').notNull(),
+    kind: text('kind').notNull(),
+    entityId: text('entity_id').notNull(),
+    /** Monotonic counter: higher is more recent. */
+    seq: integer('seq').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.kind, t.entityId] })],
 );
 
 export const workspaces = sqliteTable('workspaces', {

@@ -291,6 +291,8 @@ export interface SavedView {
   name: string;
   ownership: 'personal' | 'shared' | 'default';
   owner: ActorRef;
+  /** Team whose members start on this view. Set by the team lead. */
+  defaultForTeam?: string;
   state: {
     columns: { field: string; visible: boolean; width?: number; pinned?: 'left' | 'right' }[];
     sort: { field: string; dir: 'asc' | 'desc' }[];
@@ -457,9 +459,89 @@ export interface GridQuery {
   groupKeys?: string[];
 }
 
+/** One group row, returned when a query asks for a group level (groupBy longer than groupKeys). */
+export interface GridGroup {
+  field: string;
+  /** Group value. Null groups records with no value. */
+  key: string | null;
+  count: number;
+}
+
 export interface GridResponse<Row> {
   rows: Row[];
+  /** Present instead of rows when the query asked for a group level. */
+  groups?: GridGroup[];
   totalRows: number;
   /** ISO timestamp */
   asOf: string;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Transactions (added 0.2.0)
+// ─────────────────────────────────────────────────────────────
+
+export type TransactionStatus = 'unposted' | 'posted' | 'reversed';
+
+/** Financial fields of a transaction that can be edited or overridden. */
+export type TransactionFinancialField = 'quantity' | 'price' | 'amount';
+
+/** One transaction as the grid and the detail panel see it. */
+export interface TransactionRow {
+  id: string;
+  portfolio: EntityRef;
+  /** Null for cash-only records such as fees. */
+  security: EntityRef | null;
+  type: string;
+  tradeDate: BusinessDate;
+  settleDate: BusinessDate;
+  quantity: FinancialValue;
+  price: FinancialValue;
+  amount: FinancialValue;
+  currency: string;
+  status: TransactionStatus;
+  /** Present when the record carries a warning the user can acknowledge. */
+  warning?: Message;
+  /** Optimistic concurrency: send as If-Match on writes. */
+  version: number;
+}
+
+/** Body of PATCH /transactions/:id. */
+export interface TransactionPatch {
+  /** New decimal strings by field. */
+  changes?: Partial<Record<TransactionFinancialField, string>>;
+  /** Required when a calculated value is changed (an override). */
+  reason?: string;
+  /** New business dates. A null settle date clears it. */
+  dates?: { tradeDate?: string; settleDate?: string | null };
+}
+
+/** Every mutation returns the record and the audit events it wrote. */
+export interface MutationResult<T> {
+  record: T;
+  auditEventIds: string[];
+}
+
+// ─────────────────────────────────────────────────────────────
+// Entity search and calendars (added 0.3.0)
+// ─────────────────────────────────────────────────────────────
+
+/** One Entity Picker result. Restricted records are returned, never omitted, with the reason. */
+export interface EntitySearchResult {
+  ref: EntityRef;
+  description: string;
+  /** Asset class, portfolio type and so on. */
+  type: string;
+  currency?: string;
+  status: 'active' | 'inactive';
+  /** Issuer of a security, manager of a portfolio. */
+  parent?: string;
+  /** Which identifier matched exactly, e.g. 'isin'. Exact matches rank first. */
+  matchedOn?: string;
+  restricted?: { reason: string };
+}
+
+export interface MarketCalendar {
+  /** Calendar code, e.g. 'US'. */
+  market: string;
+  holidays: { date: string; name: string }[];
 }
