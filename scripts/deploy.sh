@@ -33,6 +33,15 @@ else
   echo "==> Skipping build (--skip-build)"
 fi
 
+# `npm run build` empties dist/, so a gallery-only rebuild drops the separately built apps.
+# Refuse to deploy a dist/ that would take them offline.
+for required in dist/index.html dist/harbor/shell/index.html dist/ledgerline/index.html; do
+  if [ ! -f "$required" ]; then
+    echo "Missing $required. Run a full deploy (npm run deploy) so every app is built." >&2
+    exit 1
+  fi
+done
+
 echo "==> Deploying to Firebase Hosting..."
 $FIREBASE deploy --only hosting
 
