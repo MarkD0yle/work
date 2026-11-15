@@ -15,6 +15,13 @@
       "when": 1794712802667,
       "tag": "0001_securities_fts",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1794745150744,
+      "tag": "0002_milky_richard_fisk",
+      "breakpoints": true
     }
   ]
 }

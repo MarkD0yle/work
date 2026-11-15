@@ -549,6 +549,14 @@ export const bulkRequest = z.object({
   reason: z.string().exactOptional(),
 });
 
+export const reportRun = z.object({
+  asOf: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .exactOptional(),
+  portfolioIds: z.array(z.string()).exactOptional(),
+});
+
 // ── Transaction entry and import ──
 export const transactionInput = z.object({
   portfolioId: z.string(),

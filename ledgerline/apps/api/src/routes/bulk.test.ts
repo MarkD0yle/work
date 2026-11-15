@@ -159,10 +159,11 @@ describe('POST /transactions/bulk', () => {
     expect(statusOf(outside)).toBe('unposted');
   });
 
-  it('rejects unknown actions, empty selections and runs too large for inline', async () => {
+  it('rejects unknown actions, empty selections and runs too large for one request', async () => {
     expect((await bulk('u-ada', 'transaction.explode', ['T-0000001'])).statusCode).toBe(400);
     expect((await bulk('u-ada', 'transaction.post', [])).statusCode).toBe(400);
-    const many = Array.from({ length: 201 }, (_, i) => `T-${String(i + 1).padStart(7, '0')}`);
+    // More than 200 runs as a job (see jobs.test.ts). More than 5,000 is refused outright.
+    const many = Array.from({ length: 5001 }, (_, i) => `T-${String(i + 1).padStart(7, '0')}`);
     const res = await bulk('u-ada', 'transaction.post', many);
     expect(res.statusCode).toBe(400);
     expect(schemas.errorBody.parse(res.json()).messages[0]?.code).toBe('LL-BLK-0002');

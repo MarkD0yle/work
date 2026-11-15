@@ -6,9 +6,10 @@ import { seed, type SeedScale } from './db/seed';
 const path = defaultDbPath();
 const fresh = !existsSync(path);
 const db = openDb(path);
+// Migrations are applied on every start, so a database from an earlier version picks up new tables.
+migrateDb(db);
 if (fresh) {
   // First run: behave as if `pnpm db:reset` had been run, so `pnpm dev` works on a clean checkout.
-  migrateDb(db);
   seed(db, (process.env.SEED_SCALE as SeedScale | undefined) ?? 'small');
 }
 

@@ -317,6 +317,19 @@ export const jobs = sqliteTable(
   (t) => [index('jobs_status').on(t.status)],
 );
 
+/** The content of a job's downloadable outputs (report files). Kept apart from `jobs` so job lists stay small. */
+export const jobOutputs = sqliteTable(
+  'job_outputs',
+  {
+    jobId: text('job_id').notNull(),
+    idx: integer('idx').notNull(),
+    name: text('name').notNull(),
+    contentType: text('content_type').notNull(),
+    content: text('content').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.jobId, t.idx] })],
+);
+
 export const approvals = sqliteTable(
   'approvals',
   {
