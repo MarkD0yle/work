@@ -1,0 +1,13 @@
+pnpm-lock.yaml
+**/dist
+**/.tsbuild
+**/.turbo
+storybook-static
+playwright-report
+test-results
+apps/api/data
+apps/api/drizzle
+docs
+CLAUDE.md
+README.md
+packages/tokens/src/tokens.css

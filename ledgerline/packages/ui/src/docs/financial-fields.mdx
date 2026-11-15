@@ -1,0 +1,43 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Docs/Capabilities/Financial Fields and Cells" />
+
+# Financial Fields and Cells
+
+**Status:** Hypothesis. Its acceptance criteria pass in automated tests. No user has tested it yet, so it has not moved to Draft (SPEC §11).
+
+**Spec:** SPEC 7.5
+
+## Purpose
+
+One input and one display cell for every financial kind, so a price, a quantity and an amount always look and behave the same, and money is never a floating-point number.
+
+## When to use, and when not
+
+**Use it** for every financial value shown or entered, anywhere.
+
+**Do not use it** to format a number yourself. Only `packages/ui/src/financial` may format or parse financial values; lint enforces it.
+
+## Foundations
+
+Values travel as decimal strings in a `FinancialValue`. Display precision comes from the precision registry by kind and currency. Zero, missing, unavailable and not applicable are four different displays.
+
+## States
+
+Value, calculated, overridden (with the original kept), locked (with the reason), the three null displays, invalid entry (the field keeps its last good value and says so) and rounded on entry (a warning).
+
+## Data contract
+
+`FinancialValue`: kind, decimal string or null, currency, precision, sign convention, provenance, optional lock and null reason. Inputs call `onCommit` with the next `FinancialValue`.
+
+## Permissions
+
+Changing a calculated value is an override: it needs the override permission and a reason. A locked value cannot be edited and says why.
+
+## Accessibility
+
+The cell's spoken name contains its visible text plus origin flags. Negative accounting values are announced as minus. The provenance popover is keyboard reachable and returns focus to the cell.
+
+## Code reference
+
+`@ledgerline/ui`: `FinancialCell`, `FinancialInput`, `formatFinancial`, `formatDelta`, `formatPercent`. Tests: `financial.test.tsx`, `delta.test.ts`.

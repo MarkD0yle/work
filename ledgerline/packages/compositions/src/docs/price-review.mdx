@@ -1,0 +1,43 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Docs/Compositions/Price Review" />
+
+# Price Review
+
+**Status:** Hypothesis. Its acceptance criteria pass in automated tests. No user has tested it yet, so it has not moved to Draft (SPEC §11).
+
+**Spec:** SPEC 8.4
+
+## Purpose
+
+Shows which prices fall outside the rules and which rule failed, and lets Market Data own the rules.
+
+## When to use, and when not
+
+**Use it** daily, by Market Data, and by anyone who needs to know why a price was flagged.
+
+**Do not use it** to change a price (overrides go through approval).
+
+## Foundations
+
+Three views: price exceptions, prices with the prior day as an inline delta column, and tolerance rules. A rule change is previewed against today's prices before it can be saved.
+
+## States
+
+Within rules, stale, variance, missing; rules read only (with the reason); a change being previewed; invalid threshold.
+
+## Data contract
+
+`PriceRow`, `ToleranceRule`, `ToleranceImpact`, `FailedRule`.
+
+## Permissions
+
+`price.view` to look, `tolerance.edit` to change rules, `exception.resolve` to resolve.
+
+## Accessibility
+
+Each threshold input is labelled with its asset class and check. The impact is a status region in words. The delta column reads as a sentence.
+
+## Code reference
+
+`@ledgerline/compositions/accounting`: `PriceReview`, `ToleranceRules`. API: `apps/api/src/routes/prices.ts`. Tests: `milestone6.test.ts`, `e2e/milestone6.e2e.ts`.

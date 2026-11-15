@@ -1,0 +1,112 @@
+/*
+ * @ledgerline/ui styles.
+ * Tailwind v4 + shadcn/ui semantic colours, all driven by @ledgerline/tokens.
+ * Components never use raw colours: change a token and every component follows.
+ */
+@import 'tailwindcss';
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/jetbrains-mono';
+@import '@ledgerline/tokens/tokens.css';
+
+@source './';
+@source '../../compositions/src';
+
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+@theme inline {
+  /* shadcn/ui semantic names → Ledgerline tokens */
+  --color-background: var(--ll-bg);
+  --color-foreground: var(--ll-text);
+  --color-card: var(--ll-surface);
+  --color-card-foreground: var(--ll-text);
+  --color-popover: var(--ll-surface-raised);
+  --color-popover-foreground: var(--ll-text);
+  --color-primary: var(--ll-accent);
+  --color-primary-foreground: var(--ll-accent-contrast);
+  --color-secondary: var(--ll-surface-sunken);
+  --color-secondary-foreground: var(--ll-text);
+  --color-muted: var(--ll-surface-sunken);
+  --color-muted-foreground: var(--ll-text-muted);
+  --color-accent: var(--ll-surface-sunken);
+  --color-accent-foreground: var(--ll-text);
+  --color-destructive: var(--ll-status-critical);
+  --color-destructive-foreground: var(--ll-surface);
+  --color-border: var(--ll-border);
+  --color-input: var(--ll-border-strong);
+  --color-ring: var(--ll-focus);
+
+  /* Status colours. Always pair with a text label or icon, never colour alone. */
+  --color-good: var(--ll-status-good);
+  --color-warning: var(--ll-status-warning);
+  --color-critical: var(--ll-status-critical);
+  --color-info: var(--ll-status-info);
+  --color-neutral: var(--ll-status-neutral);
+
+  --font-sans: var(--ll-font-ui);
+  --font-mono: var(--ll-font-mono);
+
+  --text-2xs: var(--ll-font-size-11);
+  --text-xs: var(--ll-font-size-12);
+  --text-sm: var(--ll-font-size-13);
+  --text-base: var(--ll-font-size-14);
+  --text-lg: var(--ll-font-size-16);
+  --text-xl: var(--ll-font-size-20);
+  --text-2xl: var(--ll-font-size-24);
+  /* Follows the active density. */
+  --text-body: var(--ll-font-size-body);
+
+  --radius-sm: var(--ll-radius-2);
+  --radius-md: var(--ll-radius-4);
+  --radius-lg: var(--ll-radius-8);
+
+  /* The single elevation level, for popovers and menus only. */
+  --shadow-popover: 0 4px 16px rgb(0 0 0 / 0.16);
+
+  --default-transition-duration: var(--ll-motion-fast);
+}
+
+@layer base {
+  * {
+    border-color: var(--ll-border);
+  }
+  html {
+    font-family: var(--ll-font-ui);
+    font-size: 16px;
+    color-scheme: light;
+  }
+  html[data-theme='dark'] {
+    color-scheme: dark;
+  }
+  body {
+    margin: 0;
+    background: var(--ll-bg);
+    color: var(--ll-text);
+    font-size: var(--ll-font-size-body);
+    line-height: 1.4;
+  }
+  :focus-visible {
+    outline: 2px solid var(--ll-focus);
+    outline-offset: 1px;
+  }
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+
+/* Grid: financial cells fill the cell so numbers right-align on the same edge. */
+.ll-cell-financial .ag-cell-value,
+.ll-cell-financial .ag-cell-wrapper {
+  width: 100%;
+}
+.ll-grid-body {
+  height: 100%;
+}
+.ll-header-icon-only .ag-header-cell-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}

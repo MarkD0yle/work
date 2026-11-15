@@ -1,0 +1,43 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Docs/Compositions/Admin Console" />
+
+# Admin Console
+
+**Status:** Hypothesis. Its acceptance criteria pass in automated tests. No user has tested it yet, so it has not moved to Draft (SPEC §11).
+
+**Spec:** SPEC 9
+
+## Purpose
+
+Who can do what, and which portfolios each person sees.
+
+## When to use, and when not
+
+**Use it** for administrators managing access.
+
+**Do not use it** to create users (the mock has a fixed set).
+
+## Foundations
+
+Access is a level per action (none, view, edit, full), grouped by area. Changes are staged with a count, saved together and audited.
+
+## States
+
+No user chosen, loading, staged changes, saved, refused (for example removing your own administrator access) and not an administrator (with the reason).
+
+## Data contract
+
+`User`, `Permission`, and the `/admin/users` endpoints.
+
+## Permissions
+
+`admin.users` and `admin.permissions`. An administrator cannot remove their own administrator access.
+
+## Accessibility
+
+Each access level is a labelled select. "Changed, not saved yet" is text beside the row. The pending count is a status region.
+
+## Code reference
+
+`@ledgerline/compositions`: `AdminConsole`. API: `apps/api/src/routes/admin.ts`. Tests: `milestone7.test.ts`, `e2e/milestone7.e2e.ts`.

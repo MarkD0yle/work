@@ -1,0 +1,43 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Docs/Capabilities/State and Validation" />
+
+# State and Validation
+
+**Status:** Hypothesis. Its acceptance criteria pass in automated tests. No user has tested it yet, so it has not moved to Draft (SPEC §11).
+
+**Spec:** SPEC 7.7
+
+## Purpose
+
+A shared language for what a screen is doing and what went wrong: every state is designed, and every message says what happened and what to do next.
+
+## When to use, and when not
+
+**Use it** for any component that loads data or can fail. Use field messages on fields, banners on sections and the notification panel for history.
+
+**Do not use it** to show critical information in a toast. Toasts are only for light confirmation.
+
+## Foundations
+
+Fifteen `UiState` kinds map to a tone, an icon and words. Messages lead with plain language; the stable code is small. New users get glossary definitions on domain terms, including inside messages.
+
+## States
+
+Normal, loading, processing, empty, no matches, warning, blocking error, partial success, permission-limited, pending approval, overridden, failed integration, stale, conflict and recovery.
+
+## Data contract
+
+`UiState` and `Message` (code, severity, level, text, fix, target). Levels: field, row, section, record, operation, processing.
+
+## Permissions
+
+A permission-limited state always carries the reason, and a way to ask for access when there is one.
+
+## Accessibility
+
+Errors use `role="alert"`; warnings and status use `role="status"`. Tone is always an icon plus words. Messages stay until the cause is fixed.
+
+## Code reference
+
+`@ledgerline/ui`: `SectionBanner`, `StateOverlay`, `FieldMessage`, `MessageList`, `NotificationProvider`, `GlossaryProvider`. Tests: `state.test.tsx`, `glossary.test.tsx`.

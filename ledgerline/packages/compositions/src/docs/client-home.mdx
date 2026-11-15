@@ -1,0 +1,43 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Docs/Compositions/Client Home" />
+
+# Client Home
+
+**Status:** Hypothesis. Its acceptance criteria pass in automated tests. No user has tested it yet, so it has not moved to Draft (SPEC §11).
+
+**Spec:** SPEC 8.6
+
+## Purpose
+
+What an external client needs on one page: their positions, their transactions and their statements.
+
+## When to use, and when not
+
+**Use it** as the landing page for users in the client segment.
+
+**Do not use it** for internal users, who have the workbench.
+
+## Foundations
+
+No job tray, no bulk actions, no admin. The latest month-end statement is one click from sign-in.
+
+## States
+
+Loading, no statements yet (says when the first will appear), statements listed, download in progress, and out of scope (refused with the reason).
+
+## Data contract
+
+`PositionRow`, `Statement`, `TransactionRow`. Everything is limited to the user's blotter scope by the server.
+
+## Permissions
+
+`transaction.view` and `export.run`. A record outside the scope is refused with "outside your account scope".
+
+## Accessibility
+
+Each download button names the portfolio and the month. The page states which portfolios are on the account.
+
+## Code reference
+
+`@ledgerline/compositions/client`: `ClientHome`. API: `apps/api/src/routes/client.ts`. Tests: `milestone7.test.ts`, `e2e/milestone7.e2e.ts`.

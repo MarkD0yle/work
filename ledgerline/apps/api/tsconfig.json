@@ -1,0 +1,6 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "lib": ["ES2022"], "jsx": "react-jsx", "types": ["node"] },
+  "include": ["src", "*.ts", "scripts"],
+  "references": [{ "path": "../../packages/contracts" }]
+}

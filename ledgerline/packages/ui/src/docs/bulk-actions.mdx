@@ -1,0 +1,43 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Docs/Capabilities/Bulk Actions" />
+
+# Bulk Actions
+
+**Status:** Hypothesis. Its acceptance criteria pass in automated tests. No user has tested it yet, so it has not moved to Draft (SPEC §11).
+
+**Spec:** SPEC 7.4
+
+## Purpose
+
+Runs one action on many records safely: who is eligible is counted first, the confirm step scales with the risk, and the outcome is three counts with a way to fix what failed.
+
+## When to use, and when not
+
+**Use it** for any action on a selection, from one row to five thousand.
+
+**Do not use it** to drop ineligible rows silently, or to report a partial result in a toast.
+
+## Foundations
+
+Flow: select, choose action, eligibility per row, optional preview, confirm, run inline (200 rows or fewer) or as a job, results, remediate. A typed phrase (`post 500`) is asked only for irreversible actions or more than 50 rows.
+
+## States
+
+Confirm (with ineligible rows grouped by reason), preview (rows with something to check first), running as a job (progress, free to leave), done (a toast), partial success (a panel that stays, with Show failed, Retry failed and Export results) and failed outright.
+
+## Data contract
+
+`ActionDef.execute(ids, inputs) → BulkResult` and optional `preview(ids) → PreviewRow[]`. A result with status `queued` and a job id is followed through `GridJobs`.
+
+## Permissions
+
+`available` decides the action as a whole; `eligibility` decides each row. Both carry the explanation shown to the user. The server checks again.
+
+## Accessibility
+
+The confirm button has focus for routine runs, so one Enter confirms. Counts are text. The results panel is a status region; its reasons are read, not implied by colour.
+
+## Code reference
+
+`@ledgerline/ui`: `ConfirmDialog`, `BulkResultPanel`, `useActionRunner`, `confirmPhrase`. Tests: `actions.test.tsx`, `bulk-results.test.tsx`, `e2e/milestone5.e2e.ts`.

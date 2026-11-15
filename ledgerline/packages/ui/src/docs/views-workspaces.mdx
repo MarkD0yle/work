@@ -1,0 +1,43 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Docs/Capabilities/Views and Workspaces" />
+
+# Views and Workspaces
+
+**Status:** Hypothesis. Its acceptance criteria pass in automated tests. No user has tested it yet, so it has not moved to Draft (SPEC §11).
+
+**Spec:** SPEC 7.2
+
+## Purpose
+
+A saved view is how a grid looks: columns, sort, filters, search, grouping and density. A workspace is a set of views opened together. They let people keep the screen they work in and share it.
+
+## When to use, and when not
+
+**Use it** on every grid a user returns to. Give teams a default view so a new user starts somewhere useful.
+
+**Do not use it** to hide a filter from the user. A view's filters always show as tags.
+
+## Foundations
+
+View state is split: the grid owns columns, sort, search and grouping; the screen owns filters and density. An unsaved change travels in the URL (`?view=…&d=…`), so a link shares the screen exactly as it looks.
+
+## States
+
+Clean, edited (a badge until saved or discarded), migrated (a view from an older schema loads without the columns that no longer exist, and says which), and not found (falls back to the team default).
+
+## Data contract
+
+`SavedView` and `Workspace` from `@ledgerline/contracts`. `ViewSchema` lists a grid's columns, renames by version and which columns start hidden. `migrateView`, `diffView` and `applyViewDiff` are pure functions.
+
+## Permissions
+
+Anyone can save a personal view. Only the owner or an administrator can change or delete a shared view; others are told to save a copy. The default view cannot be deleted.
+
+## Accessibility
+
+The view selector is a menu button with the current view's name. "Edited" is text, not only colour. Task chips are toggle buttons with a pressed state.
+
+## Code reference
+
+`@ledgerline/ui`: `ViewSelector`, `TaskChips`, `migrateView`, `diffView`, `encodeViewDiff`. Compositions: `TransactionsBlotter`. Tests: `view-state.test.ts`, `e2e/milestone2.e2e.ts`.
