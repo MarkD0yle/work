@@ -364,6 +364,21 @@ export interface ExceptionRecord {
   proposal?: { by: ActorRef; summary: string; actionId: string; inputs?: Record<string, unknown> };
   evidence: EvidenceRef[];
   thread: { id: string; author: ActorRef; at: string; text: string }[];
+  /** The accounting period the exception belongs to. */
+  periodEnd?: string;
+  /** Portfolio name, for display beside the id. */
+  portfolioName?: string;
+  /** For price exceptions: the tolerance rule that failed, its threshold and what was observed (SPEC 8.4). */
+  failedRule?: FailedRule;
+}
+
+export interface FailedRule {
+  ruleId: string;
+  check: ToleranceRule['check'];
+  /** The rule's threshold: a fraction for moves ("0.02" is 2%), market days for stale. */
+  threshold: string;
+  /** What was observed, in the same unit as the threshold. Absent for a missing price. */
+  actual?: string;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -590,4 +605,91 @@ export interface ImportCommit extends ImportRequest {
   fileEvidence: { name: string };
   /** Must be true to commit rows that carry warnings. */
   acknowledgeWarnings?: boolean;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Close console, price review, comparison (added in Milestone 6)
+// ─────────────────────────────────────────────────────────────
+
+export interface CloseCheck {
+  id: string;
+  label: string;
+  /** What this check catches, in plain language. */
+  catches: string;
+  /** `blocked` when a high-severity exception is open; `warning` when only lower ones are. */
+  status: 'passed' | 'warning' | 'blocked';
+  open: number;
+  high: number;
+  exceptionTypes: ExceptionType[];
+}
+
+export interface CloseChecklist {
+  period: AccountingPeriod;
+  portfolio: EntityRef;
+  checks: CloseCheck[];
+  /** Open high-severity exceptions. Close is blocked while this list is not empty. */
+  blocking: { id: string; type: ExceptionType; label: string; owner?: ActorRef }[];
+  /** A block override for this period, if one was asked for. */
+  override?: ApprovalRequest;
+  /** A reopen waiting for approval, if any. */
+  reopen?: ApprovalRequest;
+  signOff?: CloseSignOff;
+}
+
+export interface PeriodOverviewRow {
+  periodId: string;
+  portfolio: EntityRef;
+  periodEnd: string;
+  /** ISO timestamp of the close cutoff. */
+  cutoff: string;
+  state: PeriodState;
+  closes: Record<CloseType, PeriodState>;
+  checksPassed: number;
+  checksTotal: number;
+  /** Open high-severity exceptions: what blocks close. */
+  blocking: number;
+  openExceptions: number;
+  overrideStatus?: ApprovalRequest['status'];
+  signOff?: CloseSignOff;
+}
+
+export interface PriceRow {
+  id: string;
+  security: EntityRef;
+  assetClass: string;
+  priceDate: BusinessDate;
+  price: FinancialValue;
+  priorPrice: FinancialValue;
+  source: string;
+  toleranceStatus: 'ok' | 'stale' | 'variance' | 'missing';
+  failedRule?: FailedRule;
+}
+
+export interface ToleranceImpact {
+  priceDate: string;
+  /** Prices that pass today and would fail under the proposed rules. */
+  appear: number;
+  /** Prices that fail today and would pass under the proposed rules. */
+  clear: number;
+  failingNow: number;
+  failingAfter: number;
+}
+
+/** One line of a comparison: the same measure from two sources (SPEC 7.9). */
+export interface ComparisonRow {
+  key: string;
+  label: string;
+  left: FinancialValue;
+  right: FinancialValue;
+  /** Units behind each side, when the comparison is about holdings. */
+  leftUnits?: FinancialValue;
+  rightUnits?: FinancialValue;
+}
+
+export interface Comparison {
+  leftLabel: string;
+  rightLabel: string;
+  /** Tolerance on the percentage difference, as a percentage: "0.5" is 0.5%. */
+  tolerancePct: string;
+  rows: ComparisonRow[];
 }

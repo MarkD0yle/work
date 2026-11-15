@@ -48,3 +48,27 @@ export const actorOf = (user: { id: string; name: string }): ActorRef => ({
   id: user.id,
   name: user.name,
 });
+
+/** Reads a stored audit row back into the contract shape. */
+export function rowToAudit(r: Record<string, string | number | null>): AuditEvent {
+  const json = <T>(v: unknown) => (v == null ? undefined : (JSON.parse(v as string) as T));
+  const optional = {
+    effectiveDate: r.effective_date ?? undefined,
+    before: json<Record<string, unknown>>(r.before),
+    after: json<Record<string, unknown>>(r.after),
+    note: json<AuditEvent['note']>(r.note),
+    evidence: json<AuditEvent['evidence']>(r.evidence),
+    batchId: r.batch_id ?? undefined,
+  };
+  return {
+    id: r.id as string,
+    action: r.action as string,
+    recordRef: { type: r.record_type as string, id: r.record_id as string },
+    actor: JSON.parse(r.actor as string) as AuditEvent['actor'],
+    at: r.at as string,
+    immutable: Boolean(r.immutable),
+    ...(Object.fromEntries(
+      Object.entries(optional).filter(([, v]) => v !== undefined),
+    ) as Partial<AuditEvent>),
+  };
+}

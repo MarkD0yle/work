@@ -558,6 +558,63 @@ export const reportRun = z.object({
   portfolioIds: z.array(z.string()).exactOptional(),
 });
 
+// ── Exceptions, close, approvals, prices ──
+export const threadComment = z.object({ text: z.string().trim().min(1) });
+export const exceptionInputs = z.object({
+  note: z.string().exactOptional(),
+  rootCauseCategory: z.string().exactOptional(),
+  ownerId: z.string().exactOptional(),
+  challengeRef: z.string().exactOptional(),
+  evidence: z.object({ name: z.string() }).exactOptional(),
+});
+export const breakRuleInput = z.object({
+  name: z.string().trim().min(1),
+  match: z.object({
+    type: z.string(),
+    counterparty: z.string().exactOptional(),
+    portfolioIds: z.array(z.string()).exactOptional(),
+    maxAmount: z
+      .string()
+      .regex(/^\d+(\.\d+)?$/)
+      .exactOptional(),
+  }),
+  rootCauseCategory: z.string(),
+});
+const closeTypes = z.array(z.enum(['transaction', 'valuation', 'bankAccount', 'generalLedger'])).min(1);
+export const periodClose = z.object({
+  portfolioIds: z.array(z.string()).min(1),
+  periodEnd: z.string(),
+  closeTypes: closeTypes.exactOptional(),
+});
+export const periodReopen = z.object({
+  periodId: z.string(),
+  closeTypes: closeTypes.exactOptional(),
+  reason: z.string().trim().min(1),
+});
+export const reasonBody = z.object({ reason: z.string().trim().min(1) });
+export const noteBody = z.object({ note: z.string().exactOptional() });
+export const checksRun = z.object({
+  periodEnd: z.string(),
+  portfolioIds: z.array(z.string()).exactOptional(),
+});
+export const approvalDecision = z.object({
+  decision: z.enum(['approve', 'reject']),
+  note: z.string().exactOptional(),
+  ids: z.array(z.string()).exactOptional(),
+});
+export const toleranceEdits = z.object({
+  rules: z
+    .array(
+      z.object({
+        id: z.string(),
+        threshold: z.string().regex(/^\d+(\.\d+)?$/),
+        holidayAware: z.boolean().exactOptional(),
+      }),
+    )
+    .min(1),
+});
+export const comparisonRequest = z.object({ kind: z.literal('books'), portfolioId: z.string() });
+
 // ── Transaction entry and import ──
 export const transactionInput = z.object({
   portfolioId: z.string(),

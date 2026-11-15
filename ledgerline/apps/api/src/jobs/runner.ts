@@ -20,10 +20,14 @@ export interface JobHandler {
   /** Works on one item and records the outcome in `result`. Runs inside a database transaction with its chunk. */
   processItem: (ctx: JobContext, item: string, result: BulkResult) => void;
   /** Runs once after the last item, in its own transaction: batch audit event, output files. */
-  finish?: (
-    ctx: JobContext,
-    result: BulkResult,
-  ) => { outputs?: { name: string; contentType: string; content: string }[] } | void;
+  finish?: (ctx: JobContext, result: BulkResult) => { outputs?: JobOutput[] } | void;
+}
+
+/** A file a job leaves behind. Text is stored as it is; anything else is stored as base64. */
+export interface JobOutput {
+  name: string;
+  contentType: string;
+  content: string | Buffer;
 }
 
 export interface JobRunnerOptions {
@@ -43,9 +47,11 @@ const emptyResult = (jobId: string): BulkResult => ({
   failed: [],
   skipped: [],
 });
+export const XLSX_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 const FORMATS: Record<string, NonNullable<Job['outputs']>[number]['format']> = {
   'text/csv': 'csv',
   'application/pdf': 'pdf',
+  [XLSX_TYPE]: 'xlsx',
 };
 
 export function rowToJob(row: Record<string, unknown>): Job {
@@ -326,7 +332,13 @@ export class JobRunner {
               .prepare(
                 'INSERT INTO job_outputs (job_id, idx, name, content_type, content) VALUES (?, ?, ?, ?, ?)',
               )
-              .run(id, idx, o.name, o.contentType, o.content);
+              .run(
+                id,
+                idx,
+                o.name,
+                o.contentType,
+                typeof o.content === 'string' ? o.content : o.content.toString('base64'),
+              );
             return {
               name: o.name,
               format: FORMATS[o.contentType] ?? 'delimited',

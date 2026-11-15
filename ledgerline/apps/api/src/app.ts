@@ -8,7 +8,11 @@ import { SEED_TODAY } from './db/seed';
 import { HttpError } from './lib/http';
 import { registerEntityRoutes } from './routes/entities';
 import { JobRunner } from './jobs/runner';
+import { registerApprovalRoutes } from './routes/approvals';
+import { registerCloseRoutes } from './routes/close';
 import { registerEntryRoutes } from './routes/entry';
+import { registerExceptionRoutes } from './routes/exceptions';
+import { registerPriceRoutes } from './routes/prices';
 import { registerJobRoutes } from './routes/jobs';
 import { registerTransactionBulkRoutes, registerTransactionRoutes } from './routes/transactions';
 import { registerViewRoutes } from './routes/views';
@@ -197,6 +201,10 @@ export function buildApp(db: Db, clock: Clock = defaultClock): FastifyInstance {
   registerViewRoutes(app, db, API_BASE, clock);
   registerEntityRoutes(app, db, API_BASE);
   registerEntryRoutes(app, db, API_BASE, clock);
+  registerExceptionRoutes(app, db, API_BASE, clock);
+  registerCloseRoutes(app, db, API_BASE, clock, jobs);
+  registerApprovalRoutes(app, db, API_BASE, clock);
+  registerPriceRoutes(app, db, API_BASE, clock);
 
   // Every handler is registered by now: pick up anything left unfinished by the last run.
   jobs.resume();

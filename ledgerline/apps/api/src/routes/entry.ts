@@ -4,6 +4,7 @@
  */
 import type {
   AuditEvent,
+  GridResponse,
   BulkResult,
   ImportMapping,
   ImportRowResult,
@@ -16,11 +17,25 @@ import type {
 import type { FastifyInstance } from 'fastify';
 import type { Clock } from '../app';
 import type { Db } from '../db/client';
-import { actorOf, writeAudit } from '../lib/audit';
+import { actorOf, rowToAudit, writeAudit } from '../lib/audit';
+import { buildGridQuery, runGridQuery, type FieldSpec } from '../lib/grid-query';
 import { HttpError, problem, requirePermission } from '../lib/http';
 import { createTransactionRules, TRADED_TYPES, type TransactionDraft } from '../lib/transaction-rules';
 import * as schemas from '../schemas/index';
 import { toTransactionRow, TRANSACTION_SELECT, type TransactionRaw } from './transactions';
+
+const AUDIT_FIELDS: Record<string, FieldSpec> = {
+  id: { sql: 'e.id', type: 'text' },
+  action: { sql: 'e.action', type: 'text' },
+  recordType: { sql: 'e.record_type', type: 'text' },
+  recordId: { sql: 'e.record_id', type: 'text' },
+  actorId: { sql: "json_extract(e.actor, '$.id')", type: 'text' },
+  actor: { sql: "json_extract(e.actor, '$.name')", type: 'text' },
+  actorType: { sql: "json_extract(e.actor, '$.type')", type: 'text' },
+  at: { sql: 'e.at', type: 'text' },
+  effectiveDate: { sql: 'e.effective_date', type: 'date' },
+  batchId: { sql: 'e.batch_id', type: 'text' },
+};
 
 /** Fields a spreadsheet column can be mapped to. `id` marks a correction to an existing unposted transaction. */
 export const IMPORT_FIELDS = [
@@ -176,30 +191,33 @@ export function registerEntryRoutes(app: FastifyInstance, db: Db, base: string, 
           'SELECT * FROM audit_events WHERE record_type = ? AND record_id = ? ORDER BY at DESC, id DESC',
         )
         .all(request.params.type, request.params.id) as Record<string, string | number | null>[];
-      const json = <T>(v: unknown) => (v == null ? undefined : (JSON.parse(v as string) as T));
-      return rows.map((r) => {
-        const optional = {
-          effectiveDate: r.effective_date ?? undefined,
-          before: json<Record<string, unknown>>(r.before),
-          after: json<Record<string, unknown>>(r.after),
-          note: json<AuditEvent['note']>(r.note),
-          evidence: json<AuditEvent['evidence']>(r.evidence),
-          batchId: r.batch_id ?? undefined,
-        };
-        return {
-          id: r.id as string,
-          action: r.action as string,
-          recordRef: { type: r.record_type as string, id: r.record_id as string },
-          actor: JSON.parse(r.actor as string) as AuditEvent['actor'],
-          at: r.at as string,
-          immutable: Boolean(r.immutable),
-          ...(Object.fromEntries(
-            Object.entries(optional).filter(([, v]) => v !== undefined),
-          ) as Partial<AuditEvent>),
-        };
-      });
+      return rows.map(rowToAudit);
     },
   );
+
+  // The audit list (SPEC 7.10): every event, filterable. Read only: events cannot be edited or deleted.
+  app.post(`${base}/audit/query`, async (request): Promise<GridResponse<AuditEvent>> => {
+    requirePermission(db, request.user, 'audit.view');
+    const query = schemas.gridQuery.parse(request.body);
+    const built = buildGridQuery(query, {
+      fields: AUDIT_FIELDS,
+      defaultSort: { sql: 'e.at', dir: 'DESC' },
+      tieBreak: 'e.id',
+      today: clock.today,
+      quickSearch: (term, params) => {
+        const like = `%${term.replace(/[\\%_]/g, '\\$&')}%`;
+        params.push(like, like, like);
+        return "e.record_id LIKE ? ESCAPE '\\' OR e.action LIKE ? ESCAPE '\\' OR e.batch_id LIKE ? ESCAPE '\\'";
+      },
+    });
+    return runGridQuery<Record<string, string | number | null>, AuditEvent>(sqlite, {
+      select: 'SELECT e.*',
+      from: 'FROM audit_events e',
+      built,
+      asOf: clock.now(),
+      map: rowToAudit,
+    });
+  });
 
   // ── Import ──────────────────────────────────────────────
   const bySecurityKey = {

@@ -329,10 +329,11 @@ export function registerJobRoutes(
             'Run the report again to get a fresh copy.',
           ),
         ]);
+      const text = row.content_type.startsWith('text/');
       return reply
-        .header('Content-Type', `${row.content_type}; charset=utf-8`)
+        .header('Content-Type', text ? `${row.content_type}; charset=utf-8` : row.content_type)
         .header('Content-Disposition', `attachment; filename="${row.name}"`)
-        .send(row.content);
+        .send(text ? row.content : Buffer.from(row.content, 'base64'));
     },
   );
 
