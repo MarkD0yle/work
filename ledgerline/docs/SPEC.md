@@ -452,7 +452,7 @@ External clients need three things, not the full workbench: their positions, the
 - Restricted records explain why ("outside your account scope").
 
 **Acceptance**
-- [ ] A client reaches last month's statement in two clicks from sign-in.
+- [x] A client reaches last month's statement in two clicks from sign-in.
 
 ## 9. Journeys (`apps/web`)
 

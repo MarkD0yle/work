@@ -1,0 +1,43 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Docs/Compositions/Spreadsheet Import" />
+
+# Spreadsheet Import
+
+**Status:** Hypothesis. Its acceptance criteria pass in automated tests. No user has tested it yet, so it has not moved to Draft (SPEC §11).
+
+**Spec:** SPEC 8.1
+
+## Purpose
+
+Makes spreadsheets a governed way in: paste or upload, see every row judged, fix or exclude, then commit with an audit trail.
+
+## When to use, and when not
+
+**Use it** for corrections and new transactions that start life in a spreadsheet.
+
+**Do not use it** for one transaction (use the entry form).
+
+## Foundations
+
+Quick paste for 500 rows or fewer with known columns goes straight to the batch grid. Files and unknown columns pass one mapping step. Commit is all or nothing.
+
+## States
+
+Input, mapping (with what will not be imported), checking, rows with errors (commit blocked, with the reason), rows with warnings (commit asks), ready and committed.
+
+## Data contract
+
+`ImportMapping`, `ImportSourceRow`, `ImportRowResult`, `ImportCommit`. A row with a transaction id corrects it; without one it creates.
+
+## Permissions
+
+Needs `transaction.import`. Every row goes through the same rules as manual entry, including scope and closed periods.
+
+## Accessibility
+
+Each cell is a labelled input ("Quantity, row 8"). The cell an error belongs to is marked invalid and described by the row's message. The dialog does not close on Escape once rows are in.
+
+## Code reference
+
+`@ledgerline/compositions/transactions`: `ImportDialog`; `@ledgerline/ui`: `BatchGrid`, `parseDelimited`, `readXlsx`. Tests: `entry.test.ts`, `mapping.test.ts`, `batch.test.tsx`, `e2e/milestone4.e2e.ts`.

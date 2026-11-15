@@ -96,6 +96,8 @@ pnpm lint
 pnpm test           # vitest, all packages
 pnpm test:e2e       # playwright
 pnpm test:a11y      # playwright + axe on every route and story
+pnpm test:visual    # playwright screenshots of every story against the baseline
+pnpm budget         # after a build: initial JS under 400 KB gz, no grid engine in it
 pnpm storybook
 pnpm db:reset       # drop, migrate and reseed SQLite with the fixed seed
 ```

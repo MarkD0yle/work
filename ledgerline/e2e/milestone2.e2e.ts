@@ -300,9 +300,10 @@ test.describe('workspaces', () => {
   });
 
   test('a user with no start-up workspace lands on their access page', async ({ page }) => {
-    await signIn(page, 'u-eli');
+    // Fay, the administrator, has no workspace of her own or from a team. (A client lands on Client Home instead.)
+    await signIn(page, 'u-fay');
     await page.goto('/');
-    await expect(page.getByRole('heading', { name: 'Signed in as Eli' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Signed in as Fay' })).toBeVisible();
   });
 
   test('a team default cannot be changed by a member; saving makes their own, which then opens at sign-in', async ({

@@ -1,0 +1,43 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Docs/Compositions/Transaction Blotter" />
+
+# Transaction Blotter
+
+**Status:** Hypothesis. Its acceptance criteria pass in automated tests. No user has tested it yet, so it has not moved to Draft (SPEC §11).
+
+**Spec:** SPEC 8 and 9
+
+## Purpose
+
+The transaction workbench: find, review, enter, clone, correct, post and reverse transactions.
+
+## When to use, and when not
+
+**Use it** as the main screen for Transaction Operations, alone or as a workspace panel.
+
+**Do not use it** for a client's read-only view (Client Home hosts it without actions).
+
+## Foundations
+
+Built from the Data Grid, Views, Entity Picker, Financial Fields, Dates and the Action Registry. One validation rule set judges a transaction however it arrives.
+
+## States
+
+Every grid state, plus the detail panel's read-only (with the reason), edited, conflict (another user saved first) and saved states.
+
+## Data contract
+
+`TransactionRow`, `TransactionPatch`, `TransactionCreate`. Services are injected with `configureServices`.
+
+## Permissions
+
+Create, edit, import, post, reverse, delete and override are separate permissions. Ben, a new user, cannot reverse and sees why.
+
+## Accessibility
+
+Opening a row moves focus to the panel heading; closing returns it to the row. Ctrl+Enter posts; the form saves with Ctrl+Enter.
+
+## Code reference
+
+`@ledgerline/compositions/transactions`: `TransactionsBlotter`, `TransactionPanel`, `TransactionForm`. Tests: `e2e/transactions.e2e.ts`, `editing.e2e.ts`, `milestone4.e2e.ts`.

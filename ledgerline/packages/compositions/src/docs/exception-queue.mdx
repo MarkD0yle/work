@@ -1,0 +1,43 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Docs/Compositions/Exception Queue" />
+
+# Exception Queue
+
+**Status:** Hypothesis. Its acceptance criteria pass in automated tests. No user has tested it yet, so it has not moved to Draft (SPEC §11).
+
+**Spec:** SPEC 8.2
+
+## Purpose
+
+Where breaks are worked: oldest first, with an owner, a due date, a root cause, evidence and a thread on each.
+
+## When to use, and when not
+
+**Use it** for reconciliation and control work, and as Price Review's exception list.
+
+**Do not use it** as a to-do list for things that are not exceptions.
+
+## Foundations
+
+Similar exceptions can be grouped and resolved together. One file attaches to many. A recurring-break rule proposes a resolution; a person accepts it.
+
+## States
+
+Open (new, in progress, waiting on others), proposed by a rule, overdue (in words), and closed (resolved, accepted conditionally, overridden; read only, comments still allowed).
+
+## Data contract
+
+`ExceptionRecord` with `failedRule` for price types, `RecurringBreakRule`, and bulk actions through `/exceptions/bulk`.
+
+## Permissions
+
+`exception.view`, `exception.assign`, `exception.resolve`, `exception.rules`. Viewers see actions disabled with the reason.
+
+## Accessibility
+
+Each action opens a short form that states what will change; what is missing is said beside the fields. Severity and status are words.
+
+## Code reference
+
+`@ledgerline/compositions/accounting`: `ExceptionQueue`. Tests: `milestone6.test.ts`, `e2e/milestone6.e2e.ts`.

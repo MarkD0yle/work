@@ -22,14 +22,16 @@ pnpm storybook    # http://localhost:6006
 | `pnpm test` | Vitest: tokens, API and seed, UI components, lint-rule proofs |
 | `pnpm test:e2e` | Playwright journeys against a freshly seeded API |
 | `pnpm test:a11y` | Builds Storybook, then axe on every route and every story, light and dark |
+| `pnpm test:visual` | Builds Storybook, then compares every story with its baseline image. Accept a change on purpose with `--update-snapshots` |
+| `pnpm budget` | After a build: initial JavaScript under 400 KB gzipped, and no grid engine in it |
 | `pnpm db:reset` | Drop, migrate and reseed SQLite. Prints row counts and a content checksum |
-| `pnpm ci` | Everything above, in order |
+| `pnpm verify` | Everything above, in order |
 
-## Next milestone
+## Where things stand
 
-Open Claude Code in this folder and prompt:
+All seven milestones in `docs/PLAN.md` are built and their exit gates pass. Every acceptance checkbox in `docs/SPEC.md` is ticked by an automated test.
 
-> Read CLAUDE.md, docs/SPEC.md and docs/PLAN.md. Implement Milestone 7. Plan first, listing the acceptance criteria you will test. Stop at the exit gate and report.
+Nothing has been tested with a real user. Every capability is still `Hypothesis`. The next step is research (SPEC §11), not more building. Start with `docs/SCREEN-READER-SCRIPT.md` and the "Deferred" rows in `docs/DECISIONS.md`.
 
 ## Files
 

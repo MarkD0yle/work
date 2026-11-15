@@ -178,7 +178,17 @@ Import rules for transactions:
 ### Client
 | Method | Path | Purpose |
 | --- | --- | --- |
-| GET | `/statements` | Month-end statements in blotter scope, with download links |
+| GET | `/statements` | Month-end statements in blotter scope, newest first: `Statement[]`. Needs `export.run` |
+| GET | `/statements/:id/download` | The statement as a PDF. A statement outside the scope is a 403 saying so |
+| POST | `/positions/query` | Grid query → `PositionRow`, limited to the blotter scope. Asking for a portfolio outside the scope is a 403 with the reason, not an empty list |
+
+### Admin
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET | `/admin/users` | Every user. Needs `admin.users` |
+| PUT | `/admin/users/:id` | `{ blotterScope?: string[] \| null, defaultDensity? }`. An empty scope removes the limit. Audited with before and after |
+| GET | `/admin/users/:id/permissions` | `Permission[]` for that user, with groups. Needs `admin.permissions` |
+| PUT | `/admin/users/:id/permissions` | `{ changes: [{ action, accessLevel }] }`. `none` denies the action with an explanation. One audit event per change, keyed by the action. An administrator removing their own administrator access is a 409 (`LL-ADM-0003`) |
 
 ### Audit
 | Method | Path | Purpose |

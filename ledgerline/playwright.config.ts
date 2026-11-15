@@ -28,6 +28,14 @@ export default defineConfig({
       use: { baseURL: WEB_COMMUNITY },
     },
     { name: 'a11y', testDir: './e2e', testMatch: /.*\.a11y\.ts/, use: { baseURL: WEB } },
+    // One baseline image per story. A smaller viewport keeps the images small.
+    {
+      name: 'visual',
+      testDir: './e2e',
+      testMatch: /.*\.visual\.ts/,
+      snapshotPathTemplate: '{testDir}/__screenshots__/{arg}{ext}',
+      use: { baseURL: WEB, viewport: { width: 1000, height: 700 } },
+    },
   ],
   webServer: [
     {

@@ -19,7 +19,9 @@
     "storybook": "storybook dev -p 6006 --no-open",
     "build-storybook": "storybook build -o storybook-static --quiet",
     "db:reset": "pnpm --filter @ledgerline/api db:reset",
-    "ci": "pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm db:reset && pnpm test:e2e && pnpm test:a11y"
+    "budget": "node tooling/bundle-budget.mjs",
+    "test:visual": "pnpm build-storybook && playwright test --project=visual",
+    "verify": "pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm budget && pnpm db:reset && pnpm test:e2e && pnpm test:a11y && playwright test --project=visual"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
@@ -27,6 +29,7 @@
     "@ledgerline/ui": "workspace:*",
     "@playwright/test": "1.63.0",
     "@storybook/addon-a11y": "^10.6.7",
+    "@storybook/addon-docs": "^10.6.7",
     "@storybook/react-vite": "^10.6.7",
     "@tailwindcss/vite": "^4.3.5",
     "@testing-library/jest-dom": "^7.0.1",

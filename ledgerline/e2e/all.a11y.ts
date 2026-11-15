@@ -351,6 +351,47 @@ for (const theme of THEMES) {
     await expect(page.getByRole('table', { name: 'Tolerance rules' })).toBeVisible();
     await expectNoSeriousViolations(page);
   });
+
+  test(`admin and client home, ${theme}`, async ({ page, browser }) => {
+    const sign = (target: typeof page, userId: string) =>
+      target.addInitScript(
+        ([id, t]) =>
+          localStorage.setItem(
+            'll-session',
+            JSON.stringify({
+              state: { userId: id, theme: t, density: null, railCollapsed: false },
+              version: 0,
+            }),
+          ),
+        [userId, theme] as const,
+      );
+    await sign(page, 'u-fay');
+    await page.goto('/admin');
+    await expect(page.getByRole('table', { name: 'Users' })).toBeVisible();
+    await expectNoSeriousViolations(page);
+    await page.getByRole('table', { name: 'Users' }).getByRole('button', { name: /^Ben/ }).click();
+    const editor = page.locator('[data-slot="user-editor"]');
+    await expect(editor.getByRole('region', { name: 'Transactions permissions' })).toBeVisible();
+    // Stage a change, so the "changed" state is on screen too.
+    await editor
+      .getByRole('region', { name: 'Reports permissions' })
+      .getByLabel(/^Set all/)
+      .selectOption('full');
+    await expectNoSeriousViolations(page);
+
+    const context = await browser.newContext({ baseURL: test.info().project.use.baseURL as string });
+    const eli = await context.newPage();
+    await sign(eli, 'u-eli');
+    await eli.goto('/home');
+    await expect(eli.locator('[data-slot="latest-statements"]')).toContainText('Latest statement');
+    await expect(eli.locator('.ag-row').first()).toBeVisible();
+    await eli.waitForTimeout(500);
+    await expectNoSeriousViolations(eli);
+    await eli.getByRole('tab', { name: 'All statements' }).click();
+    await expect(eli.getByRole('table', { name: 'Statements' })).toBeVisible();
+    await expectNoSeriousViolations(eli);
+    await context.close();
+  });
 }
 
 interface StoryIndex {
