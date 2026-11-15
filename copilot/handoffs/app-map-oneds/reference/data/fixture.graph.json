@@ -1,0 +1,842 @@
+{
+ "schema": "floorplan/graph@1",
+ "meta": {
+  "generatedAt": "2026-11-12T09:00:00.000Z",
+  "scanAt": "2026-11-12T09:00:00.000Z",
+  "rootName": "acme-shop",
+  "root": "",
+  "audience": "everyone",
+  "repos": [
+   {
+    "path": ".",
+    "name": "acme-shop",
+    "branch": "main"
+   }
+  ],
+  "counts": {
+   "files": 32,
+   "loc": 2541,
+   "unassigned": 0
+  }
+ },
+ "project": {
+  "name": "Acme Shop",
+  "summary": "An online shop: customers fill a basket and pay by card, and staff get daily and monthly sales reports.",
+  "entrypoints": [
+   "web/src/pages/Cart.tsx"
+  ]
+ },
+ "nodes": [
+  {
+   "id": "web",
+   "parent": null,
+   "label": "Shop website",
+   "kind": "ui",
+   "summary": "The website customers use to browse, buy and see their orders.",
+   "details": "",
+   "tags": [],
+   "paths": [
+    "web"
+   ],
+   "packages": [],
+   "hosts": [],
+   "stats": {
+    "files": 3,
+    "loc": 290,
+    "langs": {
+     "typescript": 290
+    },
+    "repos": [
+     "."
+    ]
+   }
+  },
+  {
+   "id": "web.pages",
+   "parent": "web",
+   "label": "Pages",
+   "kind": "feature",
+   "summary": "The pages customers open.",
+   "details": "",
+   "tags": [],
+   "paths": [
+    "web/src/pages"
+   ],
+   "packages": [],
+   "hosts": [],
+   "stats": {
+    "files": 2,
+    "loc": 230,
+    "langs": {
+     "typescript": 230
+    },
+    "repos": [
+     "."
+    ]
+   }
+  },
+  {
+   "id": "web.api",
+   "parent": "web",
+   "label": "Server requests",
+   "kind": "library",
+   "summary": "How the website talks to the server.",
+   "details": "",
+   "tags": [],
+   "paths": [
+    "web/src/lib"
+   ],
+   "packages": [],
+   "hosts": [],
+   "stats": {
+    "files": 1,
+    "loc": 60,
+    "langs": {
+     "typescript": 60
+    },
+    "repos": [
+     "."
+    ]
+   }
+  },
+  {
+   "id": "api",
+   "parent": null,
+   "label": "Main server",
+   "kind": "service",
+   "summary": "Takes orders, charges cards and builds reports.",
+   "details": "",
+   "tags": [],
+   "paths": [
+    "api"
+   ],
+   "packages": [],
+   "hosts": [],
+   "stats": {
+    "files": 29,
+    "loc": 2251,
+    "langs": {
+     "typescript": 2251
+    },
+    "repos": [
+     "."
+    ]
+   }
+  },
+  {
+   "id": "api.routes",
+   "parent": "api",
+   "label": "Order requests",
+   "kind": "feature",
+   "summary": "What the website can ask the server to do with orders.",
+   "details": "",
+   "tags": [],
+   "paths": [
+    "api/src/routes"
+   ],
+   "packages": [],
+   "hosts": [],
+   "stats": {
+    "files": 1,
+    "loc": 1240,
+    "langs": {
+     "typescript": 1240
+    },
+    "repos": [
+     "."
+    ]
+   }
+  },
+  {
+   "id": "api.reports",
+   "parent": "api",
+   "label": "Sales reports",
+   "kind": "feature",
+   "summary": "Daily and monthly sales reports for staff.",
+   "details": "",
+   "tags": [],
+   "paths": [
+    "api/src/reports"
+   ],
+   "packages": [],
+   "hosts": [],
+   "stats": {
+    "files": 26,
+    "loc": 871,
+    "langs": {
+     "typescript": 871
+    },
+    "repos": [
+     "."
+    ]
+   }
+  },
+  {
+   "id": "stripe",
+   "parent": null,
+   "label": "Stripe",
+   "kind": "external",
+   "summary": "Takes card payments.",
+   "details": "",
+   "tags": [],
+   "paths": [],
+   "packages": [],
+   "hosts": [],
+   "stats": {
+    "files": 0,
+    "loc": 0,
+    "langs": {
+     "typescript": 0
+    },
+    "repos": [
+     "."
+    ]
+   }
+  },
+  {
+   "id": "db",
+   "parent": null,
+   "label": "Database",
+   "kind": "external",
+   "summary": "Where orders and customers are kept.",
+   "details": "",
+   "tags": [],
+   "paths": [],
+   "packages": [],
+   "hosts": [],
+   "stats": {
+    "files": 0,
+    "loc": 0,
+    "langs": {
+     "typescript": 0
+    },
+    "repos": [
+     "."
+    ]
+   }
+  }
+ ],
+ "files": [
+  {
+   "p": "web/src/pages/Cart.tsx",
+   "n": "web.pages",
+   "r": ".",
+   "l": "typescript",
+   "loc": 140,
+   "name": "Cart page",
+   "d": "Shows what is in the basket and sends the order when the customer pays."
+  },
+  {
+   "p": "web/src/pages/Orders.tsx",
+   "n": "web.pages",
+   "r": ".",
+   "l": "typescript",
+   "loc": 90,
+   "name": "My orders page",
+   "d": "Lists the signed-in customer's past orders."
+  },
+  {
+   "p": "web/src/lib/api.ts",
+   "n": "web.api",
+   "r": ".",
+   "l": "typescript",
+   "loc": 60,
+   "name": "Server requests",
+   "d": "Every request the shop makes to the server, in one place."
+  },
+  {
+   "p": "api/src/routes/orders.ts",
+   "n": "api.routes",
+   "r": ".",
+   "l": "typescript",
+   "loc": 1240,
+   "name": "Order requests",
+   "d": "Creates and lists orders, and takes the card payment.",
+   "s": [
+    [
+     "createOrder",
+     "function",
+     12,
+     0,
+     ""
+    ],
+    [
+     "listOrders",
+     "function",
+     80,
+     0,
+     ""
+    ]
+   ],
+   "note": "Every change to an order goes through here.",
+   "tags": [
+    "hotspot"
+   ]
+  },
+  {
+   "p": "api/src/services/payments.ts",
+   "n": "api",
+   "r": ".",
+   "l": "typescript",
+   "loc": 110,
+   "name": "Card payments",
+   "d": "Charges the customer's card through Stripe."
+  },
+  {
+   "p": "api/src/old/legacy.ts",
+   "n": "api",
+   "r": ".",
+   "l": "typescript",
+   "loc": 30,
+   "name": "Old helpers",
+   "d": "Leftover helpers nothing uses any more."
+  },
+  {
+   "p": "api/src/reports/daily/report-01.ts",
+   "n": "api.reports",
+   "r": ".",
+   "l": "typescript",
+   "loc": 21,
+   "name": "Daily report 1",
+   "d": "Builds daily sales report number 1."
+  },
+  {
+   "p": "api/src/reports/daily/report-02.ts",
+   "n": "api.reports",
+   "r": ".",
+   "l": "typescript",
+   "loc": 22,
+   "name": "Daily report 2",
+   "d": "Builds daily sales report number 2."
+  },
+  {
+   "p": "api/src/reports/daily/report-03.ts",
+   "n": "api.reports",
+   "r": ".",
+   "l": "typescript",
+   "loc": 23,
+   "name": "Daily report 3",
+   "d": "Builds daily sales report number 3."
+  },
+  {
+   "p": "api/src/reports/daily/report-04.ts",
+   "n": "api.reports",
+   "r": ".",
+   "l": "typescript",
+   "loc": 24,
+   "name": "Daily report 4",
+   "d": "Builds daily sales report number 4."
+  },
+  {
+   "p": "api/src/reports/daily/report-05.ts",
+   "n": "api.reports",
+   "r": ".",
+   "l": "typescript",
+   "loc": 25,
+   "name": "Daily report 5",
+   "d": "Builds daily sales report number 5."
+  },
+  {
+   "p": "api/src/reports/daily/report-06.ts",
+   "n": "api.reports",
+   "r": ".",
+   "l": "typescript",
+   "loc": 26,
+   "name": "Daily report 6",
+   "d": "Builds daily sales report number 6."
+  },
+  {
+   "p": "api/src/reports/daily/report-07.ts",
+   "n": "api.reports",
+   "r": ".",
+   "l": "typescript",
+   "loc": 27,
+   "name": "Daily report 7",
+   "d": "Builds daily sales report number 7."
+  },
+  {
+   "p": "api/src/reports/daily/report-08.ts",
+   "n": "api.reports",
+   "r": ".",
+   "l": "typescript",
+   "loc": 28,
+   "name": "Daily report 8",
+   "d": "Builds daily sales report number 8."
+  },
+  {
+   "p": "api/src/reports/daily/report-09.ts",
+   "n": "api.reports",
+   "r": ".",
+   "l": "typescript",
+   "loc": 29,
+   "name": "Daily report 9",
+   "d": "Builds daily sales report number 9."
+  },
+  {
+   "p": "api/src/reports/daily/report-10.ts",
+   "n": "api.reports",
+   "r": ".",
+   "l": "typescript",
+   "loc": 30,
+   "name": "Daily report 10",
+   "d": "Builds daily sales report number 10."
+  },
+  {
+   "p": "api/src/reports/daily/report-11.ts",
+   "n": "api.reports",
+   "r": ".",
+   "l": "typescript",
+   "loc": 31,
+   "name": "Daily report 11",
+   "d": "Builds daily sales report number 11."
+  },
+  {
+   "p": "api/src/reports/daily/report-12.ts",
+   "n": "api.reports",
+   "r": ".",
+   "l": "typescript",
+   "loc": 32,
+   "name": "Daily report 12",
+   "d": "Builds daily sales report number 12."
+  },
+  {
+   "p": "api/src/reports/daily/report-13.ts",
+   "n": "api.reports",
+   "r": ".",
+   "l": "typescript",
+   "loc": 33,
+   "name": "Daily report 13",
+   "d": "Builds daily sales report number 13."
+  },
+  {
+   "p": "api/src/reports/monthly/report-14.ts",
+   "n": "api.reports",
+   "r": ".",
+   "l": "typescript",
+   "loc": 34,
+   "name": "Monthly report 14",
+   "d": "Builds monthly sales report number 14."
+  },
+  {
+   "p": "api/src/reports/monthly/report-15.ts",
+   "n": "api.reports",
+   "r": ".",
+   "l": "typescript",
+   "loc": 35,
+   "name": "Monthly report 15",
+   "d": "Builds monthly sales report number 15."
+  },
+  {
+   "p": "api/src/reports/monthly/report-16.ts",
+   "n": "api.reports",
+   "r": ".",
+   "l": "typescript",
+   "loc": 36,
+   "name": "Monthly report 16",
+   "d": "Builds monthly sales report number 16."
+  },
+  {
+   "p": "api/src/reports/monthly/report-17.ts",
+   "n": "api.reports",
+   "r": ".",
+   "l": "typescript",
+   "loc": 37,
+   "name": "Monthly report 17",
+   "d": "Builds monthly sales report number 17."
+  },
+  {
+   "p": "api/src/reports/monthly/report-18.ts",
+   "n": "api.reports",
+   "r": ".",
+   "l": "typescript",
+   "loc": 38,
+   "name": "Monthly report 18",
+   "d": "Builds monthly sales report number 18."
+  },
+  {
+   "p": "api/src/reports/monthly/report-19.ts",
+   "n": "api.reports",
+   "r": ".",
+   "l": "typescript",
+   "loc": 39,
+   "name": "Monthly report 19",
+   "d": "Builds monthly sales report number 19."
+  },
+  {
+   "p": "api/src/reports/monthly/report-20.ts",
+   "n": "api.reports",
+   "r": ".",
+   "l": "typescript",
+   "loc": 40,
+   "name": "Monthly report 20",
+   "d": "Builds monthly sales report number 20."
+  },
+  {
+   "p": "api/src/reports/monthly/report-21.ts",
+   "n": "api.reports",
+   "r": ".",
+   "l": "typescript",
+   "loc": 41,
+   "name": "Monthly report 21",
+   "d": "Builds monthly sales report number 21."
+  },
+  {
+   "p": "api/src/reports/monthly/report-22.ts",
+   "n": "api.reports",
+   "r": ".",
+   "l": "typescript",
+   "loc": 42,
+   "name": "Monthly report 22",
+   "d": "Builds monthly sales report number 22."
+  },
+  {
+   "p": "api/src/reports/monthly/report-23.ts",
+   "n": "api.reports",
+   "r": ".",
+   "l": "typescript",
+   "loc": 43,
+   "name": "Monthly report 23",
+   "d": "Builds monthly sales report number 23."
+  },
+  {
+   "p": "api/src/reports/monthly/report-24.ts",
+   "n": "api.reports",
+   "r": ".",
+   "l": "typescript",
+   "loc": 44,
+   "name": "Monthly report 24",
+   "d": "Builds monthly sales report number 24."
+  },
+  {
+   "p": "api/src/reports/monthly/report-25.ts",
+   "n": "api.reports",
+   "r": ".",
+   "l": "typescript",
+   "loc": 45,
+   "name": "Monthly report 25",
+   "d": "Builds monthly sales report number 25."
+  },
+  {
+   "p": "api/src/reports/monthly/report-26.ts",
+   "n": "api.reports",
+   "r": ".",
+   "l": "typescript",
+   "loc": 46,
+   "name": "Monthly report 26",
+   "d": "Builds monthly sales report number 26."
+  }
+ ],
+ "routes": [
+  {
+   "f": "api/src/routes/orders.ts",
+   "m": "POST",
+   "p": "/api/orders",
+   "l": 12,
+   "h": "createOrder",
+   "name": "Place an order",
+   "d": "Takes the basket, charges the card and saves the order."
+  },
+  {
+   "f": "api/src/routes/orders.ts",
+   "m": "GET",
+   "p": "/api/orders",
+   "l": 80,
+   "h": "listOrders",
+   "name": "List my orders",
+   "d": "Returns the signed-in customer's orders."
+  },
+  {
+   "f": "api/src/routes/orders.ts",
+   "m": "DELETE",
+   "p": "/api/orders/:id",
+   "l": 120,
+   "h": null,
+   "name": "Cancel an order",
+   "d": ""
+  }
+ ],
+ "links": [
+  {
+   "a": "f:web/src/pages/Cart.tsx",
+   "b": "f:web/src/lib/api.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "placeOrder"
+   ]
+  },
+  {
+   "a": "f:web/src/pages/Orders.tsx",
+   "b": "f:web/src/lib/api.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "listOrders"
+   ]
+  },
+  {
+   "a": "f:web/src/lib/api.ts",
+   "b": "f:api/src/routes/orders.ts",
+   "k": "http",
+   "w": 2,
+   "calls": [
+    [
+     0,
+     14
+    ],
+    [
+     1,
+     30
+    ]
+   ]
+  },
+  {
+   "a": "f:api/src/routes/orders.ts",
+   "b": "f:api/src/services/payments.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "charge"
+   ]
+  },
+  {
+   "a": "f:api/src/services/payments.ts",
+   "b": "n:stripe",
+   "k": "http",
+   "w": 1,
+   "labels": [
+    "charges cards"
+   ]
+  },
+  {
+   "a": "n:api.routes",
+   "b": "n:db",
+   "k": "data",
+   "w": 1,
+   "labels": [
+    "reads/writes orders"
+   ],
+   "desc": "Every order is saved here and read back for My orders."
+  },
+  {
+   "a": "n:api.reports",
+   "b": "n:db",
+   "k": "data",
+   "w": 1,
+   "labels": [
+    "reads sales"
+   ]
+  },
+  {
+   "a": "n:stripe",
+   "b": "f:api/src/routes/orders.ts",
+   "k": "http",
+   "w": 1,
+   "labels": [
+    "payment events"
+   ],
+   "desc": "Stripe tells the server when a payment succeeds."
+  }
+ ],
+ "flows": [
+  {
+   "id": "checkout",
+   "title": "Checkout",
+   "description": "From the basket to a paid order.",
+   "steps": [
+    {
+     "ref": "f:web/src/pages/Cart.tsx",
+     "note": "The customer presses Pay."
+    },
+    {
+     "ref": "f:web/src/lib/api.ts",
+     "note": "The website sends the order to the server."
+    },
+    {
+     "ref": "r:0",
+     "note": "The server checks the basket and creates the order."
+    },
+    {
+     "ref": "n:stripe",
+     "note": "Stripe charges the card."
+    },
+    {
+     "ref": "n:db",
+     "note": "The paid order is saved."
+    }
+   ]
+  }
+ ],
+ "tour": [
+  {
+   "ref": "n:web",
+   "title": "What customers use",
+   "note": "The shop website, where people browse and pay."
+  },
+  {
+   "ref": "n:api",
+   "title": "The main server",
+   "note": "Takes orders, charges cards and builds reports."
+  },
+  {
+   "ref": "n:stripe",
+   "title": "Card payments",
+   "note": "Stripe takes the money."
+  }
+ ],
+ "recent": {
+  "updatedAt": "2026-11-12T08:30:00.000Z",
+  "tasks": [
+   {
+    "title": "Cancel orders",
+    "request": "Let customers cancel an order before it ships",
+    "summary": "Added a cancel request on the server. The website does not call it yet."
+   }
+  ],
+  "items": [
+   {
+    "id": "r:2",
+    "task": 0,
+    "change": "new",
+    "note": "New: cancels an order that has not shipped."
+   },
+   {
+    "id": "f:api/src/routes/orders.ts",
+    "task": 0,
+    "change": "changed",
+    "note": "Holds the new cancel request."
+   }
+  ]
+ },
+ "health": {
+  "summary": {
+   "high": 1,
+   "medium": 0,
+   "low": 2
+  },
+  "issues": [
+   {
+    "id": "open-endpoint:r:2",
+    "kind": "open-endpoint",
+    "severity": "high",
+    "title": "Anyone can cancel any order",
+    "detail": "Cancel an order has no sign-in check, so anyone who knows an order number can cancel it.",
+    "items": [
+     "r:2"
+    ],
+    "notes": {
+     "r:2": "No sign-in check before the order is cancelled."
+    },
+    "locations": [
+     {
+      "file": "api/src/routes/orders.ts",
+      "line": 120
+     }
+    ]
+   },
+   {
+    "id": "large-file:api/src/routes/orders.ts",
+    "kind": "large-file",
+    "severity": "low",
+    "title": "Order requests is 1,240 lines long",
+    "detail": "Files this long are hard to change safely. Consider splitting it.",
+    "items": [
+     "f:api/src/routes/orders.ts"
+    ],
+    "notes": {},
+    "locations": [
+     {
+      "file": "api/src/routes/orders.ts",
+      "line": 1
+     }
+    ]
+   },
+   {
+    "id": "unused:api/src/old/legacy.ts",
+    "kind": "unused-file",
+    "severity": "low",
+    "title": "Nothing uses Old helpers",
+    "detail": "No other file uses this one. It may be safe to delete.",
+    "items": [
+     "f:api/src/old/legacy.ts"
+    ],
+    "notes": {},
+    "locations": [
+     {
+      "file": "api/src/old/legacy.ts",
+      "line": 1
+     }
+    ]
+   }
+  ]
+ },
+ "screens": [
+  {
+   "id": "screen:/cart",
+   "url": "/cart",
+   "file": "web/src/pages/Cart.tsx",
+   "app": "web",
+   "fw": "react-router",
+   "name": "Cart",
+   "description": "The basket and the Pay button.",
+   "behind": [
+    {
+     "id": "f:web/src/pages/Cart.tsx",
+     "note": "The page itself.",
+     "kind": "screen"
+    },
+    {
+     "id": "f:web/src/lib/api.ts",
+     "note": "Sends the order.",
+     "kind": "part"
+    },
+    {
+     "id": "r:0",
+     "note": "Place an order.",
+     "kind": "request"
+    },
+    {
+     "id": "f:api/src/services/payments.ts",
+     "note": "Charges the card.",
+     "kind": "server"
+    },
+    {
+     "id": "n:db",
+     "note": "Saves the order.",
+     "kind": "data"
+    },
+    {
+     "id": "n:stripe",
+     "note": "Takes the money.",
+     "kind": "outside"
+    }
+   ]
+  },
+  {
+   "id": "screen:/orders",
+   "url": "/orders",
+   "file": "web/src/pages/Orders.tsx",
+   "app": "web",
+   "fw": "react-router",
+   "name": "My orders",
+   "description": "Past orders.",
+   "behind": [
+    {
+     "id": "f:web/src/pages/Orders.tsx",
+     "note": "The page itself.",
+     "kind": "screen"
+    },
+    {
+     "id": "r:1",
+     "note": "List my orders.",
+     "kind": "request"
+    },
+    {
+     "id": "n:db",
+     "note": "Reads the orders.",
+     "kind": "data"
+    }
+   ]
+  }
+ ]
+}

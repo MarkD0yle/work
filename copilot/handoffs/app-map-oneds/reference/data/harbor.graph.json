@@ -1,0 +1,8479 @@
+{
+ "schema": "floorplan/graph@1",
+ "meta": {
+  "generatedAt": "2026-11-12T01:46:30.190Z",
+  "scanAt": "2026-11-12T01:42:42.293Z",
+  "rootName": "harbor",
+  "root": "",
+  "audience": "everyone",
+  "repos": [
+   {
+    "path": ".",
+    "name": "harbor",
+    "branch": "main"
+   }
+  ],
+  "counts": {
+   "files": 142,
+   "loc": 15491,
+   "unassigned": 0
+  }
+ },
+ "project": {
+  "name": "Harbor",
+  "summary": "One screen that hosts many separate trading apps side by side, with a single sign-in. The apps never talk to each other directly: everything they share, like the order you just picked, goes through a central message broker. All data is made up.",
+  "entrypoints": [
+   "apps/shell/src/main.tsx",
+   "packages/agent/src/agent.ts"
+  ]
+ },
+ "nodes": [
+  {
+   "id": "shell",
+   "parent": null,
+   "label": "Desktop shell",
+   "kind": "ui",
+   "summary": "The one page people open: sign-in, the app rail, the panel layout, and the top and bottom bars around every app.",
+   "details": "",
+   "tags": [],
+   "paths": [
+    "apps/shell"
+   ],
+   "packages": [],
+   "hosts": [],
+   "stats": {
+    "files": 33,
+    "loc": 3510,
+    "langs": {
+     "html": 20,
+     "typescript": 2766,
+     "css": 724
+    },
+    "repos": [
+     "."
+    ]
+   }
+  },
+  {
+   "id": "shell.chrome",
+   "parent": "shell",
+   "label": "Shell screens",
+   "kind": "feature",
+   "summary": "The visible parts of the shell: sign-in, top bar, app rail, panel layout, app library, alerts drawer and the message log.",
+   "details": "",
+   "tags": [],
+   "paths": [
+    "apps/shell/src/components"
+   ],
+   "packages": [],
+   "hosts": [],
+   "stats": {
+    "files": 12,
+    "loc": 1191,
+    "langs": {
+     "typescript": 1191
+    },
+    "repos": [
+     "."
+    ]
+   }
+  },
+  {
+   "id": "shell.workspaces",
+   "parent": "shell",
+   "label": "Saved workspaces",
+   "kind": "feature",
+   "summary": "Remembers which apps are open and where, and offers ready-made layouts for each role.",
+   "details": "",
+   "tags": [],
+   "paths": [
+    "apps/shell/src/workspaces"
+   ],
+   "packages": [],
+   "hosts": [],
+   "stats": {
+    "files": 3,
+    "loc": 737,
+    "langs": {
+     "typescript": 737
+    },
+    "repos": [
+     "."
+    ]
+   }
+  },
+  {
+   "id": "shell.palette",
+   "parent": "shell",
+   "label": "Command palette",
+   "kind": "feature",
+   "summary": "The Cmd-K search box that finds apps, workspaces and actions as you type.",
+   "details": "",
+   "tags": [],
+   "paths": [
+    "apps/shell/src/palette"
+   ],
+   "packages": [],
+   "hosts": [],
+   "stats": {
+    "files": 2,
+    "loc": 127,
+    "langs": {
+     "typescript": 127
+    },
+    "repos": [
+     "."
+    ]
+   }
+  },
+  {
+   "id": "shell.alerts",
+   "parent": "shell",
+   "label": "Alert centre",
+   "kind": "feature",
+   "summary": "Collects alerts that apps raise and keeps them for the alerts drawer.",
+   "details": "",
+   "tags": [],
+   "paths": [
+    "apps/shell/src/alerts"
+   ],
+   "packages": [],
+   "hosts": [],
+   "stats": {
+    "files": 2,
+    "loc": 162,
+    "langs": {
+     "typescript": 162
+    },
+    "repos": [
+     "."
+    ]
+   }
+  },
+  {
+   "id": "apps",
+   "parent": null,
+   "label": "Trading apps",
+   "kind": "ui",
+   "summary": "Separate apps, each built and served on its own, that the shell shows inside locked-down frames.",
+   "details": "",
+   "tags": [],
+   "paths": [
+    "apps/{pretrade,fx-exec,post-trade,tca,cash,payments,research,partner-news,placeholder}"
+   ],
+   "packages": [],
+   "hosts": [],
+   "stats": {
+    "files": 27,
+    "loc": 2146,
+    "langs": {
+     "html": 108,
+     "css": 362,
+     "typescript": 1676
+    },
+    "repos": [
+     "."
+    ]
+   }
+  },
+  {
+   "id": "apps.pretrade",
+   "parent": "apps",
+   "label": "Pre-Trade",
+   "kind": "ui",
+   "summary": "Estimates what an order will cost and recommends how to trade it.",
+   "details": "",
+   "tags": [],
+   "paths": [
+    "apps/pretrade"
+   ],
+   "packages": [],
+   "hosts": [],
+   "stats": {
+    "files": 3,
+    "loc": 170,
+    "langs": {
+     "html": 12,
+     "css": 27,
+     "typescript": 131
+    },
+    "repos": [
+     "."
+    ]
+   }
+  },
+  {
+   "id": "apps.fxexec",
+   "parent": "apps",
+   "label": "FX Execution",
+   "kind": "ui",
+   "summary": "The trade ticket: asks banks for quotes or runs an algorithm, then books the fill.",
+   "details": "",
+   "tags": [],
+   "paths": [
+    "apps/fx-exec"
+   ],
+   "packages": [],
+   "hosts": [],
+   "stats": {
+    "files": 3,
+    "loc": 416,
+    "langs": {
+     "html": 12,
+     "css": 25,
+     "typescript": 379
+    },
+    "repos": [
+     "."
+    ]
+   }
+  },
+  {
+   "id": "apps.posttrade",
+   "parent": "apps",
+   "label": "Post-Trade",
+   "kind": "ui",
+   "summary": "Matches finished trades and shows the ones that need attention.",
+   "details": "",
+   "tags": [],
+   "paths": [
+    "apps/post-trade"
+   ],
+   "packages": [],
+   "hosts": [],
+   "stats": {
+    "files": 3,
+    "loc": 266,
+    "langs": {
+     "html": 12,
+     "css": 51,
+     "typescript": 203
+    },
+    "repos": [
+     "."
+    ]
+   }
+  },
+  {
+   "id": "apps.tca",
+   "parent": "apps",
+   "label": "Trade cost analysis",
+   "kind": "ui",
+   "summary": "Charts how well each trade was done compared with the market.",
+   "details": "",
+   "tags": [],
+   "paths": [
+    "apps/tca"
+   ],
+   "packages": [],
+   "hosts": [],
+   "stats": {
+    "files": 4,
+    "loc": 335,
+    "langs": {
+     "html": 12,
+     "typescript": 277,
+     "css": 46
+    },
+    "repos": [
+     "."
+    ]
+   }
+  },
+  {
+   "id": "apps.cash",
+   "parent": "apps",
+   "label": "Cash",
+   "kind": "ui",
+   "summary": "A money-market fund portal that checks each investment against policy.",
+   "details": "",
+   "tags": [],
+   "paths": [
+    "apps/cash"
+   ],
+   "packages": [],
+   "hosts": [],
+   "stats": {
+    "files": 3,
+    "loc": 259,
+    "langs": {
+     "html": 12,
+     "css": 40,
+     "typescript": 207
+    },
+    "repos": [
+     "."
+    ]
+   }
+  },
+  {
+   "id": "apps.payments",
+   "parent": "apps",
+   "label": "Payments",
+   "kind": "ui",
+   "summary": "Cross-border payments with a locked rate and a second person to approve.",
+   "details": "",
+   "tags": [],
+   "paths": [
+    "apps/payments"
+   ],
+   "packages": [],
+   "hosts": [],
+   "stats": {
+    "files": 3,
+    "loc": 260,
+    "langs": {
+     "html": 12,
+     "css": 17,
+     "typescript": 231
+    },
+    "repos": [
+     "."
+    ]
+   }
+  },
+  {
+   "id": "apps.research",
+   "parent": "apps",
+   "label": "Research",
+   "kind": "ui",
+   "summary": "A research reader that filters notes by currency pair.",
+   "details": "",
+   "tags": [],
+   "paths": [
+    "apps/research"
+   ],
+   "packages": [],
+   "hosts": [],
+   "stats": {
+    "files": 3,
+    "loc": 147,
+    "langs": {
+     "html": 12,
+     "css": 50,
+     "typescript": 85
+    },
+    "repos": [
+     "."
+    ]
+   }
+  },
+  {
+   "id": "apps.partner",
+   "parent": "apps",
+   "label": "Partner News",
+   "kind": "ui",
+   "summary": "Pretends to be an outside company's app, with its own look, to prove an outsider can plug in.",
+   "details": "",
+   "tags": [],
+   "paths": [
+    "apps/partner-news"
+   ],
+   "packages": [],
+   "hosts": [],
+   "stats": {
+    "files": 3,
+    "loc": 239,
+    "langs": {
+     "html": 12,
+     "typescript": 121,
+     "css": 106
+    },
+    "repos": [
+     "."
+    ]
+   }
+  },
+  {
+   "id": "apps.probe",
+   "parent": "apps",
+   "label": "Interop Probe",
+   "kind": "ui",
+   "summary": "A developer tool for sending and watching messages, served from two addresses.",
+   "details": "",
+   "tags": [],
+   "paths": [
+    "apps/placeholder"
+   ],
+   "packages": [],
+   "hosts": [],
+   "stats": {
+    "files": 2,
+    "loc": 54,
+    "langs": {
+     "html": 12,
+     "typescript": 42
+    },
+    "repos": [
+     "."
+    ]
+   }
+  },
+  {
+   "id": "broker",
+   "parent": null,
+   "label": "Message broker",
+   "kind": "library",
+   "summary": "The only way apps share anything: it checks who sent each message, whether they're allowed, and passes it on.",
+   "details": "",
+   "tags": [],
+   "paths": [
+    "packages/agent",
+    "packages/agent-client",
+    "packages/app-kit"
+   ],
+   "packages": [],
+   "hosts": [],
+   "stats": {
+    "files": 14,
+    "loc": 1440,
+    "langs": {
+     "typescript": 1324,
+     "css": 116
+    },
+    "repos": [
+     "."
+    ]
+   }
+  },
+  {
+   "id": "broker.agent",
+   "parent": "broker",
+   "label": "Broker",
+   "kind": "service",
+   "summary": "Runs inside the shell, routes messages between apps and keeps a log of them.",
+   "details": "",
+   "tags": [],
+   "paths": [
+    "packages/agent"
+   ],
+   "packages": [],
+   "hosts": [],
+   "stats": {
+    "files": 6,
+    "loc": 807,
+    "langs": {
+     "typescript": 807
+    },
+    "repos": [
+     "."
+    ]
+   }
+  },
+  {
+   "id": "broker.client",
+   "parent": "broker",
+   "label": "App connector",
+   "kind": "library",
+   "summary": "What each app calls to send and receive messages through the broker.",
+   "details": "",
+   "tags": [],
+   "paths": [
+    "packages/agent-client"
+   ],
+   "packages": [],
+   "hosts": [],
+   "stats": {
+    "files": 3,
+    "loc": 310,
+    "langs": {
+     "typescript": 310
+    },
+    "repos": [
+     "."
+    ]
+   }
+  },
+  {
+   "id": "broker.kit",
+   "parent": "broker",
+   "label": "App starter kit",
+   "kind": "library",
+   "summary": "Shared start-up code every app uses: connect, load the user, show loading and error states.",
+   "details": "",
+   "tags": [],
+   "paths": [
+    "packages/app-kit"
+   ],
+   "packages": [],
+   "hosts": [],
+   "stats": {
+    "files": 5,
+    "loc": 323,
+    "langs": {
+     "typescript": 207,
+     "css": 116
+    },
+    "repos": [
+     "."
+    ]
+   }
+  },
+  {
+   "id": "widgets",
+   "parent": null,
+   "label": "Tiles and blotter",
+   "kind": "feature",
+   "summary": "Smaller pieces that run inside the shell itself: the order blotter, summary tiles and developer tools.",
+   "details": "",
+   "tags": [],
+   "paths": [
+    "packages/widgets"
+   ],
+   "packages": [],
+   "hosts": [],
+   "stats": {
+    "files": 11,
+    "loc": 1406,
+    "langs": {
+     "typescript": 1000,
+     "css": 406
+    },
+    "repos": [
+     "."
+    ]
+   }
+  },
+  {
+   "id": "design",
+   "parent": null,
+   "label": "Design system",
+   "kind": "library",
+   "summary": "Shared colours, spacing and components so every app looks the same.",
+   "details": "",
+   "tags": [],
+   "paths": [
+    "packages/ui",
+    "packages/tokens"
+   ],
+   "packages": [],
+   "hosts": [],
+   "stats": {
+    "files": 12,
+    "loc": 1928,
+    "langs": {
+     "typescript": 1013,
+     "css": 915
+    },
+    "repos": [
+     "."
+    ]
+   }
+  },
+  {
+   "id": "design.tokens",
+   "parent": "design",
+   "label": "Colours and spacing",
+   "kind": "config",
+   "summary": "The fixed set of colours, sizes and spacing every screen uses.",
+   "details": "",
+   "tags": [],
+   "paths": [
+    "packages/tokens"
+   ],
+   "packages": [],
+   "hosts": [],
+   "stats": {
+    "files": 2,
+    "loc": 286,
+    "langs": {
+     "typescript": 54,
+     "css": 232
+    },
+    "repos": [
+     "."
+    ]
+   }
+  },
+  {
+   "id": "design.ui",
+   "parent": "design",
+   "label": "Shared components",
+   "kind": "library",
+   "summary": "Buttons, grids, dialogs, trading widgets and number formatting.",
+   "details": "",
+   "tags": [],
+   "paths": [
+    "packages/ui"
+   ],
+   "packages": [],
+   "hosts": [],
+   "stats": {
+    "files": 10,
+    "loc": 1642,
+    "langs": {
+     "typescript": 959,
+     "css": 683
+    },
+    "repos": [
+     "."
+    ]
+   }
+  },
+  {
+   "id": "mockdata",
+   "parent": null,
+   "label": "Pretend market data",
+   "kind": "data",
+   "summary": "Makes up orders, prices and services from a seed, so every app shows the same numbers.",
+   "details": "",
+   "tags": [],
+   "paths": [
+    "packages/mock-data"
+   ],
+   "packages": [],
+   "hosts": [],
+   "stats": {
+    "files": 10,
+    "loc": 1287,
+    "langs": {
+     "typescript": 1287
+    },
+    "repos": [
+     "."
+    ]
+   }
+  },
+  {
+   "id": "schemas",
+   "parent": null,
+   "label": "Message rules",
+   "kind": "data",
+   "summary": "Defines the shape of every message, user, app listing and saved workspace, and rejects anything that doesn't fit.",
+   "details": "",
+   "tags": [],
+   "paths": [
+    "packages/schemas"
+   ],
+   "packages": [],
+   "hosts": [],
+   "stats": {
+    "files": 8,
+    "loc": 541,
+    "langs": {
+     "typescript": 541
+    },
+    "repos": [
+     "."
+    ]
+   }
+  },
+  {
+   "id": "tests",
+   "parent": null,
+   "label": "Tests",
+   "kind": "test",
+   "summary": "Automatic checks: small checks beside the code and full click-through tests of the main trading loop.",
+   "details": "",
+   "tags": [],
+   "paths": [
+    "e2e",
+    "**/*.test.ts",
+    "**/testkit.ts"
+   ],
+   "packages": [],
+   "hosts": [],
+   "stats": {
+    "files": 14,
+    "loc": 3089,
+    "langs": {
+     "typescript": 3089
+    },
+    "repos": [
+     "."
+    ]
+   }
+  },
+  {
+   "id": "tooling",
+   "parent": null,
+   "label": "Build setup",
+   "kind": "infra",
+   "summary": "Settings for building, testing and checking the code, and the script that prepares the hosted copy.",
+   "details": "",
+   "tags": [],
+   "paths": [
+    "*.js",
+    "*.ts",
+    "scripts",
+    "apps/*/vite.config.ts"
+   ],
+   "packages": [],
+   "hosts": [],
+   "stats": {
+    "files": 13,
+    "loc": 144,
+    "langs": {
+     "typescript": 78,
+     "javascript": 66
+    },
+    "repos": [
+     "."
+    ]
+   }
+  },
+  {
+   "id": "browser",
+   "parent": null,
+   "label": "Browser storage",
+   "kind": "external",
+   "summary": "The browser's own storage, used to remember the signed-in user, workspaces and pending payments.",
+   "details": "",
+   "tags": [],
+   "paths": [],
+   "packages": [],
+   "hosts": [],
+   "stats": {
+    "files": 0,
+    "loc": 0,
+    "langs": {},
+    "repos": []
+   }
+  },
+  {
+   "id": "dockview",
+   "parent": null,
+   "label": "Dockview",
+   "kind": "external",
+   "summary": "The library that draws the draggable, dockable panels.",
+   "details": "",
+   "tags": [],
+   "paths": [],
+   "packages": [
+    "npm:dockview",
+    "npm:dockview-react"
+   ],
+   "hosts": [],
+   "stats": {
+    "files": 0,
+    "loc": 0,
+    "langs": {},
+    "repos": []
+   }
+  },
+  {
+   "id": "aggrid",
+   "parent": null,
+   "label": "AG Grid",
+   "kind": "external",
+   "summary": "The library behind the data tables.",
+   "details": "",
+   "tags": [],
+   "paths": [],
+   "packages": [
+    "npm:ag-grid-community",
+    "npm:ag-grid-react"
+   ],
+   "hosts": [],
+   "stats": {
+    "files": 0,
+    "loc": 0,
+    "langs": {},
+    "repos": []
+   }
+  }
+ ],
+ "files": [
+  {
+   "p": "apps/cash/index.html",
+   "n": "apps.cash",
+   "r": ".",
+   "l": "html",
+   "loc": 12,
+   "name": "Page that starts Cash",
+   "d": "The empty web page the Cash app loads into."
+  },
+  {
+   "p": "apps/cash/src/app.css",
+   "n": "apps.cash",
+   "r": ".",
+   "l": "css",
+   "loc": 40,
+   "name": "Cash look",
+   "d": "Layout for the Cash portal's fund list and order form."
+  },
+  {
+   "p": "apps/cash/src/main.tsx",
+   "n": "apps.cash",
+   "r": ".",
+   "l": "typescript",
+   "loc": 207,
+   "name": "Cash portal",
+   "d": "Lists money-market funds, lets you place subscriptions and redemptions, and checks each one against the investment policy before it goes through."
+  },
+  {
+   "p": "apps/cash/vite.config.ts",
+   "n": "tooling",
+   "r": ".",
+   "l": "typescript",
+   "loc": 6,
+   "name": "Cash dev settings",
+   "d": "Runs the Cash app on its own local port (5182) while developing."
+  },
+  {
+   "p": "apps/fx-exec/index.html",
+   "n": "apps.fxexec",
+   "r": ".",
+   "l": "html",
+   "loc": 12,
+   "name": "Page that starts FX Execution",
+   "d": "The empty web page the FX Execution app loads into."
+  },
+  {
+   "p": "apps/fx-exec/src/app.css",
+   "n": "apps.fxexec",
+   "r": ".",
+   "l": "css",
+   "loc": 25,
+   "name": "Ticket look",
+   "d": "Layout for the trade ticket and the quote list."
+  },
+  {
+   "p": "apps/fx-exec/src/main.tsx",
+   "n": "apps.fxexec",
+   "r": ".",
+   "l": "typescript",
+   "loc": 379,
+   "name": "Trade ticket",
+   "d": "Fills the ticket from the chosen order, asks the suggested banks for quotes with a countdown, books the accepted quote and announces the new trade."
+  },
+  {
+   "p": "apps/fx-exec/vite.config.ts",
+   "n": "tooling",
+   "r": ".",
+   "l": "typescript",
+   "loc": 6,
+   "name": "FX Execution dev settings",
+   "d": "Runs the FX Execution app on its own local port (5177) while developing."
+  },
+  {
+   "p": "apps/partner-news/index.html",
+   "n": "apps.partner",
+   "r": ".",
+   "l": "html",
+   "loc": 12,
+   "name": "Page that starts Partner News",
+   "d": "The empty web page the Partner News app loads into."
+  },
+  {
+   "p": "apps/partner-news/src/main.tsx",
+   "n": "apps.partner",
+   "r": ".",
+   "l": "typescript",
+   "loc": 121,
+   "name": "Wirefeed news app",
+   "d": "A news feed with its own branding that only uses the app connector, to show an outside company can plug into Harbor without any of its other code."
+  },
+  {
+   "p": "apps/partner-news/src/wirefeed.css",
+   "n": "apps.partner",
+   "r": ".",
+   "l": "css",
+   "loc": 106,
+   "name": "Wirefeed look",
+   "d": "Wirefeed's own styling, deliberately different from Harbor's.",
+   "doc": "Wirefeed's own stylesheet."
+  },
+  {
+   "p": "apps/partner-news/vite.config.ts",
+   "n": "tooling",
+   "r": ".",
+   "l": "typescript",
+   "loc": 6,
+   "name": "Partner News dev settings",
+   "d": "Runs the Partner News app on its own local port (5175) while developing."
+  },
+  {
+   "p": "apps/payments/index.html",
+   "n": "apps.payments",
+   "r": ".",
+   "l": "html",
+   "loc": 12,
+   "name": "Page that starts Payments",
+   "d": "The empty web page the Payments app loads into."
+  },
+  {
+   "p": "apps/payments/src/app.css",
+   "n": "apps.payments",
+   "r": ".",
+   "l": "css",
+   "loc": 17,
+   "name": "Payments look",
+   "d": "Layout for the payment form, the locked-rate line and policy warnings."
+  },
+  {
+   "p": "apps/payments/src/main.tsx",
+   "n": "apps.payments",
+   "r": ".",
+   "l": "typescript",
+   "loc": 231,
+   "name": "Payments app",
+   "d": "Creates cross-border payments with a time-limited locked rate, and requires a second person to approve. Pending payments are kept in the browser so the approver can see them."
+  },
+  {
+   "p": "apps/payments/vite.config.ts",
+   "n": "tooling",
+   "r": ".",
+   "l": "typescript",
+   "loc": 6,
+   "name": "Payments dev settings",
+   "d": "Runs the Payments app on its own local port (5183) while developing."
+  },
+  {
+   "p": "apps/placeholder/index.html",
+   "n": "apps.probe",
+   "r": ".",
+   "l": "html",
+   "loc": 12,
+   "name": "Page that starts Interop Probe",
+   "d": "The empty web page the Interop Probe app loads into."
+  },
+  {
+   "p": "apps/placeholder/src/main.tsx",
+   "n": "apps.probe",
+   "r": ".",
+   "l": "typescript",
+   "loc": 42,
+   "name": "Probe frame",
+   "d": "Wraps the Interop Probe tool so it can run as a separate app on its own address, for testing messages between frames."
+  },
+  {
+   "p": "apps/placeholder/vite.config.ts",
+   "n": "tooling",
+   "r": ".",
+   "l": "typescript",
+   "loc": 5,
+   "name": "Interop Probe dev settings",
+   "d": "Development settings for the Interop Probe; its ports are set when it starts, so it can run on two addresses."
+  },
+  {
+   "p": "apps/post-trade/index.html",
+   "n": "apps.posttrade",
+   "r": ".",
+   "l": "html",
+   "loc": 12,
+   "name": "Page that starts Post-Trade",
+   "d": "The empty web page the Post-Trade app loads into."
+  },
+  {
+   "p": "apps/post-trade/src/app.css",
+   "n": "apps.posttrade",
+   "r": ".",
+   "l": "css",
+   "loc": 51,
+   "name": "Post-Trade look",
+   "d": "Layout for the matching list, the exceptions queue and the activity log."
+  },
+  {
+   "p": "apps/post-trade/src/main.tsx",
+   "n": "apps.posttrade",
+   "r": ".",
+   "l": "typescript",
+   "loc": 203,
+   "name": "Post-Trade app",
+   "d": "Shows each new trade as unmatched, matches it a few seconds later, and lists mismatches that need someone to look at them."
+  },
+  {
+   "p": "apps/post-trade/vite.config.ts",
+   "n": "tooling",
+   "r": ".",
+   "l": "typescript",
+   "loc": 6,
+   "name": "Post-Trade dev settings",
+   "d": "Runs the Post-Trade app on its own local port (5178) while developing."
+  },
+  {
+   "p": "apps/pretrade/index.html",
+   "n": "apps.pretrade",
+   "r": ".",
+   "l": "html",
+   "loc": 12,
+   "name": "Page that starts Pre-Trade",
+   "d": "The empty web page the Pre-Trade app loads into."
+  },
+  {
+   "p": "apps/pretrade/src/app.css",
+   "n": "apps.pretrade",
+   "r": ".",
+   "l": "css",
+   "loc": 27,
+   "name": "Pre-Trade look",
+   "d": "Layout for the cost estimate panel."
+  },
+  {
+   "p": "apps/pretrade/src/main.tsx",
+   "n": "apps.pretrade",
+   "r": ".",
+   "l": "typescript",
+   "loc": 131,
+   "name": "Cost estimate",
+   "d": "When an order is selected, shows its expected cost, available liquidity and the recommended way to trade it, with a button to send it to FX Execution."
+  },
+  {
+   "p": "apps/pretrade/vite.config.ts",
+   "n": "tooling",
+   "r": ".",
+   "l": "typescript",
+   "loc": 6,
+   "name": "Pre-Trade dev settings",
+   "d": "Runs the Pre-Trade app on its own local port (5176) while developing."
+  },
+  {
+   "p": "apps/research/index.html",
+   "n": "apps.research",
+   "r": ".",
+   "l": "html",
+   "loc": 12,
+   "name": "Page that starts Research",
+   "d": "The empty web page the Research app loads into."
+  },
+  {
+   "p": "apps/research/src/app.css",
+   "n": "apps.research",
+   "r": ".",
+   "l": "css",
+   "loc": 50,
+   "name": "Research look",
+   "d": "Layout for the list of research notes and the reading pane."
+  },
+  {
+   "p": "apps/research/src/main.tsx",
+   "n": "apps.research",
+   "r": ".",
+   "l": "typescript",
+   "loc": 85,
+   "name": "Research reader",
+   "d": "Shows research notes and narrows them to the currency pair of whatever order or trade is selected elsewhere."
+  },
+  {
+   "p": "apps/research/vite.config.ts",
+   "n": "tooling",
+   "r": ".",
+   "l": "typescript",
+   "loc": 6,
+   "name": "Research dev settings",
+   "d": "Runs the Research app on its own local port (5184) while developing."
+  },
+  {
+   "p": "apps/shell/index.html",
+   "n": "shell",
+   "r": ".",
+   "l": "html",
+   "loc": 12,
+   "name": "Page that starts the shell",
+   "d": "The empty web page the the shell app loads into."
+  },
+  {
+   "p": "apps/shell/public/popout.html",
+   "n": "shell",
+   "r": ".",
+   "l": "html",
+   "loc": 8,
+   "name": "Pop-out window",
+   "d": "An empty page used when a panel is popped out into its own browser window."
+  },
+  {
+   "p": "apps/shell/src/App.tsx",
+   "n": "shell",
+   "r": ".",
+   "l": "typescript",
+   "loc": 63,
+   "name": "Shell layout",
+   "d": "Puts the whole shell together: sign-in first, then the top bar, app rail, panels, status bar and drawers.",
+   "s": [
+    [
+     "App",
+     "function",
+     23,
+     0,
+     ""
+    ]
+   ]
+  },
+  {
+   "p": "apps/shell/src/alerts/center.ts",
+   "n": "shell.alerts",
+   "r": ".",
+   "l": "typescript",
+   "loc": 33,
+   "name": "Alert centre hookup",
+   "d": "The shell's single alert centre, and how acting on an alert is carried out.",
+   "s": [
+    [
+     "setAlertActionHandler",
+     "function",
+     10,
+     0,
+     "The agent wiring supplies how an alert's action is carried out."
+    ],
+    [
+     "alerts",
+     "const",
+     29,
+     0,
+     ""
+    ]
+   ]
+  },
+  {
+   "p": "apps/shell/src/alerts/service.test.ts",
+   "n": "tests",
+   "r": ".",
+   "l": "typescript",
+   "loc": 114,
+   "name": "Alert checks",
+   "d": "Checks alerts are stored, actioned, dismissed and recorded correctly."
+  },
+  {
+   "p": "apps/shell/src/alerts/service.ts",
+   "n": "shell.alerts",
+   "r": ".",
+   "l": "typescript",
+   "loc": 129,
+   "name": "Alert keeper",
+   "d": "Stores alerts from apps, tracks whether each is open, actioned or dismissed, and records every change.",
+   "s": [
+    [
+     "AlertAuditEntry",
+     "interface",
+     4,
+     0,
+     "One line per change to an alert: who, when, before and after."
+    ],
+    [
+     "AlertServiceOptions",
+     "interface",
+     15,
+     0,
+     ""
+    ],
+    [
+     "AlertService",
+     "class",
+     34,
+     0,
+     "The shell's alert centre."
+    ]
+   ]
+  },
+  {
+   "p": "apps/shell/src/announce.ts",
+   "n": "shell",
+   "r": ".",
+   "l": "typescript",
+   "loc": 56,
+   "name": "Screen reader announcements",
+   "d": "Reads out fills and critical alerts to screen-reader users, without flooding them.",
+   "doc": "Screen-reader announcements for things that happen without the user asking: fills and critical alerts.",
+   "s": [
+    [
+     "AnnouncerOptions",
+     "interface",
+     5,
+     0,
+     ""
+    ],
+    [
+     "Announcer",
+     "interface",
+     14,
+     0,
+     ""
+    ],
+    [
+     "createAnnouncer",
+     "function",
+     19,
+     0,
+     ""
+    ],
+    [
+     "announcer",
+     "const",
+     62,
+     0,
+     ""
+    ]
+   ]
+  },
+  {
+   "p": "apps/shell/src/audit.ts",
+   "n": "shell",
+   "r": ".",
+   "l": "typescript",
+   "loc": 43,
+   "name": "Audit trail",
+   "d": "Records every change the shell makes, with who did it, when, and what it was before and after.",
+   "doc": "The shell's audit trail: every state-changing action the shell itself performs, with who, when, before and after.",
+   "s": [
+    [
+     "AuditEntry",
+     "interface",
+     6,
+     0,
+     ""
+    ],
+    [
+     "AuditTrail",
+     "class",
+     17,
+     0,
+     ""
+    ]
+   ]
+  },
+  {
+   "p": "apps/shell/src/auth.ts",
+   "n": "shell",
+   "r": ".",
+   "l": "typescript",
+   "loc": 74,
+   "name": "Mock sign-in",
+   "d": "Five pretend users, one per role. Remembers who signed in, and is built so a real sign-in service can replace it later.",
+   "s": [
+    [
+     "AuthProvider",
+     "interface",
+     4,
+     0,
+     "Auth sits behind this interface so a real identity provider can replace the mock."
+    ],
+    [
+     "MOCK_USERS",
+     "const",
+     17,
+     0,
+     "Five seeded mock users, one per role."
+    ],
+    [
+     "MockAuth",
+     "class",
+     61,
+     0,
+     ""
+    ],
+    [
+     "auth",
+     "const",
+     80,
+     0,
+     ""
+    ]
+   ]
+  },
+  {
+   "p": "apps/shell/src/components/Accessibility.tsx",
+   "n": "shell.chrome",
+   "r": ".",
+   "l": "typescript",
+   "loc": 52,
+   "name": "Accessibility helpers",
+   "d": "The hidden area screen readers listen to, and the ? dialog listing every shortcut.",
+   "s": [
+    [
+     "LiveRegion",
+     "function",
+     7,
+     0,
+     "Where throttled announcements are spoken."
+    ],
+    [
+     "ShortcutsDialog",
+     "function",
+     31,
+     0,
+     "The documented shortcut map."
+    ]
+   ]
+  },
+  {
+   "p": "apps/shell/src/components/AlertDrawer.tsx",
+   "n": "shell.chrome",
+   "r": ".",
+   "l": "typescript",
+   "loc": 97,
+   "name": "Alerts drawer",
+   "d": "Lists alerts by severity then time, with filters by app, and lets you act on, dismiss or bulk-dismiss them.",
+   "s": [
+    [
+     "SEVERITY_ICON",
+     "const",
+     10,
+     0,
+     "Severity is never colour alone: each level has its own icon and a text label."
+    ],
+    [
+     "SEVERITY_LABEL",
+     "const",
+     11,
+     0,
+     ""
+    ],
+    [
+     "AlertDrawer",
+     "function",
+     17,
+     0,
+     "The alert centre: grouped by severity then time, filter by app, act or dismiss, bulk dismiss."
+    ]
+   ]
+  },
+  {
+   "p": "apps/shell/src/components/AppGlyph.tsx",
+   "n": "shell.chrome",
+   "r": ".",
+   "l": "typescript",
+   "loc": 11,
+   "name": "App icon",
+   "d": "Shows an app's image, or two letters of its name if it has none, with a dot when it is running.",
+   "s": [
+    [
+     "AppGlyph",
+     "function",
+     4,
+     0,
+     "App icon: the directory image when present, otherwise a two-letter glyph."
+    ]
+   ]
+  },
+  {
+   "p": "apps/shell/src/components/AppRail.tsx",
+   "n": "shell.chrome",
+   "r": ".",
+   "l": "typescript",
+   "loc": 47,
+   "name": "App rail",
+   "d": "The strip of app icons down the side for opening apps you're allowed to use.",
+   "s": [
+    [
+     "AppRail",
+     "function",
+     7,
+     0,
+     ""
+    ]
+   ]
+  },
+  {
+   "p": "apps/shell/src/components/CommandPalette.tsx",
+   "n": "shell.chrome",
+   "r": ".",
+   "l": "typescript",
+   "loc": 127,
+   "name": "Command palette",
+   "d": "The Cmd/Ctrl-K search box, fully keyboard driven, offering only what this user may do.",
+   "s": [
+    [
+     "CommandPalette",
+     "function",
+     129,
+     0,
+     "Cmd/Ctrl-K. Fully keyboard driven; only offers what this user is entitled to do."
+    ]
+   ]
+  },
+  {
+   "p": "apps/shell/src/components/IntentResolver.tsx",
+   "n": "shell.chrome",
+   "r": ".",
+   "l": "typescript",
+   "loc": 39,
+   "name": "Choose an app",
+   "d": "Asks which app to use when more than one can handle a request.",
+   "s": [
+    [
+     "IntentResolver",
+     "function",
+     7,
+     0,
+     "Shown when two or more apps can handle an intent."
+    ]
+   ]
+  },
+  {
+   "p": "apps/shell/src/components/InteropLogDrawer.tsx",
+   "n": "shell.chrome",
+   "r": ".",
+   "l": "typescript",
+   "loc": 93,
+   "name": "Developer drawer",
+   "d": "Shows the broker's message log and test switches, such as forcing a mismatch or dropping the connection.",
+   "s": [
+    [
+     "InteropLogDrawer",
+     "function",
+     12,
+     0,
+     "The dev panel: the interop log (which doubles as an audit trail) plus test switches."
+    ]
+   ]
+  },
+  {
+   "p": "apps/shell/src/components/Layout.tsx",
+   "n": "shell.chrome",
+   "r": ".",
+   "l": "typescript",
+   "loc": 308,
+   "name": "Panel layout",
+   "d": "The draggable panel area: shows each app in a locked-down frame or a tile inside the shell, and moves focus between panels.",
+   "s": [
+    [
+     "focusAdjacentPanel",
+     "function",
+     29,
+     0,
+     "Ctrl-Alt-arrows: move focus to the next or previous panel."
+    ],
+    [
+     "Layout",
+     "function",
+     298,
+     0,
+     ""
+    ]
+   ]
+  },
+  {
+   "p": "apps/shell/src/components/Library.tsx",
+   "n": "shell.chrome",
+   "r": ".",
+   "l": "typescript",
+   "loc": 108,
+   "name": "Widget Library",
+   "d": "A side sheet of every app and tile you can drag straight onto the layout.",
+   "s": [
+    [
+     "DRAG_TYPE",
+     "const",
+     8,
+     0,
+     ""
+    ],
+    [
+     "Library",
+     "function",
+     15,
+     0,
+     "The Widget Library. A non-modal side sheet rather than a modal dialog, so a card can be dragged from it straight onto the layout."
+    ]
+   ]
+  },
+  {
+   "p": "apps/shell/src/components/SignIn.tsx",
+   "n": "shell.chrome",
+   "r": ".",
+   "l": "typescript",
+   "loc": 23,
+   "name": "Sign-in screen",
+   "d": "Pick one of the pretend users to sign in as.",
+   "s": [
+    [
+     "SignIn",
+     "function",
+     4,
+     0,
+     ""
+    ]
+   ]
+  },
+  {
+   "p": "apps/shell/src/components/StatusBar.tsx",
+   "n": "shell.chrome",
+   "r": ".",
+   "l": "typescript",
+   "loc": 43,
+   "name": "Status bar",
+   "d": "The bottom bar showing connection state and whether the workspace is saved.",
+   "s": [
+    [
+     "StatusBar",
+     "function",
+     10,
+     0,
+     ""
+    ]
+   ]
+  },
+  {
+   "p": "apps/shell/src/components/TopBar.tsx",
+   "n": "shell.chrome",
+   "r": ".",
+   "l": "typescript",
+   "loc": 243,
+   "name": "Top bar",
+   "d": "Workspace menu, alerts bell, theme and density switches, and the signed-in user.",
+   "s": [
+    [
+     "TopBar",
+     "function",
+     98,
+     0,
+     ""
+    ]
+   ]
+  },
+  {
+   "p": "apps/shell/src/directory.ts",
+   "n": "shell",
+   "r": ".",
+   "l": "typescript",
+   "loc": 51,
+   "name": "App list loader",
+   "d": "Fetches the list of available apps once when the shell starts and checks it against the listing rules.",
+   "s": [
+    [
+     "loadDirectory",
+     "function",
+     12,
+     0,
+     "Load the directory once per page; repeat calls share the same load."
+    ]
+   ]
+  },
+  {
+   "p": "apps/shell/src/download.ts",
+   "n": "shell",
+   "r": ".",
+   "l": "typescript",
+   "loc": 11,
+   "name": "File download",
+   "d": "Hands the user a file to save, used for exporting logs, alerts and workspaces.",
+   "doc": "Hand the user a file to save.",
+   "s": [
+    [
+     "download",
+     "function",
+     2,
+     0,
+     "Hand the user a file to save."
+    ]
+   ]
+  },
+  {
+   "p": "apps/shell/src/hardening.test.ts",
+   "n": "tests",
+   "r": ".",
+   "l": "typescript",
+   "loc": 79,
+   "name": "Shell safety checks",
+   "d": "Checks the audit trail and screen-reader announcements behave."
+  },
+  {
+   "p": "apps/shell/src/interop.ts",
+   "n": "shell",
+   "r": ".",
+   "l": "typescript",
+   "loc": 97,
+   "name": "Broker setup",
+   "d": "Creates the shell's one broker and connects it to alerts, the command palette and keyboard shortcuts.",
+   "s": [
+    [
+     "setShortcutHandler",
+     "function",
+     11,
+     0,
+     "The shell's keyboard layer supplies how a forwarded shortcut is carried out."
+    ],
+    [
+     "agent",
+     "const",
+     16,
+     0,
+     "The one agent for this shell."
+    ],
+    [
+     "bridge",
+     "const",
+     50,
+     0,
+     ""
+    ],
+    [
+     "actOnAlert",
+     "function",
+     70,
+     0,
+     "Carry out an alert's action: raise its intent with its context."
+    ],
+    [
+     "raiseFromShell",
+     "function",
+     88,
+     0,
+     "Raise an intent as the shell (command palette)."
+    ],
+    [
+     "forceMismatch",
+     "function",
+     97,
+     0,
+     "Dev panel: ask Post-Trade to turn its most recent healthy trade into a mismatch."
+    ]
+   ]
+  },
+  {
+   "p": "apps/shell/src/main.tsx",
+   "n": "shell",
+   "r": ".",
+   "l": "typescript",
+   "loc": 16,
+   "name": "Shell start-up",
+   "d": "Loads the styles and starts the shell."
+  },
+  {
+   "p": "apps/shell/src/palette/fuzzy.test.ts",
+   "n": "tests",
+   "r": ".",
+   "l": "typescript",
+   "loc": 32,
+   "name": "Search checks",
+   "d": "Checks the palette ranks the best match first."
+  },
+  {
+   "p": "apps/shell/src/palette/fuzzy.ts",
+   "n": "shell.palette",
+   "r": ".",
+   "l": "typescript",
+   "loc": 49,
+   "name": "Search matching",
+   "d": "Scores and ranks palette entries against what you type, tolerating gaps and typos.",
+   "doc": "Fuzzy match for the command palette.",
+   "s": [
+    [
+     "fuzzyScore",
+     "function",
+     7,
+     0,
+     "Fuzzy match for the command palette."
+    ],
+    [
+     "rank",
+     "function",
+     43,
+     0,
+     "Rank items for a query, best first."
+    ]
+   ]
+  },
+  {
+   "p": "apps/shell/src/palette/items.ts",
+   "n": "shell.palette",
+   "r": ".",
+   "l": "typescript",
+   "loc": 78,
+   "name": "Palette entries",
+   "d": "Builds the list of apps, workspaces, orders and actions this user can reach from the palette.",
+   "s": [
+    [
+     "PaletteItem",
+     "interface",
+     9,
+     0,
+     ""
+    ],
+    [
+     "buildPaletteItems",
+     "function",
+     23,
+     0,
+     "Everything the palette can do right now, for this user."
+    ]
+   ]
+  },
+  {
+   "p": "apps/shell/src/shell.css",
+   "n": "shell",
+   "r": ".",
+   "l": "css",
+   "loc": 724,
+   "name": "Shell look",
+   "d": "How the bars, rail, panels and drawers around the apps look.",
+   "doc": "Shell chrome. Semantic and component tokens only."
+  },
+  {
+   "p": "apps/shell/src/shortcuts.ts",
+   "n": "shell",
+   "r": ".",
+   "l": "typescript",
+   "loc": 39,
+   "name": "Keyboard shortcuts",
+   "d": "Cmd/Ctrl-K, Escape, F6 and Ctrl-Alt-arrows, whether pressed in the shell or inside an app.",
+   "s": [
+    [
+     "runShortcut",
+     "function",
+     10,
+     0,
+     "Carry out a shell shortcut, whether it was pressed in the shell or forwarded from an app."
+    ],
+    [
+     "useShellShortcuts",
+     "function",
+     27,
+     0,
+     "Shell-level keys: Cmd/Ctrl-K opens the command palette, Escape closes the library, F6 cycles regions, Ctrl-Alt-arrows move between panels."
+    ]
+   ]
+  },
+  {
+   "p": "apps/shell/src/state.ts",
+   "n": "shell",
+   "r": ".",
+   "l": "typescript",
+   "loc": 93,
+   "name": "Shell memory",
+   "d": "What the shell is currently showing: theme, density, connection status, open drawers, and the audit trail.",
+   "s": [
+    [
+     "DevPanelState",
+     "type",
+     6,
+     0,
+     ""
+    ],
+    [
+     "SaveStatus",
+     "type",
+     7,
+     0,
+     ""
+    ],
+    [
+     "ResolverState",
+     "interface",
+     9,
+     0,
+     ""
+    ],
+    [
+     "ShellState",
+     "interface",
+     14,
+     0,
+     ""
+    ],
+    [
+     "useShell",
+     "const",
+     52,
+     0,
+     ""
+    ],
+    [
+     "shell",
+     "const",
+     80,
+     0,
+     ""
+    ],
+    [
+     "setTheme",
+     "function",
+     85,
+     0,
+     ""
+    ],
+    [
+     "setDensity",
+     "function",
+     91,
+     0,
+     ""
+    ],
+    [
+     "setConnected",
+     "function",
+     97,
+     0,
+     ""
+    ],
+    [
+     "audit",
+     "const",
+     103,
+     0,
+     "Every state-changing action the shell performs is recorded here."
+    ]
+   ]
+  },
+  {
+   "p": "apps/shell/src/workspaces/controller.ts",
+   "n": "shell.workspaces",
+   "r": ".",
+   "l": "typescript",
+   "loc": 479,
+   "name": "Workspace manager",
+   "d": "Opens, saves, renames, duplicates, imports and exports workspaces, and saves changes to the layout automatically.",
+   "s": [
+    [
+     "workspaceStore",
+     "const",
+     8,
+     0,
+     ""
+    ],
+    [
+     "WorkspaceEntry",
+     "interface",
+     45,
+     0,
+     ""
+    ],
+    [
+     "workspaceEntries",
+     "function",
+     52,
+     0,
+     "Saved workspaces plus the role template, unless the user has already forked it."
+    ],
+    [
+     "startSession",
+     "function",
+     69,
+     0,
+     ""
+    ],
+    [
+     "endSession",
+     "function",
+     79,
+     0,
+     ""
+    ],
+    [
+     "attachLayout",
+     "function",
+     88,
+     0,
+     ""
+    ],
+    [
+     "openWorkspace",
+     "function",
+     226,
+     0,
+     ""
+    ],
+    [
+     "saveNow",
+     "function",
+     265,
+     0,
+     "Flush pending changes."
+    ],
+    [
+     "saveWorkspaceAs",
+     "function",
+     300,
+     0,
+     ""
+    ],
+    [
+     "duplicateWorkspace",
+     "function",
+     307,
+     0,
+     ""
+    ],
+    [
+     "newWorkspace",
+     "function",
+     312,
+     0,
+     ""
+    ],
+    [
+     "renameWorkspace",
+     "function",
+     322,
+     0,
+     ""
+    ],
+    [
+     "deleteWorkspace",
+     "function",
+     328,
+     0,
+     ""
+    ],
+    [
+     "canResetToDefault",
+     "function",
+     342,
+     0,
+     ""
+    ],
+    [
+     "resetToDefault",
+     "function",
+     347,
+     0,
+     ""
+    ],
+    [
+     "exportWorkspace",
+     "function",
+     364,
+     0,
+     ""
+    ],
+    [
+     "ImportPreview",
+     "interface",
+     372,
+     0,
+     ""
+    ],
+    [
+     "previewImport",
+     "function",
+     382,
+     0,
+     ""
+    ],
+    [
+     "importWorkspace",
+     "function",
+     402,
+     0,
+     ""
+    ],
+    [
+     "setPanelChannel",
+     "function",
+     423,
+     0,
+     ""
+    ],
+    [
+     "AddPanelOptions",
+     "interface",
+     431,
+     0,
+     ""
+    ],
+    [
+     "addPanel",
+     "function",
+     438,
+     0,
+     "Add a panel for a directory app."
+    ],
+    [
+     "focusOrOpen",
+     "function",
+     472,
+     0,
+     "Focus a running instance of the app, or open one."
+    ],
+    [
+     "focusPanel",
+     "function",
+     485,
+     0,
+     ""
+    ],
+    [
+     "setPanelConfig",
+     "function",
+     490,
+     0,
+     "Save new per-placement settings for a panel (e.g."
+    ],
+    [
+     "closePanel",
+     "function",
+     496,
+     0,
+     ""
+    ],
+    [
+     "duplicatePanel",
+     "function",
+     504,
+     0,
+     ""
+    ],
+    [
+     "reloadPanel",
+     "function",
+     509,
+     0,
+     ""
+    ],
+    [
+     "movePanelToWorkspace",
+     "function",
+     514,
+     0,
+     ""
+    ],
+    [
+     "channelUsage",
+     "function",
+     528,
+     0,
+     "Channel link counts for the status bar legend."
+    ]
+   ]
+  },
+  {
+   "p": "apps/shell/src/workspaces/store.test.ts",
+   "n": "tests",
+   "r": ".",
+   "l": "typescript",
+   "loc": 71,
+   "name": "Workspace storage checks",
+   "d": "Checks workspaces save, load and set aside damaged files."
+  },
+  {
+   "p": "apps/shell/src/workspaces/store.ts",
+   "n": "shell.workspaces",
+   "r": ".",
+   "l": "typescript",
+   "loc": 158,
+   "name": "Workspace storage",
+   "d": "Keeps saved workspaces in the browser's storage and sets aside any damaged file instead of losing it.",
+   "s": [
+    [
+     "WorkspaceStore",
+     "interface",
+     8,
+     0,
+     "Where workspaces live."
+    ],
+    [
+     "QuarantinedFile",
+     "interface",
+     22,
+     0,
+     ""
+    ],
+    [
+     "KeyValueBackend",
+     "interface",
+     31,
+     0,
+     "Minimal key-value backend so the store logic is shared by IndexedDB and tests."
+    ],
+    [
+     "Bucket",
+     "type",
+     37,
+     0,
+     ""
+    ],
+    [
+     "parseWorkspaceJson",
+     "function",
+     42,
+     0,
+     "Parse the text of a `.harbor.json` file without saving it (used for the import preview)."
+    ],
+    [
+     "BackedWorkspaceStore",
+     "class",
+     52,
+     0,
+     ""
+    ],
+    [
+     "MemoryBackend",
+     "class",
+     123,
+     0,
+     ""
+    ],
+    [
+     "IndexedDbBackend",
+     "class",
+     140,
+     0,
+     ""
+    ]
+   ]
+  },
+  {
+   "p": "apps/shell/src/workspaces/templates.ts",
+   "n": "shell.workspaces",
+   "r": ".",
+   "l": "typescript",
+   "loc": 100,
+   "name": "Role layouts",
+   "d": "Read-only starting layouts for each role, such as the FX Trading workspace for traders.",
+   "s": [
+    [
+     "TemplatePanel",
+     "interface",
+     3,
+     0,
+     ""
+    ],
+    [
+     "TemplateDef",
+     "interface",
+     9,
+     0,
+     "A read-only role default."
+    ],
+    [
+     "TEMPLATES",
+     "const",
+     28,
+     0,
+     ""
+    ],
+    [
+     "isTemplateId",
+     "const",
+     88,
+     0,
+     ""
+    ],
+    [
+     "templateForRole",
+     "function",
+     90,
+     0,
+     ""
+    ],
+    [
+     "materialise",
+     "function",
+     97,
+     0,
+     "A template as an unsaved workspace file."
+    ]
+   ]
+  },
+  {
+   "p": "apps/shell/vite.config.ts",
+   "n": "shell",
+   "r": ".",
+   "l": "typescript",
+   "loc": 6,
+   "name": "shell dev settings",
+   "d": "Runs the shell app on its own local port (5180) while developing."
+  },
+  {
+   "p": "apps/tca/index.html",
+   "n": "apps.tca",
+   "r": ".",
+   "l": "html",
+   "loc": 12,
+   "name": "Page that starts trade cost analysis",
+   "d": "The empty web page the trade cost analysis app loads into."
+  },
+  {
+   "p": "apps/tca/src/Chart.tsx",
+   "n": "apps.tca",
+   "r": ".",
+   "l": "typescript",
+   "loc": 83,
+   "name": "Price chart",
+   "d": "A small, fast chart used to plot a trade's price against the market around it.",
+   "s": [
+    [
+     "ChartProps",
+     "interface",
+     31,
+     0,
+     ""
+    ],
+    [
+     "Chart",
+     "function",
+     44,
+     0,
+     "A small canvas chart (uPlot)."
+    ]
+   ]
+  },
+  {
+   "p": "apps/tca/src/app.css",
+   "n": "apps.tca",
+   "r": ".",
+   "l": "css",
+   "loc": 46,
+   "name": "Cost analysis look",
+   "d": "Layout for the trade list and the chart."
+  },
+  {
+   "p": "apps/tca/src/main.tsx",
+   "n": "apps.tca",
+   "r": ".",
+   "l": "typescript",
+   "loc": 194,
+   "name": "Cost analysis app",
+   "d": "Lists trades with how much they cost compared with the market, adds each new trade as soon as it is announced, and charts the selected one."
+  },
+  {
+   "p": "apps/tca/vite.config.ts",
+   "n": "tooling",
+   "r": ".",
+   "l": "typescript",
+   "loc": 6,
+   "name": "trade cost analysis dev settings",
+   "d": "Runs the trade cost analysis app on its own local port (5179) while developing."
+  },
+  {
+   "p": "e2e/harbor.spec.ts",
+   "n": "tests",
+   "r": ".",
+   "l": "typescript",
+   "loc": 770,
+   "name": "Full trading loop check",
+   "d": "Clicks through Harbor in a real browser, including the whole order-to-trade loop."
+  },
+  {
+   "p": "e2e/hardening.spec.ts",
+   "n": "tests",
+   "r": ".",
+   "l": "typescript",
+   "loc": 308,
+   "name": "Full safety check",
+   "d": "Clicks through security, keyboard and accessibility behaviour in a real browser."
+  },
+  {
+   "p": "eslint.config.js",
+   "n": "tooling",
+   "r": ".",
+   "l": "javascript",
+   "loc": 17,
+   "name": "Code style rules",
+   "d": "The rules the code checker enforces, such as no loose types and no unused code."
+  },
+  {
+   "p": "packages/agent-client/src/client.ts",
+   "n": "broker.client",
+   "r": ".",
+   "l": "typescript",
+   "loc": 227,
+   "name": "Connector features",
+   "d": "Everything an app can ask of the broker: share the selected item, listen on a channel, ask another app to do something, raise an alert, find out who is signed in.",
+   "s": [
+    [
+     "Listener",
+     "interface",
+     22,
+     0,
+     ""
+    ],
+    [
+     "ContextMetadata",
+     "interface",
+     25,
+     0,
+     ""
+    ],
+    [
+     "ContextHandler",
+     "type",
+     28,
+     0,
+     ""
+    ],
+    [
+     "IntentHandler",
+     "type",
+     29,
+     0,
+     ""
+    ],
+    [
+     "Channel",
+     "interface",
+     31,
+     0,
+     ""
+    ],
+    [
+     "HarborError",
+     "class",
+     39,
+     0,
+     "Error thrown for a failed request."
+    ],
+    [
+     "HarborClient",
+     "interface",
+     48,
+     0,
+     "FDC3-shaped API (method names follow the current FDC3 DesktopAgent), plus a few Harbor extras."
+    ],
+    [
+     "createClient",
+     "function",
+     86,
+     0,
+     ""
+    ]
+   ]
+  },
+  {
+   "p": "packages/agent-client/src/connect.ts",
+   "n": "broker.client",
+   "r": ".",
+   "l": "typescript",
+   "loc": 81,
+   "name": "Connect to the shell",
+   "d": "Called once when an app starts: connects to the shell's broker and picks up its theme and density.",
+   "s": [
+    [
+     "applyAppearance",
+     "function",
+     14,
+     0,
+     ""
+    ],
+    [
+     "connect",
+     "function",
+     24,
+     0,
+     "Connect an iframe app to the shell's agent."
+    ]
+   ]
+  },
+  {
+   "p": "packages/agent-client/src/index.ts",
+   "n": "broker.client",
+   "r": ".",
+   "l": "typescript",
+   "loc": 2,
+   "name": "Connector entry point",
+   "d": "The one thing apps import to talk to Harbor."
+  },
+  {
+   "p": "packages/agent/src/agent.test.ts",
+   "n": "tests",
+   "r": ".",
+   "l": "typescript",
+   "loc": 548,
+   "name": "Broker checks",
+   "d": "Checks the broker routes, refuses and logs messages as the security rules require."
+  },
+  {
+   "p": "packages/agent/src/agent.ts",
+   "n": "broker.agent",
+   "r": ".",
+   "l": "typescript",
+   "loc": 522,
+   "name": "Broker core",
+   "d": "Routes every message between apps: checks the sender and their permissions, validates the message, opens the right app for a request, and logs or refuses anything else.",
+   "s": [
+    [
+     "AGENT_VERSION",
+     "const",
+     34,
+     0,
+     ""
+    ],
+    [
+     "FDC3_VERSION",
+     "const",
+     36,
+     0,
+     "The FDC3 version whose API names this agent follows."
+    ],
+    [
+     "AgentFault",
+     "class",
+     38,
+     0,
+     ""
+    ],
+    [
+     "ResolveRequest",
+     "interface",
+     46,
+     0,
+     ""
+    ],
+    [
+     "AgentHooks",
+     "interface",
+     53,
+     0,
+     "Everything the agent needs from its host (the shell)."
+    ],
+    [
+     "AgentOptions",
+     "interface",
+     74,
+     0,
+     ""
+    ],
+    [
+     "Agent",
+     "class",
+     114,
+     0,
+     ""
+    ]
+   ],
+   "note": "Every security rule lives here: sender checks, entitlements and message validation. Changes here affect every app.",
+   "tags": [
+    "hotspot"
+   ]
+  },
+  {
+   "p": "packages/agent/src/bridge.test.ts",
+   "n": "tests",
+   "r": ".",
+   "l": "typescript",
+   "loc": 109,
+   "name": "Frame bridge checks",
+   "d": "Checks messages from the wrong frame or address are dropped."
+  },
+  {
+   "p": "packages/agent/src/bridge.ts",
+   "n": "broker.agent",
+   "r": ".",
+   "l": "typescript",
+   "loc": 95,
+   "name": "Frame bridge",
+   "d": "Connects each app's frame to the broker and drops any message that doesn't come from that frame's own address.",
+   "s": [
+    [
+     "WindowLike",
+     "interface",
+     4,
+     0,
+     ""
+    ],
+    [
+     "FrameRegistration",
+     "interface",
+     8,
+     0,
+     ""
+    ],
+    [
+     "IncomingMessage",
+     "interface",
+     24,
+     0,
+     ""
+    ],
+    [
+     "WindowBridge",
+     "class",
+     37,
+     0,
+     "Connects sandboxed iframes to the agent over `postMessage`."
+    ]
+   ]
+  },
+  {
+   "p": "packages/agent/src/direct.ts",
+   "n": "broker.agent",
+   "r": ".",
+   "l": "typescript",
+   "loc": 37,
+   "name": "In-page connection",
+   "d": "Lets tiles and widgets inside the shell talk to the broker directly, without going through a frame.",
+   "s": [
+    [
+     "createDirectPair",
+     "function",
+     9,
+     0,
+     "In-process transport for widgets and tiles."
+    ]
+   ]
+  },
+  {
+   "p": "packages/agent/src/index.ts",
+   "n": "broker.agent",
+   "r": ".",
+   "l": "typescript",
+   "loc": 4,
+   "name": "Broker entry point",
+   "d": "Gathers the broker's pieces so the shell can use them from one place."
+  },
+  {
+   "p": "packages/agent/src/log.ts",
+   "n": "broker.agent",
+   "r": ".",
+   "l": "typescript",
+   "loc": 47,
+   "name": "Message log",
+   "d": "Keeps an in-memory record of everything the broker delivered or refused, shown in the developer drawer.",
+   "s": [
+    [
+     "InteropLogKind",
+     "type",
+     1,
+     0,
+     ""
+    ],
+    [
+     "InteropLogEntry",
+     "interface",
+     3,
+     0,
+     ""
+    ],
+    [
+     "InteropLogInput",
+     "type",
+     19,
+     0,
+     ""
+    ],
+    [
+     "InteropLog",
+     "class",
+     22,
+     0,
+     "Append-only, in-memory record of everything the agent routed or refused."
+    ]
+   ]
+  },
+  {
+   "p": "packages/agent/src/testkit.ts",
+   "n": "broker.agent",
+   "r": ".",
+   "l": "typescript",
+   "loc": 102,
+   "name": "Broker test setup",
+   "d": "Sample users, apps, an order and a price, plus a ready-made broker for the automatic checks.",
+   "s": [
+    [
+     "DIRECTORY",
+     "const",
+     19,
+     0,
+     ""
+    ],
+    [
+     "TRADER",
+     "const",
+     29,
+     0,
+     ""
+    ],
+    [
+     "OPS",
+     "const",
+     35,
+     0,
+     ""
+    ],
+    [
+     "ORDER",
+     "const",
+     42,
+     0,
+     ""
+    ],
+    [
+     "EURUSD",
+     "const",
+     54,
+     0,
+     ""
+    ],
+    [
+     "Kit",
+     "interface",
+     56,
+     0,
+     ""
+    ],
+    [
+     "makeKit",
+     "function",
+     71,
+     0,
+     ""
+    ],
+    [
+     "settle",
+     "const",
+     109,
+     0,
+     "Let queued microtask deliveries (and their replies) settle."
+    ]
+   ]
+  },
+  {
+   "p": "packages/app-kit/src/HarborApp.tsx",
+   "n": "broker.kit",
+   "r": ".",
+   "l": "typescript",
+   "loc": 63,
+   "name": "App frame",
+   "d": "Wraps every app: connects it, shows loading and error states, and gives the app its user, data and connection status.",
+   "s": [
+    [
+     "AppContextValue",
+     "interface",
+     8,
+     0,
+     ""
+    ],
+    [
+     "useApp",
+     "function",
+     15,
+     0,
+     "The connected client, services, user and connection state."
+    ],
+    [
+     "HarborApp",
+     "function",
+     34,
+     0,
+     "The frame every iframe app renders inside."
+    ],
+    [
+     "mountApp",
+     "function",
+     63,
+     0,
+     "Mount an app into `#root`."
+    ]
+   ]
+  },
+  {
+   "p": "packages/app-kit/src/app-kit.css",
+   "n": "broker.kit",
+   "r": ".",
+   "l": "css",
+   "loc": 116,
+   "name": "Shared app layout",
+   "d": "The common page layout every Harbor app sits in.",
+   "doc": "Layout shared by every Harbor app."
+  },
+  {
+   "p": "packages/app-kit/src/hooks.ts",
+   "n": "broker.kit",
+   "r": ".",
+   "l": "typescript",
+   "loc": 127,
+   "name": "App helpers",
+   "d": "Ready-made helpers for apps: listen for selected items or requests, get the user, and keep live lists of orders and trades.",
+   "s": [
+    [
+     "useContextListener",
+     "function",
+     8,
+     0,
+     "Subscribe to a context type on the panel's channel for as long as the component lives."
+    ],
+    [
+     "useIntentListener",
+     "function",
+     36,
+     0,
+     "Handle an intent for as long as the component lives."
+    ],
+    [
+     "Session",
+     "interface",
+     60,
+     0,
+     ""
+    ],
+    [
+     "useSession",
+     "function",
+     71,
+     0,
+     "What every app, widget and tile needs before it can render: the realm's services, who the user is, and whether the (mock) market connection is up."
+    ],
+    [
+     "useNow",
+     "function",
+     93,
+     0,
+     "The current time, refreshed on an interval (for ages and countdowns)."
+    ],
+    [
+     "useOrders",
+     "function",
+     103,
+     0,
+     "Live list of orders from the realm's OrderService."
+    ],
+    [
+     "useTrades",
+     "function",
+     120,
+     0,
+     "Live list of trades from the realm's TradeService."
+    ]
+   ]
+  },
+  {
+   "p": "packages/app-kit/src/index.ts",
+   "n": "broker.kit",
+   "r": ".",
+   "l": "typescript",
+   "loc": 3,
+   "name": "Starter kit entry point",
+   "d": "Gathers the starter kit so apps can use it from one place."
+  },
+  {
+   "p": "packages/app-kit/src/realm.ts",
+   "n": "broker.kit",
+   "r": ".",
+   "l": "typescript",
+   "loc": 14,
+   "name": "Per-app data",
+   "d": "Builds each app's own copy of the pretend data once, from the seed in the page address. Apps share nothing else except through the broker.",
+   "s": [
+    [
+     "realmServices",
+     "function",
+     13,
+     0,
+     "The services for this JavaScript realm, built once from `?seed=`."
+    ]
+   ]
+  },
+  {
+   "p": "packages/mock-data/src/entities.ts",
+   "n": "mockdata",
+   "r": ".",
+   "l": "typescript",
+   "loc": 285,
+   "name": "Pretend records",
+   "d": "Makes up the funds, banks, orders, trades, money-market funds, payees and research notes every app uses.",
+   "s": [
+    [
+     "Fund",
+     "interface",
+     7,
+     0,
+     ""
+    ],
+    [
+     "LiquidityProvider",
+     "interface",
+     14,
+     0,
+     ""
+    ],
+    [
+     "Order",
+     "interface",
+     27,
+     0,
+     ""
+    ],
+    [
+     "MatchStatus",
+     "type",
+     35,
+     0,
+     ""
+    ],
+    [
+     "Trade",
+     "interface",
+     37,
+     0,
+     ""
+    ],
+    [
+     "MoneyMarketFund",
+     "interface",
+     42,
+     0,
+     ""
+    ],
+    [
+     "Beneficiary",
+     "interface",
+     54,
+     0,
+     ""
+    ],
+    [
+     "ResearchNote",
+     "interface",
+     63,
+     0,
+     ""
+    ],
+    [
+     "Dataset",
+     "interface",
+     73,
+     0,
+     ""
+    ],
+    [
+     "COUNTS",
+     "const",
+     88,
+     0,
+     ""
+    ],
+    [
+     "createDataset",
+     "function",
+     291,
+     0,
+     "Build the whole mock dataset."
+    ]
+   ]
+  },
+  {
+   "p": "packages/mock-data/src/estimate.ts",
+   "n": "mockdata",
+   "r": ".",
+   "l": "typescript",
+   "loc": 66,
+   "name": "Cost estimator",
+   "d": "Works out an order's expected cost and which banks to ask, and flags orders large enough to be worked gradually.",
+   "s": [
+    [
+     "SuggestedCounterparty",
+     "interface",
+     6,
+     0,
+     ""
+    ],
+    [
+     "PreTradeEstimate",
+     "interface",
+     15,
+     0,
+     ""
+    ],
+    [
+     "LARGE_ORDER",
+     "const",
+     23,
+     0,
+     "Above this size (in dealt currency) an order is worked rather than shown to dealers in one go."
+    ],
+    [
+     "estimateOrder",
+     "function",
+     29,
+     0,
+     "A pre-trade estimate from the order and the seeded history."
+    ]
+   ]
+  },
+  {
+   "p": "packages/mock-data/src/index.ts",
+   "n": "mockdata",
+   "r": ".",
+   "l": "typescript",
+   "loc": 8,
+   "name": "Mock data entry point",
+   "d": "Gathers the pretend data so apps can use it from one place."
+  },
+  {
+   "p": "packages/mock-data/src/mock-data.test.ts",
+   "n": "tests",
+   "r": ".",
+   "l": "typescript",
+   "loc": 559,
+   "name": "Mock data checks",
+   "d": "Checks the pretend data is the same for the same seed and the services behave."
+  },
+  {
+   "p": "packages/mock-data/src/pairs.ts",
+   "n": "mockdata",
+   "r": ".",
+   "l": "typescript",
+   "loc": 113,
+   "name": "Currency pairs",
+   "d": "The currency pairs on offer, how many decimals each shows, and business-day date rules.",
+   "s": [
+    [
+     "PairSpec",
+     "interface",
+     1,
+     0,
+     ""
+    ],
+    [
+     "PAIRS",
+     "const",
+     31,
+     0,
+     ""
+    ],
+    [
+     "pairSpec",
+     "function",
+     46,
+     0,
+     ""
+    ],
+    [
+     "roundRate",
+     "function",
+     52,
+     0,
+     ""
+    ],
+    [
+     "RateParts",
+     "interface",
+     56,
+     0,
+     ""
+    ],
+    [
+     "rateParts",
+     "function",
+     66,
+     0,
+     "Split a rate for display: fixed decimals per pair, pip digits separated out."
+    ],
+    [
+     "formatRate",
+     "function",
+     71,
+     0,
+     ""
+    ],
+    [
+     "toIsoDate",
+     "const",
+     78,
+     0,
+     ""
+    ],
+    [
+     "startOfUtcDay",
+     "const",
+     79,
+     0,
+     ""
+    ],
+    [
+     "addBusinessDays",
+     "function",
+     82,
+     0,
+     ""
+    ],
+    [
+     "nextBusinessDay",
+     "function",
+     94,
+     0,
+     "Roll forward to a business day if the date falls on a weekend."
+    ],
+    [
+     "Tenor",
+     "type",
+     100,
+     0,
+     ""
+    ],
+    [
+     "valueDate",
+     "function",
+     103,
+     0,
+     "Spot is T+2 business days (T+1 for USDCAD)."
+    ]
+   ]
+  },
+  {
+   "p": "packages/mock-data/src/prices.ts",
+   "n": "mockdata",
+   "r": ".",
+   "l": "typescript",
+   "loc": 182,
+   "name": "Price feed",
+   "d": "Produces live prices that depend only on the seed, pair and time, so separate apps always agree, plus each bank's quote around them.",
+   "s": [
+    [
+     "TICK_MIN_MS",
+     "const",
+     6,
+     0,
+     ""
+    ],
+    [
+     "TICK_MAX_MS",
+     "const",
+     7,
+     0,
+     ""
+    ],
+    [
+     "PriceTick",
+     "interface",
+     14,
+     0,
+     ""
+    ],
+    [
+     "LpQuote",
+     "interface",
+     27,
+     0,
+     ""
+    ],
+    [
+     "PriceEngine",
+     "class",
+     55,
+     0,
+     "The price walk as a pure function of (seed, pair, time)."
+    ],
+    [
+     "quoteFor",
+     "function",
+     110,
+     0,
+     "An LP quotes mid ± half its own spread, shifted by its own skew."
+    ],
+    [
+     "PriceStream",
+     "interface",
+     117,
+     0,
+     ""
+    ],
+    [
+     "createPriceStream",
+     "function",
+     133,
+     0,
+     ""
+    ],
+    [
+     "ALL_PAIRS",
+     "const",
+     199,
+     0,
+     ""
+    ]
+   ]
+  },
+  {
+   "p": "packages/mock-data/src/rng.ts",
+   "n": "mockdata",
+   "r": ".",
+   "l": "typescript",
+   "loc": 58,
+   "name": "Seeded randomness",
+   "d": "The one source of randomness, so the same seed always gives the same data. The seed comes from the page address.",
+   "doc": "Seeded randomness. Everything in this package draws from here, so the same seed always produces the same data.",
+   "s": [
+    [
+     "hashString",
+     "function",
+     5,
+     0,
+     "FNV-1a 32-bit hash of a string."
+    ],
+    [
+     "Rng",
+     "interface",
+     14,
+     0,
+     ""
+    ],
+    [
+     "createRng",
+     "function",
+     32,
+     0,
+     ""
+    ],
+    [
+     "DEFAULT_SEED",
+     "const",
+     57,
+     0,
+     ""
+    ],
+    [
+     "seedFromSearch",
+     "function",
+     60,
+     0,
+     "The seed comes from `?seed=` in the page URL."
+    ]
+   ]
+  },
+  {
+   "p": "packages/mock-data/src/scheduler.ts",
+   "n": "mockdata",
+   "r": ".",
+   "l": "typescript",
+   "loc": 11,
+   "name": "Clock",
+   "d": "Time and timers in one place, so the automatic checks can fast-forward instead of waiting.",
+   "doc": "Time and timers, injectable so tests can run simulated behaviour instantly.",
+   "s": [
+    [
+     "Scheduler",
+     "interface",
+     2,
+     0,
+     "Time and timers, injectable so tests can run simulated behaviour instantly."
+    ],
+    [
+     "realScheduler",
+     "const",
+     8,
+     0,
+     ""
+    ]
+   ]
+  },
+  {
+   "p": "packages/mock-data/src/services.ts",
+   "n": "mockdata",
+   "r": ".",
+   "l": "typescript",
+   "loc": 405,
+   "name": "Pretend services",
+   "d": "Stand-ins for the real back office: orders, bank quotes, trade booking, matching and settlement, all running in the browser.",
+   "s": [
+    [
+     "OrderService",
+     "interface",
+     14,
+     0,
+     ""
+    ],
+    [
+     "QuoteStatus",
+     "type",
+     21,
+     0,
+     ""
+    ],
+    [
+     "RfqQuote",
+     "interface",
+     22,
+     0,
+     ""
+    ],
+    [
+     "RfqRequest",
+     "interface",
+     30,
+     0,
+     ""
+    ],
+    [
+     "RfqHandle",
+     "interface",
+     35,
+     0,
+     ""
+    ],
+    [
+     "QuoteService",
+     "interface",
+     40,
+     0,
+     ""
+    ],
+    [
+     "ExecuteRequest",
+     "interface",
+     45,
+     0,
+     ""
+    ],
+    [
+     "TradeService",
+     "interface",
+     53,
+     0,
+     ""
+    ],
+    [
+     "MismatchDetail",
+     "interface",
+     63,
+     0,
+     ""
+    ],
+    [
+     "ActivityEntry",
+     "interface",
+     69,
+     0,
+     ""
+    ],
+    [
+     "SettlementEvent",
+     "interface",
+     77,
+     0,
+     ""
+    ],
+    [
+     "SettlementService",
+     "interface",
+     82,
+     0,
+     ""
+    ],
+    [
+     "CostBucket",
+     "interface",
+     94,
+     0,
+     ""
+    ],
+    [
+     "TcaFilter",
+     "interface",
+     100,
+     0,
+     ""
+    ],
+    [
+     "TcaService",
+     "interface",
+     106,
+     0,
+     ""
+    ],
+    [
+     "RFQ_REPLY_MIN_MS",
+     "const",
+     117,
+     0,
+     ""
+    ],
+    [
+     "RFQ_REPLY_MAX_MS",
+     "const",
+     118,
+     0,
+     ""
+    ],
+    [
+     "QUOTE_LIFETIME_MS",
+     "const",
+     119,
+     0,
+     ""
+    ],
+    [
+     "MATCH_MIN_MS",
+     "const",
+     120,
+     0,
+     ""
+    ],
+    [
+     "MATCH_MAX_MS",
+     "const",
+     121,
+     0,
+     ""
+    ],
+    [
+     "MISMATCH_RATE",
+     "const",
+     122,
+     0,
+     ""
+    ],
+    [
+     "slippageBps",
+     "function",
+     125,
+     0,
+     "Slippage against arrival in bps."
+    ],
+    [
+     "MockServices",
+     "interface",
+     130,
+     0,
+     ""
+    ],
+    [
+     "createMockServices",
+     "function",
+     142,
+     0,
+     ""
+    ]
+   ]
+  },
+  {
+   "p": "packages/mock-data/src/testkit.ts",
+   "n": "mockdata",
+   "r": ".",
+   "l": "typescript",
+   "loc": 30,
+   "name": "Mock data test setup",
+   "d": "A manual clock and a fixed date for the automatic checks.",
+   "s": [
+    [
+     "fakeScheduler",
+     "function",
+     4,
+     0,
+     "A manual clock: timers fire only when the test advances time."
+    ],
+    [
+     "T0",
+     "const",
+     31,
+     0,
+     "Tuesday 10 November 2026, 14:00 UTC."
+    ],
+    [
+     "AS_OF",
+     "const",
+     32,
+     0,
+     ""
+    ]
+   ]
+  },
+  {
+   "p": "packages/mock-data/src/treasury.test.ts",
+   "n": "tests",
+   "r": ".",
+   "l": "typescript",
+   "loc": 74,
+   "name": "Cash rule checks",
+   "d": "Checks the investment policy and cut-off times."
+  },
+  {
+   "p": "packages/mock-data/src/treasury.ts",
+   "n": "mockdata",
+   "r": ".",
+   "l": "typescript",
+   "loc": 129,
+   "name": "Cash and payment rules",
+   "d": "The investment policy, cash available per account, fund cut-off times, and how long a locked payment rate lasts.",
+   "s": [
+    [
+     "CashPolicy",
+     "interface",
+     6,
+     0,
+     ""
+    ],
+    [
+     "CASH_POLICY",
+     "const",
+     12,
+     0,
+     ""
+    ],
+    [
+     "accountCash",
+     "function",
+     17,
+     0,
+     "Cash an account has available to place: a fixed 5% of its assets."
+    ],
+    [
+     "CashOrder",
+     "interface",
+     21,
+     0,
+     ""
+    ],
+    [
+     "PolicyResult",
+     "type",
+     30,
+     0,
+     ""
+    ],
+    [
+     "checkCashOrder",
+     "function",
+     33,
+     0,
+     "Check a subscription or redemption against the policy."
+    ],
+    [
+     "nextCutOff",
+     "function",
+     67,
+     0,
+     "When a fund's next dealing cut-off falls, as an epoch time."
+    ],
+    [
+     "UpcomingCutOff",
+     "interface",
+     79,
+     0,
+     ""
+    ],
+    [
+     "upcomingCutOffs",
+     "function",
+     85,
+     0,
+     "The next `count` distinct cut-off times across funds, soonest first."
+    ],
+    [
+     "PaymentStatus",
+     "type",
+     101,
+     0,
+     ""
+    ],
+    [
+     "Payment",
+     "interface",
+     103,
+     0,
+     ""
+    ],
+    [
+     "RATE_LOCK_MS",
+     "const",
+     124,
+     0,
+     "How long a locked FX rate stays good."
+    ],
+    [
+     "canDecide",
+     "function",
+     127,
+     0,
+     "Two-step approval with segregation of duties: whoever made a payment cannot approve or reject it."
+    ],
+    [
+     "conversionRate",
+     "function",
+     137,
+     0,
+     "How many units of `to` one unit of `from` buys, from mids for the twelve pairs."
+    ]
+   ]
+  },
+  {
+   "p": "packages/schemas/src/alert.ts",
+   "n": "schemas",
+   "r": ".",
+   "l": "typescript",
+   "loc": 38,
+   "name": "Alert rules",
+   "d": "What an alert must contain, its severity levels, and the open-alert counts per severity.",
+   "s": [
+    [
+     "SeveritySchema",
+     "const",
+     4,
+     0,
+     ""
+    ],
+    [
+     "Severity",
+     "type",
+     5,
+     0,
+     ""
+    ],
+    [
+     "SEVERITIES",
+     "const",
+     6,
+     0,
+     ""
+    ],
+    [
+     "AlertInputSchema",
+     "const",
+     9,
+     0,
+     "What an app sends when it publishes an alert."
+    ],
+    [
+     "AlertInput",
+     "type",
+     21,
+     0,
+     ""
+    ],
+    [
+     "AlertStatus",
+     "type",
+     23,
+     0,
+     ""
+    ],
+    [
+     "Alert",
+     "interface",
+     25,
+     0,
+     ""
+    ],
+    [
+     "AlertSummary",
+     "type",
+     39,
+     0,
+     "Open alerts (not yet actioned or dismissed) per severity."
+    ],
+    [
+     "parseAlertInput",
+     "function",
+     41,
+     0,
+     ""
+    ]
+   ]
+  },
+  {
+   "p": "packages/schemas/src/channels.ts",
+   "n": "schemas",
+   "r": ".",
+   "l": "typescript",
+   "loc": 25,
+   "name": "Colour channels",
+   "d": "The eight fixed colour channels panels can join to share what is selected.",
+   "doc": "The eight fixed user channels.",
+   "s": [
+    [
+     "UserChannel",
+     "interface",
+     2,
+     0,
+     "The eight fixed user channels."
+    ],
+    [
+     "USER_CHANNELS",
+     "const",
+     15,
+     0,
+     ""
+    ],
+    [
+     "findUserChannel",
+     "function",
+     26,
+     0,
+     ""
+    ]
+   ]
+  },
+  {
+   "p": "packages/schemas/src/context.ts",
+   "n": "schemas",
+   "r": ".",
+   "l": "typescript",
+   "loc": 161,
+   "name": "Shared item rules",
+   "d": "The exact shape of every item apps pass around: orders, trades, cost estimates, settlements and more.",
+   "s": [
+    [
+     "BaseContextSchema",
+     "const",
+     4,
+     0,
+     "Base shape every context must satisfy (FDC3 Context)."
+    ],
+    [
+     "Context",
+     "type",
+     12,
+     0,
+     ""
+    ],
+    [
+     "SideSchema",
+     "const",
+     14,
+     0,
+     ""
+    ],
+    [
+     "Side",
+     "type",
+     15,
+     0,
+     ""
+    ],
+    [
+     "PreTradeEstimateContextSchema",
+     "const",
+     21,
+     0,
+     ""
+    ],
+    [
+     "PreTradeEstimateContext",
+     "type",
+     29,
+     0,
+     ""
+    ],
+    [
+     "FxOrderContextSchema",
+     "const",
+     31,
+     0,
+     ""
+    ],
+    [
+     "FxOrderContext",
+     "type",
+     50,
+     0,
+     ""
+    ],
+    [
+     "FxTradeContextSchema",
+     "const",
+     52,
+     0,
+     ""
+    ],
+    [
+     "FxTradeContext",
+     "type",
+     66,
+     0,
+     ""
+    ],
+    [
+     "SettlementContextSchema",
+     "const",
+     68,
+     0,
+     ""
+    ],
+    [
+     "SettlementContext",
+     "type",
+     74,
+     0,
+     ""
+    ],
+    [
+     "ORDER_STATUSES",
+     "const",
+     76,
+     0,
+     ""
+    ],
+    [
+     "OrderFilterContextSchema",
+     "const",
+     79,
+     0,
+     "Harbor addition: asks an order list to show a subset."
+    ],
+    [
+     "OrderFilterContext",
+     "type",
+     85,
+     0,
+     ""
+    ],
+    [
+     "DevCommandContextSchema",
+     "const",
+     88,
+     0,
+     "Harbor addition, dev builds only: a test instruction from the shell's dev panel to an app."
+    ],
+    [
+     "DevCommandContext",
+     "type",
+     94,
+     0,
+     ""
+    ],
+    [
+     "InstrumentContextSchema",
+     "const",
+     98,
+     0,
+     "Standard FDC3 types used by Harbor."
+    ],
+    [
+     "InstrumentContext",
+     "type",
+     105,
+     0,
+     ""
+    ],
+    [
+     "PortfolioContextSchema",
+     "const",
+     107,
+     0,
+     ""
+    ],
+    [
+     "PortfolioContext",
+     "type",
+     115,
+     0,
+     ""
+    ],
+    [
+     "OrganizationContextSchema",
+     "const",
+     117,
+     0,
+     ""
+    ],
+    [
+     "OrganizationContext",
+     "type",
+     124,
+     0,
+     ""
+    ],
+    [
+     "TimeRangeContextSchema",
+     "const",
+     126,
+     0,
+     ""
+    ],
+    [
+     "TimeRangeContext",
+     "type",
+     136,
+     0,
+     ""
+    ],
+    [
+     "ValidationResult",
+     "type",
+     151,
+     0,
+     ""
+    ],
+    [
+     "formatIssues",
+     "function",
+     153,
+     0,
+     ""
+    ],
+    [
+     "validateContext",
+     "function",
+     162,
+     0,
+     "Validate any context."
+    ],
+    [
+     "contextIdLabel",
+     "function",
+     178,
+     0,
+     "A short, human-readable id for log lines: the first id value, if any."
+    ]
+   ]
+  },
+  {
+   "p": "packages/schemas/src/directory.ts",
+   "n": "schemas",
+   "r": ".",
+   "l": "typescript",
+   "loc": 79,
+   "name": "App listing rules",
+   "d": "What each entry in the list of apps must say: its address, allowed addresses, required permission and the requests it can handle.",
+   "s": [
+    [
+     "DirectoryRecordSchema",
+     "const",
+     10,
+     0,
+     "FDC3 App Directory record shape, plus the Harbor extensions from SPEC 9.5."
+    ],
+    [
+     "DirectoryRecord",
+     "type",
+     41,
+     0,
+     ""
+    ],
+    [
+     "DirectoryParseResult",
+     "interface",
+     43,
+     0,
+     ""
+    ],
+    [
+     "parseDirectory",
+     "function",
+     49,
+     0,
+     ""
+    ],
+    [
+     "parseDirectoryRecord",
+     "function",
+     76,
+     0,
+     ""
+    ],
+    [
+     "handlesIntent",
+     "function",
+     82,
+     0,
+     "Does this record declare a handler for `intent` with `contextType`?"
+    ]
+   ]
+  },
+  {
+   "p": "packages/schemas/src/index.ts",
+   "n": "schemas",
+   "r": ".",
+   "l": "typescript",
+   "loc": 7,
+   "name": "Message rules entry point",
+   "d": "Gathers every rule so the rest of Harbor can use them from one place."
+  },
+  {
+   "p": "packages/schemas/src/protocol.ts",
+   "n": "schemas",
+   "r": ".",
+   "l": "typescript",
+   "loc": 148,
+   "name": "Conversation rules",
+   "d": "How the shell and apps talk: request and reply formats, theme and density, and the keyboard shortcuts apps pass back to the shell.",
+   "s": [
+    [
+     "PROTOCOL",
+     "const",
+     9,
+     0,
+     ""
+    ],
+    [
+     "AppIdentifier",
+     "interface",
+     11,
+     0,
+     ""
+    ],
+    [
+     "ImplementationMetadata",
+     "interface",
+     16,
+     0,
+     ""
+    ],
+    [
+     "AppIntent",
+     "interface",
+     24,
+     0,
+     ""
+    ],
+    [
+     "IntentResolution",
+     "interface",
+     29,
+     0,
+     ""
+    ],
+    [
+     "Theme",
+     "type",
+     34,
+     0,
+     ""
+    ],
+    [
+     "Density",
+     "type",
+     35,
+     0,
+     ""
+    ],
+    [
+     "Appearance",
+     "interface",
+     36,
+     0,
+     ""
+    ],
+    [
+     "SHELL_SHORTCUTS",
+     "const",
+     42,
+     0,
+     "Shell-level keyboard shortcuts."
+    ],
+    [
+     "ShellShortcut",
+     "type",
+     43,
+     0,
+     ""
+    ],
+    [
+     "isTypingTarget",
+     "function",
+     46,
+     0,
+     "Is the key press aimed at a text field?"
+    ],
+    [
+     "shellShortcutFor",
+     "function",
+     52,
+     0,
+     "Which shell shortcut, if any, a key press is."
+    ],
+    [
+     "Methods",
+     "interface",
+     62,
+     0,
+     "Request methods and their params/results."
+    ],
+    [
+     "MethodName",
+     "type",
+     89,
+     0,
+     ""
+    ],
+    [
+     "RequestMessage",
+     "interface",
+     91,
+     0,
+     ""
+    ],
+    [
+     "ResponseMessage",
+     "interface",
+     99,
+     0,
+     ""
+    ],
+    [
+     "AgentEvent",
+     "type",
+     110,
+     0,
+     ""
+    ],
+    [
+     "EventMessage",
+     "type",
+     120,
+     0,
+     ""
+    ],
+    [
+     "HelloMessage",
+     "interface",
+     123,
+     0,
+     "Iframe handshake: the app says hello, the shell answers with its identity."
+    ],
+    [
+     "HandshakeMessage",
+     "interface",
+     127,
+     0,
+     ""
+    ],
+    [
+     "ClientToAgent",
+     "type",
+     135,
+     0,
+     ""
+    ],
+    [
+     "AgentToClient",
+     "type",
+     136,
+     0,
+     ""
+    ],
+    [
+     "Transport",
+     "interface",
+     139,
+     0,
+     "A duplex message pipe."
+    ],
+    [
+     "ClientTransport",
+     "type",
+     144,
+     0,
+     ""
+    ],
+    [
+     "AgentTransport",
+     "type",
+     145,
+     0,
+     ""
+    ],
+    [
+     "isProtocolMessage",
+     "function",
+     147,
+     0,
+     ""
+    ],
+    [
+     "AgentError",
+     "const",
+     157,
+     0,
+     "Error codes, following FDC3's error enums where one fits."
+    ],
+    [
+     "AgentErrorCode",
+     "type",
+     168,
+     0,
+     ""
+    ]
+   ]
+  },
+  {
+   "p": "packages/schemas/src/schemas.test.ts",
+   "n": "tests",
+   "r": ".",
+   "l": "typescript",
+   "loc": 245,
+   "name": "Message rule checks",
+   "d": "Checks good messages pass and bad ones are rejected."
+  },
+  {
+   "p": "packages/schemas/src/user.ts",
+   "n": "schemas",
+   "r": ".",
+   "l": "typescript",
+   "loc": 23,
+   "name": "User and permission rules",
+   "d": "What apps learn about the signed-in user and their role, and whether they may open an app or make a request.",
+   "s": [
+    [
+     "RoleSchema",
+     "const",
+     4,
+     0,
+     ""
+    ],
+    [
+     "Role",
+     "type",
+     5,
+     0,
+     ""
+    ],
+    [
+     "UserInfoSchema",
+     "const",
+     7,
+     0,
+     ""
+    ],
+    [
+     "UserInfo",
+     "type",
+     19,
+     0,
+     "What apps see via `getUserInfo()`."
+    ],
+    [
+     "canLaunch",
+     "function",
+     21,
+     0,
+     ""
+    ],
+    [
+     "canRaise",
+     "function",
+     25,
+     0,
+     ""
+    ]
+   ]
+  },
+  {
+   "p": "packages/schemas/src/workspace.ts",
+   "n": "schemas",
+   "r": ".",
+   "l": "typescript",
+   "loc": 60,
+   "name": "Workspace file rules",
+   "d": "The format of a saved workspace, including upgrading older saved files.",
+   "s": [
+    [
+     "WORKSPACE_SCHEMA_VERSION",
+     "const",
+     4,
+     0,
+     ""
+    ],
+    [
+     "PanelRecordSchema",
+     "const",
+     6,
+     0,
+     ""
+    ],
+    [
+     "PanelRecord",
+     "type",
+     14,
+     0,
+     ""
+    ],
+    [
+     "WorkspaceFileSchema",
+     "const",
+     16,
+     0,
+     ""
+    ],
+    [
+     "WorkspaceFile",
+     "type",
+     32,
+     0,
+     ""
+    ],
+    [
+     "migrateWorkspace",
+     "function",
+     42,
+     0,
+     "Parse, migrate and validate an unknown value as a workspace file."
+    ]
+   ]
+  },
+  {
+   "p": "packages/tokens/src/contrast.test.ts",
+   "n": "tests",
+   "r": ".",
+   "l": "typescript",
+   "loc": 91,
+   "name": "Colour contrast check",
+   "d": "Checks text and background colours are readable enough in every theme."
+  },
+  {
+   "p": "packages/tokens/src/index.ts",
+   "n": "design.tokens",
+   "r": ".",
+   "l": "typescript",
+   "loc": 54,
+   "name": "Token names",
+   "d": "The list of colour, size and spacing names, plus the available themes and densities, so code can refer to them safely.",
+   "doc": "Typed view of the token names in tokens.css.",
+   "s": [
+    [
+     "tokens",
+     "const",
+     6,
+     0,
+     ""
+    ],
+    [
+     "Tokens",
+     "type",
+     55,
+     0,
+     ""
+    ],
+    [
+     "THEMES",
+     "const",
+     56,
+     0,
+     ""
+    ],
+    [
+     "DENSITIES",
+     "const",
+     57,
+     0,
+     ""
+    ]
+   ]
+  },
+  {
+   "p": "packages/tokens/src/tokens.css",
+   "n": "design.tokens",
+   "r": ".",
+   "l": "css",
+   "loc": 232,
+   "name": "Colours and spacing",
+   "d": "Defines every colour, size and spacing value, for dark and light themes and compact or comfortable density.",
+   "doc": "Harbor design tokens."
+  },
+  {
+   "p": "packages/tokens/src/tokens.test.ts",
+   "n": "tests",
+   "r": ".",
+   "l": "typescript",
+   "loc": 42,
+   "name": "Token checks",
+   "d": "Checks every token name in the code exists in the stylesheet."
+  },
+  {
+   "p": "packages/ui/src/DataGrid.tsx",
+   "n": "design.ui",
+   "r": ".",
+   "l": "typescript",
+   "loc": 115,
+   "name": "Data table",
+   "d": "The shared table used for orders and trades, built on AG Grid.",
+   "s": [
+    [
+     "DataGridProps",
+     "interface",
+     43,
+     0,
+     ""
+    ],
+    [
+     "DataGrid",
+     "function",
+     57,
+     0,
+     ""
+    ]
+   ]
+  },
+  {
+   "p": "packages/ui/src/Icon.tsx",
+   "n": "design.ui",
+   "r": ".",
+   "l": "typescript",
+   "loc": 28,
+   "name": "Icons",
+   "d": "The set of icons used across Harbor.",
+   "s": [
+    [
+     "IconName",
+     "type",
+     22,
+     0,
+     ""
+    ],
+    [
+     "Icon",
+     "function",
+     24,
+     0,
+     ""
+    ]
+   ]
+  },
+  {
+   "p": "packages/ui/src/channel.tsx",
+   "n": "design.ui",
+   "r": ".",
+   "l": "typescript",
+   "loc": 36,
+   "name": "Channel picker",
+   "d": "Shows which colour channel a panel is on, always with a letter as well as a colour, and lets you change it.",
+   "s": [
+    [
+     "ChannelDot",
+     "function",
+     5,
+     0,
+     "Coloured square with a letter, so a channel is never identified by colour alone."
+    ],
+    [
+     "ChannelPicker",
+     "function",
+     14,
+     0,
+     ""
+    ]
+   ]
+  },
+  {
+   "p": "packages/ui/src/controls.tsx",
+   "n": "design.ui",
+   "r": ".",
+   "l": "typescript",
+   "loc": 165,
+   "name": "Form controls",
+   "d": "Buttons, text fields, drop-downs, switches, checkboxes and tabs that work with the keyboard.",
+   "s": [
+    [
+     "ButtonProps",
+     "interface",
+     6,
+     0,
+     ""
+    ],
+    [
+     "Button",
+     "function",
+     11,
+     0,
+     ""
+    ],
+    [
+     "IconButtonProps",
+     "interface",
+     20,
+     0,
+     ""
+    ],
+    [
+     "IconButton",
+     "function",
+     27,
+     0,
+     ""
+    ],
+    [
+     "InputProps",
+     "interface",
+     35,
+     0,
+     ""
+    ],
+    [
+     "Input",
+     "function",
+     41,
+     0,
+     ""
+    ],
+    [
+     "SelectProps",
+     "interface",
+     56,
+     0,
+     ""
+    ],
+    [
+     "Select",
+     "function",
+     62,
+     0,
+     ""
+    ],
+    [
+     "Switch",
+     "function",
+     77,
+     0,
+     ""
+    ],
+    [
+     "Checkbox",
+     "function",
+     89,
+     0,
+     ""
+    ],
+    [
+     "TabItem",
+     "interface",
+     98,
+     0,
+     ""
+    ],
+    [
+     "Tabs",
+     "function",
+     105,
+     0,
+     "Tab list with roving focus: arrows move, Home/End jump."
+    ],
+    [
+     "Badge",
+     "function",
+     141,
+     0,
+     ""
+    ],
+    [
+     "Kbd",
+     "function",
+     145,
+     0,
+     ""
+    ],
+    [
+     "Skeleton",
+     "function",
+     149,
+     0,
+     ""
+    ],
+    [
+     "EmptyState",
+     "function",
+     159,
+     0,
+     ""
+    ],
+    [
+     "ErrorState",
+     "function",
+     170,
+     0,
+     ""
+    ]
+   ]
+  },
+  {
+   "p": "packages/ui/src/format.test.ts",
+   "n": "tests",
+   "r": ".",
+   "l": "typescript",
+   "loc": 47,
+   "name": "Number format checks",
+   "d": "Checks shorthand like 25m is read and shown correctly."
+  },
+  {
+   "p": "packages/ui/src/format.ts",
+   "n": "design.ui",
+   "r": ".",
+   "l": "typescript",
+   "loc": 63,
+   "name": "Number formatting",
+   "d": "Reads trader shorthand like 25m or 1.5b, and shows amounts, ages and basis points consistently, including amounts in words for large trades.",
+   "doc": "Number entry and display helpers shared by every app.",
+   "s": [
+    [
+     "parseAmount",
+     "function",
+     6,
+     0,
+     "Parse trader shorthand: `25m`, `500k`, `1.5b`, `2,500,000`."
+    ],
+    [
+     "formatAmount",
+     "function",
+     16,
+     0,
+     "Thousand separators, at most two decimals."
+    ],
+    [
+     "formatCompact",
+     "function",
+     21,
+     0,
+     "Short form for tight spaces: 25m, 1.5bn, 500k."
+    ],
+    [
+     "amountInWords",
+     "function",
+     46,
+     0,
+     "A whole amount in words, for the large-trade confirmation: \"seventy-five million EUR\"."
+    ],
+    [
+     "formatAge",
+     "function",
+     61,
+     0,
+     "How long ago, compactly: 45s, 12m, 3h 05m, 2d."
+    ],
+    [
+     "formatBps",
+     "function",
+     71,
+     0,
+     ""
+    ]
+   ]
+  },
+  {
+   "p": "packages/ui/src/index.ts",
+   "n": "design.ui",
+   "r": ".",
+   "l": "typescript",
+   "loc": 8,
+   "name": "Components entry point",
+   "d": "Gathers every shared component so apps can use them from one place."
+  },
+  {
+   "p": "packages/ui/src/more.tsx",
+   "n": "design.ui",
+   "r": ".",
+   "l": "typescript",
+   "loc": 142,
+   "name": "More controls",
+   "d": "Radio buttons, hover hints, small pop-up panels and a searchable drop-down.",
+   "s": [
+    [
+     "RadioGroup",
+     "function",
+     4,
+     0,
+     "A set of mutually exclusive choices."
+    ],
+    [
+     "Tooltip",
+     "function",
+     20,
+     0,
+     "A short hint shown on hover and on keyboard focus."
+    ],
+    [
+     "Popover",
+     "function",
+     33,
+     0,
+     "A button that opens a small non-modal panel beside it."
+    ],
+    [
+     "ComboboxOption",
+     "interface",
+     70,
+     0,
+     ""
+    ],
+    [
+     "Combobox",
+     "function",
+     76,
+     0,
+     "A text field that filters a list of options as you type."
+    ]
+   ]
+  },
+  {
+   "p": "packages/ui/src/overlays.tsx",
+   "n": "design.ui",
+   "r": ".",
+   "l": "typescript",
+   "loc": 262,
+   "name": "Dialogs and messages",
+   "d": "Pop-up dialogs, side drawers, menus and the short messages that appear in the corner (at most three at once).",
+   "s": [
+    [
+     "Dialog",
+     "function",
+     51,
+     0,
+     ""
+    ],
+    [
+     "Drawer",
+     "function",
+     55,
+     0,
+     ""
+    ],
+    [
+     "MenuItem",
+     "interface",
+     62,
+     0,
+     ""
+    ],
+    [
+     "MenuProps",
+     "interface",
+     73,
+     0,
+     ""
+    ],
+    [
+     "Menu",
+     "function",
+     84,
+     0,
+     ""
+    ],
+    [
+     "ToastTone",
+     "type",
+     199,
+     0,
+     ""
+    ],
+    [
+     "ToastItem",
+     "interface",
+     200,
+     0,
+     ""
+    ],
+    [
+     "dismissToast",
+     "function",
+     220,
+     0,
+     ""
+    ],
+    [
+     "toast",
+     "function",
+     228,
+     0,
+     "Show a toast. At most three are on screen."
+    ],
+    [
+     "ToastViewport",
+     "function",
+     242,
+     0,
+     ""
+    ]
+   ]
+  },
+  {
+   "p": "packages/ui/src/trading.tsx",
+   "n": "design.ui",
+   "r": ".",
+   "l": "typescript",
+   "loc": 140,
+   "name": "Trading pieces",
+   "d": "Price and amount cells, buy/sell labels, status pills, the trade ticket layout, the quote countdown and the amount box that understands 25m.",
+   "s": [
+    [
+     "PriceCell",
+     "function",
+     5,
+     0,
+     "A rate with fixed decimals and the two pip digits larger, as traders read it."
+    ],
+    [
+     "AmountCell",
+     "function",
+     18,
+     0,
+     "Right-aligned amount with thousand separators and an optional currency."
+    ],
+    [
+     "SideLabel",
+     "function",
+     28,
+     0,
+     "Buy/sell: a colour and a text label, never colour alone."
+    ],
+    [
+     "PillTone",
+     "type",
+     32,
+     0,
+     ""
+    ],
+    [
+     "StatusPill",
+     "function",
+     36,
+     0,
+     "Status with an icon and a label, so state never depends on colour alone."
+    ],
+    [
+     "KeyValueList",
+     "function",
+     45,
+     0,
+     ""
+    ],
+    [
+     "Ticket",
+     "function",
+     59,
+     0,
+     "The one ticket layout: a titled block of fields with its actions underneath."
+    ],
+    [
+     "Countdown",
+     "function",
+     74,
+     0,
+     "Time left on a quote: a draining ring with the seconds inside."
+    ],
+    [
+     "NumberInputProps",
+     "interface",
+     94,
+     0,
+     ""
+    ],
+    [
+     "NumberInput",
+     "function",
+     103,
+     0,
+     "Amount entry that understands `25m`, `500k`, `1.5b`."
+    ],
+    [
+     "Sparkline",
+     "function",
+     140,
+     0,
+     "A tiny trend line. Decorative: the number beside it carries the meaning."
+    ]
+   ]
+  },
+  {
+   "p": "packages/ui/src/ui.css",
+   "n": "design.ui",
+   "r": ".",
+   "l": "css",
+   "loc": 683,
+   "name": "Component styles",
+   "d": "How every shared component looks.",
+   "doc": "Shared component styles."
+  },
+  {
+   "p": "packages/widgets/src/AlertsTile.tsx",
+   "n": "widgets",
+   "r": ".",
+   "l": "typescript",
+   "loc": 41,
+   "name": "Alerts tile",
+   "d": "Shows open alerts per severity, live.",
+   "s": [
+    [
+     "AlertsTile",
+     "function",
+     10,
+     0,
+     "Tile: open alerts per severity, live."
+    ]
+   ]
+  },
+  {
+   "p": "packages/widgets/src/InteropProbe.tsx",
+   "n": "widgets",
+   "r": ".",
+   "l": "typescript",
+   "loc": 147,
+   "name": "Interop Probe",
+   "d": "A developer tool to send items and requests and watch what arrives.",
+   "s": [
+    [
+     "InteropProbe",
+     "function",
+     46,
+     0,
+     "A small interop test surface."
+    ]
+   ]
+  },
+  {
+   "p": "packages/widgets/src/MockDataInspector.tsx",
+   "n": "widgets",
+   "r": ".",
+   "l": "typescript",
+   "loc": 137,
+   "name": "Mock data inspector",
+   "d": "Developer tool showing the current seed, record counts and the live prices with each pair's best bank quote.",
+   "s": [
+    [
+     "Rate",
+     "function",
+     9,
+     0,
+     "A rate with the pip digits larger, as traders read it."
+    ],
+    [
+     "MockDataInspector",
+     "function",
+     25,
+     0,
+     "Developer tool for the mock data layer: shows the seed, the dataset fingerprint and entity counts, and the live price stream with the best LP quote per pair."
+    ]
+   ]
+  },
+  {
+   "p": "packages/widgets/src/OrderBlotter.tsx",
+   "n": "widgets",
+   "r": ".",
+   "l": "typescript",
+   "loc": 159,
+   "name": "Order blotter",
+   "d": "Lists open orders. Selecting one shares it with apps on the same channel; Analyse and Execute ask Pre-Trade or FX Execution to act.",
+   "s": [
+    [
+     "OrderBlotter",
+     "function",
+     31,
+     0,
+     "Open orders. Selecting a row shares it on the panel's channel; Analyse and Execute raise intents."
+    ]
+   ]
+  },
+  {
+   "p": "packages/widgets/src/OrdersAwaitingTile.tsx",
+   "n": "widgets",
+   "r": ".",
+   "l": "typescript",
+   "loc": 36,
+   "name": "Orders awaiting tile",
+   "d": "Shows how many orders are waiting to be traded and their size by currency; clicking it filters the blotter.",
+   "s": [
+    [
+     "OrdersAwaitingTile",
+     "function",
+     7,
+     0,
+     "Tile: how many orders are waiting to be executed, and their notional by currency."
+    ]
+   ]
+  },
+  {
+   "p": "packages/widgets/src/TileGroup.tsx",
+   "n": "widgets",
+   "r": ".",
+   "l": "typescript",
+   "loc": 96,
+   "name": "Tile grid",
+   "d": "A panel of tiles you can drag and resize, hiding any the user may not see.",
+   "s": [
+    [
+     "TILES",
+     "const",
+     11,
+     0,
+     "Tiles, keyed by App Directory id, with their default size in grid cells."
+    ],
+    [
+     "TileGroup",
+     "function",
+     59,
+     0,
+     "A panel of tiles on a draggable, resizable grid."
+    ]
+   ]
+  },
+  {
+   "p": "packages/widgets/src/UiGallery.tsx",
+   "n": "widgets",
+   "r": ".",
+   "l": "typescript",
+   "loc": 189,
+   "name": "Component gallery",
+   "d": "Developer tool showing every shared component in its main states on one page.",
+   "s": [
+    [
+     "UiGallery",
+     "function",
+     68,
+     0,
+     "Developer tool: every shared component on one page, in its main states."
+    ]
+   ]
+  },
+  {
+   "p": "packages/widgets/src/index.ts",
+   "n": "widgets",
+   "r": ".",
+   "l": "typescript",
+   "loc": 19,
+   "name": "Widget list",
+   "d": "The tiles and tools that run inside the shell, listed by app id.",
+   "s": [
+    [
+     "WIDGETS",
+     "const",
+     10,
+     0,
+     "In-process widgets and tiles, keyed by App Directory id."
+    ],
+    [
+     "InteropProbe",
+     "export",
+     20,
+     0,
+     ""
+    ]
+   ]
+  },
+  {
+   "p": "packages/widgets/src/tiles.tsx",
+   "n": "widgets",
+   "r": ".",
+   "l": "typescript",
+   "loc": 164,
+   "name": "Summary tiles",
+   "d": "Live rates with trend lines, unmatched trades, upcoming fund cut-offs and today's trading cost against the 30-day average.",
+   "s": [
+    [
+     "RatesTile",
+     "function",
+     17,
+     0,
+     "Tile: up to six pairs with live mid, day change and a sparkline."
+    ],
+    [
+     "UnmatchedTradesTile",
+     "function",
+     84,
+     0,
+     "Tile: trades not yet matched, and how long the oldest has waited."
+    ],
+    [
+     "CutOffsTile",
+     "function",
+     120,
+     0,
+     "Tile: the next three fund cut-offs, with a countdown."
+    ],
+    [
+     "DayCostTile",
+     "function",
+     147,
+     0,
+     "Tile: today's average slippage against the 30-day average."
+    ]
+   ]
+  },
+  {
+   "p": "packages/widgets/src/types.ts",
+   "n": "widgets",
+   "r": ".",
+   "l": "typescript",
+   "loc": 12,
+   "name": "Widget basics",
+   "d": "What every tile is given, and the private channel order lists listen on.",
+   "s": [
+    [
+     "WidgetProps",
+     "interface",
+     3,
+     0,
+     ""
+    ],
+    [
+     "ORDERS_CHANNEL",
+     "const",
+     14,
+     0,
+     "App channel that order lists listen on for filter requests (e.g."
+    ]
+   ]
+  },
+  {
+   "p": "packages/widgets/src/widgets.css",
+   "n": "widgets",
+   "r": ".",
+   "l": "css",
+   "loc": 406,
+   "name": "Widget styles",
+   "d": "How the blotter, tiles and developer tools look."
+  },
+  {
+   "p": "playwright.config.ts",
+   "n": "tooling",
+   "r": ".",
+   "l": "typescript",
+   "loc": 12,
+   "name": "Browser test settings",
+   "d": "Starts every app and runs the full browser checks one at a time, stopping after three failures."
+  },
+  {
+   "p": "scripts/build-hosted.mjs",
+   "n": "tooling",
+   "r": ".",
+   "l": "javascript",
+   "loc": 49,
+   "name": "Hosted build",
+   "d": "Builds every app so they can all be served from one web address.",
+   "doc": "Build Harbor for static hosting under one host."
+  },
+  {
+   "p": "vitest.config.ts",
+   "n": "tooling",
+   "r": ".",
+   "l": "typescript",
+   "loc": 13,
+   "name": "Check settings",
+   "d": "Which automatic checks to run, and requires 90% of the broker, rules and data code to be covered."
+  }
+ ],
+ "routes": [],
+ "links": [
+  {
+   "a": "f:apps/cash/src/main.tsx",
+   "b": "f:packages/app-kit/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "mountApp",
+    "useApp",
+    "useIntentListener",
+    "useNow"
+   ]
+  },
+  {
+   "a": "f:apps/cash/src/main.tsx",
+   "b": "f:packages/mock-data/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "CASH_POLICY",
+    "accountCash",
+    "checkCashOrder",
+    "nextCutOff",
+    "MoneyMarketFund"
+   ]
+  },
+  {
+   "a": "f:apps/cash/src/main.tsx",
+   "b": "f:packages/ui/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "AmountCell",
+    "Badge",
+    "Button",
+    "EmptyState",
+    "KeyValueList",
+    "NumberInput",
+    "Select",
+    "StatusPill",
+    "Ticket",
+    "formatAmount",
+    "toast"
+   ]
+  },
+  {
+   "a": "f:apps/cash/src/main.tsx",
+   "b": "f:packages/tokens/src/tokens.css",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:apps/cash/src/main.tsx",
+   "b": "f:packages/ui/src/ui.css",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:apps/cash/src/main.tsx",
+   "b": "f:packages/app-kit/src/app-kit.css",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:apps/cash/src/main.tsx",
+   "b": "f:apps/cash/src/app.css",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:apps/fx-exec/src/main.tsx",
+   "b": "f:packages/app-kit/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "mountApp",
+    "useApp",
+    "useIntentListener"
+   ]
+  },
+  {
+   "a": "f:apps/fx-exec/src/main.tsx",
+   "b": "f:packages/mock-data/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "ALL_PAIRS",
+    "QUOTE_LIFETIME_MS",
+    "formatRate",
+    "pairSpec",
+    "valueDate",
+    "RfqHandle",
+    "RfqQuote",
+    "Trade"
+   ]
+  },
+  {
+   "a": "f:apps/fx-exec/src/main.tsx",
+   "b": "f:packages/schemas/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "FxOrderContext",
+    "FxTradeContext"
+   ]
+  },
+  {
+   "a": "f:apps/fx-exec/src/main.tsx",
+   "b": "f:packages/ui/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "AmountCell",
+    "Badge",
+    "Button",
+    "Checkbox",
+    "Countdown",
+    "Dialog",
+    "EmptyState",
+    "KeyValueList",
+    "NumberInput",
+    "PriceCell",
+    "Select",
+    "SideLabel",
+    "StatusPill",
+    "Ticket",
+    "amountInWords",
+    "formatAmount",
+    "toast"
+   ]
+  },
+  {
+   "a": "f:apps/fx-exec/src/main.tsx",
+   "b": "f:packages/tokens/src/tokens.css",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:apps/fx-exec/src/main.tsx",
+   "b": "f:packages/ui/src/ui.css",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:apps/fx-exec/src/main.tsx",
+   "b": "f:packages/app-kit/src/app-kit.css",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:apps/fx-exec/src/main.tsx",
+   "b": "f:apps/fx-exec/src/app.css",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:apps/partner-news/src/main.tsx",
+   "b": "f:packages/agent-client/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "connect",
+    "HarborClient"
+   ]
+  },
+  {
+   "a": "f:apps/partner-news/src/main.tsx",
+   "b": "f:apps/partner-news/src/wirefeed.css",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:apps/payments/src/main.tsx",
+   "b": "f:packages/app-kit/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "mountApp",
+    "useApp",
+    "useIntentListener",
+    "useNow"
+   ]
+  },
+  {
+   "a": "f:apps/payments/src/main.tsx",
+   "b": "f:packages/mock-data/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "RATE_LOCK_MS",
+    "canDecide",
+    "conversionRate",
+    "Beneficiary",
+    "Payment"
+   ]
+  },
+  {
+   "a": "f:apps/payments/src/main.tsx",
+   "b": "f:packages/ui/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "AmountCell",
+    "Badge",
+    "Button",
+    "EmptyState",
+    "Input",
+    "NumberInput",
+    "Select",
+    "StatusPill",
+    "Ticket",
+    "formatAmount",
+    "toast",
+    "PillTone"
+   ]
+  },
+  {
+   "a": "f:apps/payments/src/main.tsx",
+   "b": "f:packages/tokens/src/tokens.css",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:apps/payments/src/main.tsx",
+   "b": "f:packages/ui/src/ui.css",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:apps/payments/src/main.tsx",
+   "b": "f:packages/app-kit/src/app-kit.css",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:apps/payments/src/main.tsx",
+   "b": "f:apps/payments/src/app.css",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:apps/placeholder/src/main.tsx",
+   "b": "f:packages/agent-client/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "connect",
+    "HarborClient"
+   ]
+  },
+  {
+   "a": "f:apps/placeholder/src/main.tsx",
+   "b": "f:packages/ui/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "EmptyState",
+    "ErrorState",
+    "Skeleton"
+   ]
+  },
+  {
+   "a": "f:apps/placeholder/src/main.tsx",
+   "b": "f:packages/widgets/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "InteropProbe"
+   ]
+  },
+  {
+   "a": "f:apps/placeholder/src/main.tsx",
+   "b": "f:packages/tokens/src/tokens.css",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:apps/placeholder/src/main.tsx",
+   "b": "f:packages/ui/src/ui.css",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:apps/placeholder/src/main.tsx",
+   "b": "f:packages/widgets/src/widgets.css",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:apps/post-trade/src/main.tsx",
+   "b": "f:packages/app-kit/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "mountApp",
+    "useApp",
+    "useContextListener",
+    "useIntentListener",
+    "useTrades"
+   ]
+  },
+  {
+   "a": "f:apps/post-trade/src/main.tsx",
+   "b": "f:packages/mock-data/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "formatRate",
+    "ActivityEntry",
+    "MatchStatus",
+    "MismatchDetail",
+    "Trade"
+   ]
+  },
+  {
+   "a": "f:apps/post-trade/src/main.tsx",
+   "b": "f:packages/schemas/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "DevCommandContext",
+    "FxTradeContext",
+    "SettlementContext"
+   ]
+  },
+  {
+   "a": "f:apps/post-trade/src/main.tsx",
+   "b": "f:packages/ui/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "AmountCell",
+    "Badge",
+    "Button",
+    "DataGrid",
+    "EmptyState",
+    "Select",
+    "SideLabel",
+    "Skeleton",
+    "StatusPill",
+    "formatAmount",
+    "toast",
+    "ColDef",
+    "PillTone"
+   ]
+  },
+  {
+   "a": "f:apps/post-trade/src/main.tsx",
+   "b": "f:packages/tokens/src/tokens.css",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:apps/post-trade/src/main.tsx",
+   "b": "f:packages/ui/src/ui.css",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:apps/post-trade/src/main.tsx",
+   "b": "f:packages/app-kit/src/app-kit.css",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:apps/post-trade/src/main.tsx",
+   "b": "f:apps/post-trade/src/app.css",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:apps/pretrade/src/main.tsx",
+   "b": "f:packages/agent-client/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "HarborError"
+   ]
+  },
+  {
+   "a": "f:apps/pretrade/src/main.tsx",
+   "b": "f:packages/app-kit/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "mountApp",
+    "useApp",
+    "useContextListener",
+    "useIntentListener"
+   ]
+  },
+  {
+   "a": "f:apps/pretrade/src/main.tsx",
+   "b": "f:packages/mock-data/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "estimateOrder",
+    "pairSpec"
+   ]
+  },
+  {
+   "a": "f:apps/pretrade/src/main.tsx",
+   "b": "f:packages/schemas/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "FxOrderContext"
+   ]
+  },
+  {
+   "a": "f:apps/pretrade/src/main.tsx",
+   "b": "f:packages/ui/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "AmountCell",
+    "Badge",
+    "Button",
+    "EmptyState",
+    "KeyValueList",
+    "SideLabel",
+    "StatusPill",
+    "formatBps",
+    "toast"
+   ]
+  },
+  {
+   "a": "f:apps/pretrade/src/main.tsx",
+   "b": "f:packages/tokens/src/tokens.css",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:apps/pretrade/src/main.tsx",
+   "b": "f:packages/ui/src/ui.css",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:apps/pretrade/src/main.tsx",
+   "b": "f:packages/app-kit/src/app-kit.css",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:apps/pretrade/src/main.tsx",
+   "b": "f:apps/pretrade/src/app.css",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:apps/research/src/main.tsx",
+   "b": "f:packages/app-kit/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "mountApp",
+    "useApp",
+    "useContextListener",
+    "useIntentListener"
+   ]
+  },
+  {
+   "a": "f:apps/research/src/main.tsx",
+   "b": "f:packages/mock-data/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "ALL_PAIRS"
+   ]
+  },
+  {
+   "a": "f:apps/research/src/main.tsx",
+   "b": "f:packages/schemas/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "Context"
+   ]
+  },
+  {
+   "a": "f:apps/research/src/main.tsx",
+   "b": "f:packages/ui/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "Button",
+    "EmptyState",
+    "Select"
+   ]
+  },
+  {
+   "a": "f:apps/research/src/main.tsx",
+   "b": "f:packages/tokens/src/tokens.css",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:apps/research/src/main.tsx",
+   "b": "f:packages/ui/src/ui.css",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:apps/research/src/main.tsx",
+   "b": "f:packages/app-kit/src/app-kit.css",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:apps/research/src/main.tsx",
+   "b": "f:apps/research/src/app.css",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:apps/shell/src/App.tsx",
+   "b": "f:packages/ui/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "ToastViewport"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/App.tsx",
+   "b": "f:apps/shell/src/auth.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "auth"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/App.tsx",
+   "b": "f:apps/shell/src/directory.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "loadDirectory"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/App.tsx",
+   "b": "f:apps/shell/src/interop.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "agent",
+    "setShortcutHandler"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/App.tsx",
+   "b": "f:apps/shell/src/state.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "shell",
+    "useShell"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/App.tsx",
+   "b": "f:apps/shell/src/workspaces/controller.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "startSession"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/App.tsx",
+   "b": "f:apps/shell/src/components/Accessibility.tsx",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "LiveRegion",
+    "ShortcutsDialog"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/App.tsx",
+   "b": "f:apps/shell/src/components/AlertDrawer.tsx",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "AlertDrawer"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/App.tsx",
+   "b": "f:apps/shell/src/components/AppRail.tsx",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "AppRail"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/App.tsx",
+   "b": "f:apps/shell/src/components/CommandPalette.tsx",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "CommandPalette"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/App.tsx",
+   "b": "f:apps/shell/src/components/IntentResolver.tsx",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "IntentResolver"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/App.tsx",
+   "b": "f:apps/shell/src/components/InteropLogDrawer.tsx",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "InteropLogDrawer"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/App.tsx",
+   "b": "f:apps/shell/src/components/Layout.tsx",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "Layout"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/App.tsx",
+   "b": "f:apps/shell/src/components/Library.tsx",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "Library"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/App.tsx",
+   "b": "f:apps/shell/src/components/SignIn.tsx",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "SignIn"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/App.tsx",
+   "b": "f:apps/shell/src/components/StatusBar.tsx",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "StatusBar"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/App.tsx",
+   "b": "f:apps/shell/src/components/TopBar.tsx",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "TopBar"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/App.tsx",
+   "b": "f:apps/shell/src/shortcuts.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "runShortcut",
+    "useShellShortcuts"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/alerts/center.ts",
+   "b": "f:packages/schemas/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "Alert"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/alerts/center.ts",
+   "b": "f:packages/ui/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "dismissToast",
+    "toast"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/alerts/center.ts",
+   "b": "f:apps/shell/src/state.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "shell"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/alerts/center.ts",
+   "b": "f:apps/shell/src/alerts/service.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "AlertService"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/alerts/service.test.ts",
+   "b": "f:packages/schemas/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "Alert",
+    "AlertInput"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/alerts/service.test.ts",
+   "b": "f:apps/shell/src/alerts/service.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "AlertService"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/alerts/service.ts",
+   "b": "f:packages/schemas/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "Alert",
+    "AlertInput",
+    "AlertStatus",
+    "AlertSummary",
+    "Severity"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/auth.ts",
+   "b": "f:packages/schemas/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "UserInfo"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/Accessibility.tsx",
+   "b": "f:packages/ui/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "Dialog",
+    "Kbd"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/Accessibility.tsx",
+   "b": "f:apps/shell/src/announce.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "announcer"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/Accessibility.tsx",
+   "b": "f:apps/shell/src/state.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "shell",
+    "useShell"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/AlertDrawer.tsx",
+   "b": "f:packages/schemas/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "SEVERITIES",
+    "Alert",
+    "Severity"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/AlertDrawer.tsx",
+   "b": "f:packages/ui/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "Badge",
+    "Button",
+    "Drawer",
+    "EmptyState",
+    "Icon",
+    "Select",
+    "Tabs",
+    "IconName"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/AlertDrawer.tsx",
+   "b": "f:apps/shell/src/alerts/center.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "alerts"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/AlertDrawer.tsx",
+   "b": "f:apps/shell/src/download.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "download"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/AlertDrawer.tsx",
+   "b": "f:apps/shell/src/interop.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "actOnAlert"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/AlertDrawer.tsx",
+   "b": "f:apps/shell/src/state.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "shell",
+    "useShell"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/AppGlyph.tsx",
+   "b": "f:packages/schemas/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "DirectoryRecord"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/AppRail.tsx",
+   "b": "f:packages/schemas/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "canLaunch"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/AppRail.tsx",
+   "b": "f:packages/ui/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "Icon"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/AppRail.tsx",
+   "b": "f:apps/shell/src/state.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "shell",
+    "useShell"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/AppRail.tsx",
+   "b": "f:apps/shell/src/workspaces/controller.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "focusOrOpen"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/AppRail.tsx",
+   "b": "f:apps/shell/src/components/AppGlyph.tsx",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "AppGlyph"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/CommandPalette.tsx",
+   "b": "f:packages/app-kit/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "realmServices"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/CommandPalette.tsx",
+   "b": "f:packages/mock-data/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "Order"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/CommandPalette.tsx",
+   "b": "f:packages/ui/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "Icon",
+    "Kbd"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/CommandPalette.tsx",
+   "b": "f:apps/shell/src/palette/fuzzy.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "rank"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/CommandPalette.tsx",
+   "b": "f:apps/shell/src/palette/items.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "buildPaletteItems",
+    "PaletteItem"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/CommandPalette.tsx",
+   "b": "f:apps/shell/src/state.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "shell",
+    "useShell"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/IntentResolver.tsx",
+   "b": "f:packages/ui/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "Checkbox",
+    "Dialog"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/IntentResolver.tsx",
+   "b": "f:apps/shell/src/state.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "useShell"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/IntentResolver.tsx",
+   "b": "f:apps/shell/src/components/AppGlyph.tsx",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "AppGlyph"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/InteropLogDrawer.tsx",
+   "b": "f:packages/ui/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "Badge",
+    "Button",
+    "Drawer",
+    "EmptyState",
+    "Switch"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/InteropLogDrawer.tsx",
+   "b": "f:apps/shell/src/interop.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "agent",
+    "forceMismatch"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/InteropLogDrawer.tsx",
+   "b": "f:apps/shell/src/state.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "audit",
+    "setConnected",
+    "useShell",
+    "shell"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/InteropLogDrawer.tsx",
+   "b": "f:apps/shell/src/workspaces/controller.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "workspaceStore"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/InteropLogDrawer.tsx",
+   "b": "f:apps/shell/src/workspaces/store.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "QuarantinedFile"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/InteropLogDrawer.tsx",
+   "b": "f:apps/shell/src/download.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "download"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/Layout.tsx",
+   "b": "f:packages/agent/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "createDirectPair"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/Layout.tsx",
+   "b": "f:packages/agent-client/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "createClient",
+    "HarborClient"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/Layout.tsx",
+   "b": "f:packages/schemas/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "canLaunch",
+    "DirectoryRecord"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/Layout.tsx",
+   "b": "f:packages/ui/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "ChannelPicker",
+    "EmptyState",
+    "ErrorState",
+    "Icon",
+    "Menu",
+    "Skeleton",
+    "MenuItem"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/Layout.tsx",
+   "b": "f:packages/widgets/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "WIDGETS"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/Layout.tsx",
+   "b": "f:apps/shell/src/interop.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "agent",
+    "bridge"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/Layout.tsx",
+   "b": "f:apps/shell/src/state.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "shell",
+    "useShell",
+    "DevPanelState"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/Layout.tsx",
+   "b": "f:apps/shell/src/workspaces/controller.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "addPanel",
+    "attachLayout",
+    "closePanel",
+    "duplicatePanel",
+    "movePanelToWorkspace",
+    "reloadPanel",
+    "setPanelChannel",
+    "setPanelConfig"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/Layout.tsx",
+   "b": "f:apps/shell/src/components/AppGlyph.tsx",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "AppGlyph"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/Layout.tsx",
+   "b": "f:apps/shell/src/components/Library.tsx",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "DRAG_TYPE"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/Library.tsx",
+   "b": "f:packages/schemas/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "canLaunch",
+    "DirectoryRecord"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/Library.tsx",
+   "b": "f:packages/ui/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "Badge",
+    "Button",
+    "EmptyState",
+    "IconButton",
+    "Input",
+    "Select",
+    "Tabs"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/Library.tsx",
+   "b": "f:apps/shell/src/state.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "shell",
+    "useShell"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/Library.tsx",
+   "b": "f:apps/shell/src/workspaces/controller.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "addPanel",
+    "openWorkspace",
+    "workspaceEntries"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/Library.tsx",
+   "b": "f:apps/shell/src/components/AppGlyph.tsx",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "AppGlyph"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/SignIn.tsx",
+   "b": "f:apps/shell/src/auth.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "auth"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/SignIn.tsx",
+   "b": "f:apps/shell/src/workspaces/controller.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "startSession"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/StatusBar.tsx",
+   "b": "f:packages/schemas/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "USER_CHANNELS"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/StatusBar.tsx",
+   "b": "f:packages/ui/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "ChannelDot"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/StatusBar.tsx",
+   "b": "f:apps/shell/src/state.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "shell",
+    "useShell"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/StatusBar.tsx",
+   "b": "f:apps/shell/src/workspaces/controller.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "channelUsage"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/TopBar.tsx",
+   "b": "f:packages/ui/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "Button",
+    "Dialog",
+    "Icon",
+    "Input",
+    "Kbd",
+    "IconButton",
+    "Menu",
+    "toast",
+    "MenuItem"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/TopBar.tsx",
+   "b": "f:apps/shell/src/alerts/center.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "alerts"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/TopBar.tsx",
+   "b": "f:apps/shell/src/auth.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "auth"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/TopBar.tsx",
+   "b": "f:apps/shell/src/download.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "download"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/TopBar.tsx",
+   "b": "f:apps/shell/src/state.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "setDensity",
+    "setTheme",
+    "shell",
+    "useShell"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/TopBar.tsx",
+   "b": "f:apps/shell/src/workspaces/controller.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "canResetToDefault",
+    "deleteWorkspace",
+    "duplicateWorkspace",
+    "endSession",
+    "exportWorkspace",
+    "importWorkspace",
+    "newWorkspace",
+    "openWorkspace",
+    "previewImport",
+    "renameWorkspace",
+    "resetToDefault",
+    "saveWorkspaceAs",
+    "startSession",
+    "workspaceEntries",
+    "ImportPreview"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/TopBar.tsx",
+   "b": "f:apps/shell/src/workspaces/templates.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "isTemplateId"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/directory.ts",
+   "b": "f:packages/schemas/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "parseDirectory",
+    "DirectoryRecord"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/directory.ts",
+   "b": "f:apps/shell/src/state.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "shell"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/hardening.test.ts",
+   "b": "f:apps/shell/src/announce.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "createAnnouncer"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/hardening.test.ts",
+   "b": "f:apps/shell/src/audit.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "AuditTrail"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/interop.ts",
+   "b": "f:packages/agent/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "Agent",
+    "WindowBridge"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/interop.ts",
+   "b": "f:packages/schemas/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "ShellShortcut"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/interop.ts",
+   "b": "f:packages/ui/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "toast"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/interop.ts",
+   "b": "f:apps/shell/src/alerts/center.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "alerts",
+    "setAlertActionHandler"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/interop.ts",
+   "b": "f:apps/shell/src/announce.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "announcer"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/interop.ts",
+   "b": "f:apps/shell/src/state.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "shell"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/interop.ts",
+   "b": "f:apps/shell/src/workspaces/controller.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "focusOrOpen",
+    "setPanelChannel"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/main.tsx",
+   "b": "f:apps/shell/src/App.tsx",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "App"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/main.tsx",
+   "b": "f:packages/tokens/src/tokens.css",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:apps/shell/src/main.tsx",
+   "b": "f:packages/ui/src/ui.css",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:apps/shell/src/main.tsx",
+   "b": "f:packages/widgets/src/widgets.css",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:apps/shell/src/main.tsx",
+   "b": "f:apps/shell/src/shell.css",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:apps/shell/src/palette/fuzzy.test.ts",
+   "b": "f:apps/shell/src/palette/fuzzy.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "fuzzyScore",
+    "rank"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/palette/items.ts",
+   "b": "f:packages/app-kit/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "realmServices"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/palette/items.ts",
+   "b": "f:packages/mock-data/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "ALL_PAIRS",
+    "Order"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/palette/items.ts",
+   "b": "f:packages/schemas/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "canLaunch",
+    "canRaise",
+    "handlesIntent",
+    "Context"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/palette/items.ts",
+   "b": "f:packages/ui/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "formatCompact"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/palette/items.ts",
+   "b": "f:apps/shell/src/interop.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "raiseFromShell"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/palette/items.ts",
+   "b": "f:apps/shell/src/state.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "setDensity",
+    "setTheme",
+    "shell"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/palette/items.ts",
+   "b": "f:apps/shell/src/workspaces/controller.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "addPanel",
+    "focusOrOpen",
+    "focusPanel",
+    "openWorkspace",
+    "workspaceEntries"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/shortcuts.ts",
+   "b": "f:packages/schemas/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "isTypingTarget",
+    "shellShortcutFor",
+    "ShellShortcut"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/shortcuts.ts",
+   "b": "f:apps/shell/src/state.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "shell"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/shortcuts.ts",
+   "b": "f:apps/shell/src/components/Layout.tsx",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "focusAdjacentPanel"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/state.ts",
+   "b": "f:apps/shell/src/audit.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "AuditTrail"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/state.ts",
+   "b": "f:packages/agent/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "ResolveRequest"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/state.ts",
+   "b": "f:packages/schemas/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "Density",
+    "DirectoryRecord",
+    "PanelRecord",
+    "Severity",
+    "Theme",
+    "UserInfo",
+    "WorkspaceFile"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/workspaces/controller.ts",
+   "b": "f:packages/schemas/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "canLaunch",
+    "DirectoryRecord",
+    "PanelRecord",
+    "UserInfo",
+    "WorkspaceFile"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/workspaces/controller.ts",
+   "b": "f:packages/ui/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "toast"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/workspaces/controller.ts",
+   "b": "f:apps/shell/src/state.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "audit",
+    "shell"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/workspaces/controller.ts",
+   "b": "f:apps/shell/src/workspaces/store.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "BackedWorkspaceStore",
+    "IndexedDbBackend",
+    "parseWorkspaceJson",
+    "WorkspaceStore"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/workspaces/controller.ts",
+   "b": "f:apps/shell/src/workspaces/templates.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "TEMPLATES",
+    "isTemplateId",
+    "materialise",
+    "templateForRole"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/workspaces/store.test.ts",
+   "b": "f:packages/schemas/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "WorkspaceFile"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/workspaces/store.test.ts",
+   "b": "f:apps/shell/src/workspaces/store.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "BackedWorkspaceStore",
+    "MemoryBackend",
+    "parseWorkspaceJson"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/workspaces/store.ts",
+   "b": "f:packages/schemas/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "migrateWorkspace",
+    "ValidationResult",
+    "WorkspaceFile"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/workspaces/templates.ts",
+   "b": "f:packages/schemas/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "PanelRecord",
+    "Role",
+    "WorkspaceFile"
+   ]
+  },
+  {
+   "a": "f:apps/tca/src/main.tsx",
+   "b": "f:packages/app-kit/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "mountApp",
+    "useApp",
+    "useContextListener",
+    "useIntentListener",
+    "useTrades"
+   ]
+  },
+  {
+   "a": "f:apps/tca/src/main.tsx",
+   "b": "f:packages/mock-data/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "ALL_PAIRS",
+    "formatRate",
+    "CostBucket",
+    "TcaFilter",
+    "Trade"
+   ]
+  },
+  {
+   "a": "f:apps/tca/src/main.tsx",
+   "b": "f:packages/schemas/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "Context",
+    "FxTradeContext"
+   ]
+  },
+  {
+   "a": "f:apps/tca/src/main.tsx",
+   "b": "f:packages/ui/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "AmountCell",
+    "Badge",
+    "Button",
+    "Select",
+    "SideLabel",
+    "Skeleton",
+    "formatBps"
+   ]
+  },
+  {
+   "a": "f:apps/tca/src/main.tsx",
+   "b": "f:apps/tca/src/Chart.tsx",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "Chart"
+   ]
+  },
+  {
+   "a": "f:apps/tca/src/main.tsx",
+   "b": "f:packages/tokens/src/tokens.css",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:apps/tca/src/main.tsx",
+   "b": "f:packages/ui/src/ui.css",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:apps/tca/src/main.tsx",
+   "b": "f:packages/app-kit/src/app-kit.css",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:apps/tca/src/main.tsx",
+   "b": "f:apps/tca/src/app.css",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:packages/agent-client/src/client.ts",
+   "b": "f:packages/schemas/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "PROTOCOL",
+    "AlertInput",
+    "AlertSummary",
+    "Severity",
+    "ShellShortcut",
+    "AppIdentifier",
+    "AppIntent",
+    "Appearance",
+    "ClientTransport",
+    "Context",
+    "EventMessage",
+    "ImplementationMetadata",
+    "IntentResolution",
+    "MethodName",
+    "Methods",
+    "ResponseMessage",
+    "UserChannel",
+    "UserInfo"
+   ]
+  },
+  {
+   "a": "f:packages/agent-client/src/connect.ts",
+   "b": "f:packages/schemas/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "PROTOCOL",
+    "isProtocolMessage",
+    "isTypingTarget",
+    "shellShortcutFor",
+    "Appearance",
+    "ClientTransport",
+    "EventMessage",
+    "HandshakeMessage",
+    "ResponseMessage"
+   ]
+  },
+  {
+   "a": "f:packages/agent-client/src/connect.ts",
+   "b": "f:packages/agent-client/src/client.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "createClient",
+    "HarborError",
+    "HarborClient"
+   ]
+  },
+  {
+   "a": "f:packages/agent-client/src/index.ts",
+   "b": "f:packages/agent-client/src/client.ts",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:packages/agent-client/src/index.ts",
+   "b": "f:packages/agent-client/src/connect.ts",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:packages/agent/src/agent.test.ts",
+   "b": "f:packages/schemas/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "PROTOCOL",
+    "Context",
+    "EventMessage",
+    "RequestMessage",
+    "ResponseMessage"
+   ]
+  },
+  {
+   "a": "f:packages/agent/src/agent.test.ts",
+   "b": "f:packages/agent-client/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "HarborError"
+   ]
+  },
+  {
+   "a": "f:packages/agent/src/agent.test.ts",
+   "b": "f:packages/agent/src/agent.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "AGENT_VERSION"
+   ]
+  },
+  {
+   "a": "f:packages/agent/src/agent.test.ts",
+   "b": "f:packages/agent/src/testkit.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "EURUSD",
+    "OPS",
+    "ORDER",
+    "makeKit",
+    "settle"
+   ]
+  },
+  {
+   "a": "f:packages/agent/src/agent.ts",
+   "b": "f:packages/schemas/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "AgentError",
+    "PROTOCOL",
+    "USER_CHANNELS",
+    "canLaunch",
+    "canRaise",
+    "contextIdLabel",
+    "findUserChannel",
+    "SHELL_SHORTCUTS",
+    "handlesIntent",
+    "parseAlertInput",
+    "validateContext",
+    "AgentErrorCode",
+    "AgentEvent",
+    "AgentTransport",
+    "AlertInput",
+    "AlertSummary",
+    "Severity",
+    "ShellShortcut",
+    "AppIdentifier",
+    "AppIntent",
+    "Appearance",
+    "Context",
+    "DirectoryRecord",
+    "ImplementationMetadata",
+    "IntentResolution",
+    "MethodName",
+    "Methods",
+    "RequestMessage",
+    "UserInfo"
+   ]
+  },
+  {
+   "a": "f:packages/agent/src/agent.ts",
+   "b": "f:packages/agent/src/log.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "InteropLog"
+   ]
+  },
+  {
+   "a": "f:packages/agent/src/bridge.test.ts",
+   "b": "f:packages/schemas/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "PROTOCOL",
+    "AgentToClient"
+   ]
+  },
+  {
+   "a": "f:packages/agent/src/bridge.test.ts",
+   "b": "f:packages/agent/src/bridge.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "WindowBridge"
+   ]
+  },
+  {
+   "a": "f:packages/agent/src/bridge.test.ts",
+   "b": "f:packages/agent/src/testkit.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "ORDER",
+    "makeKit",
+    "settle"
+   ]
+  },
+  {
+   "a": "f:packages/agent/src/bridge.ts",
+   "b": "f:packages/schemas/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "PROTOCOL",
+    "isProtocolMessage",
+    "AgentTransport",
+    "EventMessage",
+    "RequestMessage",
+    "ResponseMessage"
+   ]
+  },
+  {
+   "a": "f:packages/agent/src/bridge.ts",
+   "b": "f:packages/agent/src/agent.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "Agent"
+   ]
+  },
+  {
+   "a": "f:packages/agent/src/direct.ts",
+   "b": "f:packages/schemas/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "AgentTransport",
+    "ClientTransport",
+    "EventMessage",
+    "RequestMessage",
+    "ResponseMessage"
+   ]
+  },
+  {
+   "a": "f:packages/agent/src/index.ts",
+   "b": "f:packages/agent/src/agent.ts",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:packages/agent/src/index.ts",
+   "b": "f:packages/agent/src/bridge.ts",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:packages/agent/src/index.ts",
+   "b": "f:packages/agent/src/direct.ts",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:packages/agent/src/index.ts",
+   "b": "f:packages/agent/src/log.ts",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:packages/agent/src/testkit.ts",
+   "b": "f:packages/agent-client/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "createClient",
+    "HarborClient"
+   ]
+  },
+  {
+   "a": "f:packages/agent/src/testkit.ts",
+   "b": "f:packages/schemas/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "parseDirectory",
+    "Appearance",
+    "DirectoryRecord",
+    "FxOrderContext",
+    "UserInfo"
+   ]
+  },
+  {
+   "a": "f:packages/agent/src/testkit.ts",
+   "b": "f:packages/agent/src/agent.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "Agent",
+    "AgentHooks",
+    "ResolveRequest"
+   ]
+  },
+  {
+   "a": "f:packages/agent/src/testkit.ts",
+   "b": "f:packages/agent/src/direct.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "createDirectPair"
+   ]
+  },
+  {
+   "a": "f:packages/app-kit/src/HarborApp.tsx",
+   "b": "f:packages/agent-client/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "connect",
+    "HarborClient"
+   ]
+  },
+  {
+   "a": "f:packages/app-kit/src/HarborApp.tsx",
+   "b": "f:packages/ui/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "EmptyState",
+    "ErrorState",
+    "Skeleton",
+    "ToastViewport"
+   ]
+  },
+  {
+   "a": "f:packages/app-kit/src/HarborApp.tsx",
+   "b": "f:packages/app-kit/src/hooks.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "useSession",
+    "Session"
+   ]
+  },
+  {
+   "a": "f:packages/app-kit/src/HarborApp.tsx",
+   "b": "f:packages/app-kit/src/realm.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "realmServices"
+   ]
+  },
+  {
+   "a": "f:packages/app-kit/src/hooks.ts",
+   "b": "f:packages/agent-client/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "ContextHandler",
+    "HarborClient",
+    "IntentHandler"
+   ]
+  },
+  {
+   "a": "f:packages/app-kit/src/hooks.ts",
+   "b": "f:packages/mock-data/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "MockServices",
+    "Order",
+    "Trade"
+   ]
+  },
+  {
+   "a": "f:packages/app-kit/src/hooks.ts",
+   "b": "f:packages/schemas/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "UserInfo"
+   ]
+  },
+  {
+   "a": "f:packages/app-kit/src/hooks.ts",
+   "b": "f:packages/app-kit/src/realm.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "realmServices"
+   ]
+  },
+  {
+   "a": "f:packages/app-kit/src/index.ts",
+   "b": "f:packages/app-kit/src/realm.ts",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:packages/app-kit/src/index.ts",
+   "b": "f:packages/app-kit/src/hooks.ts",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:packages/app-kit/src/index.ts",
+   "b": "f:packages/app-kit/src/HarborApp.tsx",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:packages/app-kit/src/realm.ts",
+   "b": "f:packages/mock-data/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "createMockServices",
+    "seedFromSearch",
+    "MockServices"
+   ]
+  },
+  {
+   "a": "f:packages/mock-data/src/entities.ts",
+   "b": "f:packages/schemas/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "FxOrderContext",
+    "FxTradeContext",
+    "SettlementContext",
+    "Side"
+   ]
+  },
+  {
+   "a": "f:packages/mock-data/src/entities.ts",
+   "b": "f:packages/mock-data/src/pairs.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "PAIRS",
+    "addBusinessDays",
+    "roundRate",
+    "startOfUtcDay",
+    "toIsoDate",
+    "valueDate",
+    "PairSpec",
+    "Tenor"
+   ]
+  },
+  {
+   "a": "f:packages/mock-data/src/entities.ts",
+   "b": "f:packages/mock-data/src/rng.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "createRng",
+    "hashString",
+    "Rng"
+   ]
+  },
+  {
+   "a": "f:packages/mock-data/src/estimate.ts",
+   "b": "f:packages/schemas/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "FxOrderContext",
+    "PreTradeEstimateContext"
+   ]
+  },
+  {
+   "a": "f:packages/mock-data/src/estimate.ts",
+   "b": "f:packages/mock-data/src/entities.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "Dataset"
+   ]
+  },
+  {
+   "a": "f:packages/mock-data/src/estimate.ts",
+   "b": "f:packages/mock-data/src/pairs.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "pairSpec"
+   ]
+  },
+  {
+   "a": "f:packages/mock-data/src/estimate.ts",
+   "b": "f:packages/mock-data/src/services.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "slippageBps"
+   ]
+  },
+  {
+   "a": "f:packages/mock-data/src/index.ts",
+   "b": "f:packages/mock-data/src/rng.ts",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:packages/mock-data/src/index.ts",
+   "b": "f:packages/mock-data/src/pairs.ts",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:packages/mock-data/src/index.ts",
+   "b": "f:packages/mock-data/src/entities.ts",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:packages/mock-data/src/index.ts",
+   "b": "f:packages/mock-data/src/scheduler.ts",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:packages/mock-data/src/index.ts",
+   "b": "f:packages/mock-data/src/prices.ts",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:packages/mock-data/src/index.ts",
+   "b": "f:packages/mock-data/src/services.ts",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:packages/mock-data/src/index.ts",
+   "b": "f:packages/mock-data/src/estimate.ts",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:packages/mock-data/src/index.ts",
+   "b": "f:packages/mock-data/src/treasury.ts",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:packages/mock-data/src/mock-data.test.ts",
+   "b": "f:packages/schemas/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "FxOrderContextSchema",
+    "FxTradeContextSchema",
+    "PreTradeEstimateContextSchema"
+   ]
+  },
+  {
+   "a": "f:packages/mock-data/src/mock-data.test.ts",
+   "b": "f:packages/mock-data/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "ALL_PAIRS",
+    "COUNTS",
+    "DEFAULT_SEED",
+    "MATCH_MAX_MS",
+    "MATCH_MIN_MS",
+    "PAIRS",
+    "PriceEngine",
+    "QUOTE_LIFETIME_MS",
+    "RFQ_REPLY_MAX_MS",
+    "RFQ_REPLY_MIN_MS",
+    "TICK_MAX_MS",
+    "TICK_MIN_MS",
+    "addBusinessDays",
+    "createDataset",
+    "createMockServices",
+    "createPriceStream",
+    "createRng",
+    "estimateOrder",
+    "LARGE_ORDER",
+    "formatRate",
+    "hashString",
+    "nextBusinessDay",
+    "pairSpec",
+    "quoteFor",
+    "rateParts",
+    "realScheduler",
+    "seedFromSearch",
+    "slippageBps",
+    "toIsoDate",
+    "valueDate",
+    "PriceTick",
+    "RfqQuote",
+    "SettlementEvent"
+   ]
+  },
+  {
+   "a": "f:packages/mock-data/src/mock-data.test.ts",
+   "b": "f:packages/mock-data/src/testkit.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "AS_OF",
+    "T0",
+    "fakeScheduler"
+   ]
+  },
+  {
+   "a": "f:packages/mock-data/src/prices.ts",
+   "b": "f:packages/mock-data/src/entities.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "LiquidityProvider"
+   ]
+  },
+  {
+   "a": "f:packages/mock-data/src/prices.ts",
+   "b": "f:packages/mock-data/src/pairs.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "PAIRS",
+    "pairSpec",
+    "roundRate",
+    "startOfUtcDay",
+    "PairSpec"
+   ]
+  },
+  {
+   "a": "f:packages/mock-data/src/prices.ts",
+   "b": "f:packages/mock-data/src/rng.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "createRng",
+    "Rng"
+   ]
+  },
+  {
+   "a": "f:packages/mock-data/src/prices.ts",
+   "b": "f:packages/mock-data/src/scheduler.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "realScheduler",
+    "Scheduler"
+   ]
+  },
+  {
+   "a": "f:packages/mock-data/src/services.ts",
+   "b": "f:packages/schemas/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "FxOrderContext",
+    "Side"
+   ]
+  },
+  {
+   "a": "f:packages/mock-data/src/services.ts",
+   "b": "f:packages/mock-data/src/entities.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "createDataset",
+    "Dataset",
+    "LiquidityProvider",
+    "MatchStatus",
+    "Order",
+    "Trade"
+   ]
+  },
+  {
+   "a": "f:packages/mock-data/src/services.ts",
+   "b": "f:packages/mock-data/src/pairs.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "roundRate",
+    "valueDate"
+   ]
+  },
+  {
+   "a": "f:packages/mock-data/src/services.ts",
+   "b": "f:packages/mock-data/src/prices.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "createPriceStream",
+    "quoteFor",
+    "PriceStream"
+   ]
+  },
+  {
+   "a": "f:packages/mock-data/src/services.ts",
+   "b": "f:packages/mock-data/src/rng.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "createRng",
+    "Rng"
+   ]
+  },
+  {
+   "a": "f:packages/mock-data/src/services.ts",
+   "b": "f:packages/mock-data/src/scheduler.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "realScheduler",
+    "Scheduler"
+   ]
+  },
+  {
+   "a": "f:packages/mock-data/src/testkit.ts",
+   "b": "f:packages/mock-data/src/scheduler.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "Scheduler"
+   ]
+  },
+  {
+   "a": "f:packages/mock-data/src/treasury.test.ts",
+   "b": "f:packages/mock-data/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "CASH_POLICY",
+    "RATE_LOCK_MS",
+    "accountCash",
+    "canDecide",
+    "checkCashOrder",
+    "conversionRate",
+    "createDataset",
+    "nextCutOff",
+    "upcomingCutOffs",
+    "MoneyMarketFund"
+   ]
+  },
+  {
+   "a": "f:packages/mock-data/src/treasury.test.ts",
+   "b": "f:packages/mock-data/src/testkit.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "AS_OF",
+    "T0"
+   ]
+  },
+  {
+   "a": "f:packages/mock-data/src/treasury.ts",
+   "b": "f:packages/mock-data/src/entities.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "Fund",
+    "MoneyMarketFund"
+   ]
+  },
+  {
+   "a": "f:packages/mock-data/src/treasury.ts",
+   "b": "f:packages/mock-data/src/pairs.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "PAIRS"
+   ]
+  },
+  {
+   "a": "f:packages/schemas/src/alert.ts",
+   "b": "f:packages/schemas/src/context.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "formatIssues",
+    "ValidationResult"
+   ]
+  },
+  {
+   "a": "f:packages/schemas/src/directory.ts",
+   "b": "f:packages/schemas/src/context.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "formatIssues",
+    "ValidationResult"
+   ]
+  },
+  {
+   "a": "f:packages/schemas/src/index.ts",
+   "b": "f:packages/schemas/src/context.ts",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:packages/schemas/src/index.ts",
+   "b": "f:packages/schemas/src/channels.ts",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:packages/schemas/src/index.ts",
+   "b": "f:packages/schemas/src/directory.ts",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:packages/schemas/src/index.ts",
+   "b": "f:packages/schemas/src/user.ts",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:packages/schemas/src/index.ts",
+   "b": "f:packages/schemas/src/workspace.ts",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:packages/schemas/src/index.ts",
+   "b": "f:packages/schemas/src/protocol.ts",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:packages/schemas/src/index.ts",
+   "b": "f:packages/schemas/src/alert.ts",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:packages/schemas/src/protocol.ts",
+   "b": "f:packages/schemas/src/context.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "Context"
+   ]
+  },
+  {
+   "a": "f:packages/schemas/src/protocol.ts",
+   "b": "f:packages/schemas/src/channels.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "UserChannel"
+   ]
+  },
+  {
+   "a": "f:packages/schemas/src/protocol.ts",
+   "b": "f:packages/schemas/src/user.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "UserInfo"
+   ]
+  },
+  {
+   "a": "f:packages/schemas/src/protocol.ts",
+   "b": "f:packages/schemas/src/alert.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "AlertInput",
+    "AlertSummary",
+    "Severity"
+   ]
+  },
+  {
+   "a": "f:packages/schemas/src/schemas.test.ts",
+   "b": "f:packages/schemas/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "USER_CHANNELS",
+    "canLaunch",
+    "canRaise",
+    "contextIdLabel",
+    "findUserChannel",
+    "handlesIntent",
+    "isProtocolMessage",
+    "migrateWorkspace",
+    "parseDirectory",
+    "parseAlertInput",
+    "isTypingTarget",
+    "shellShortcutFor",
+    "parseDirectoryRecord",
+    "validateContext",
+    "PROTOCOL",
+    "UserInfo"
+   ]
+  },
+  {
+   "a": "f:packages/schemas/src/user.ts",
+   "b": "f:packages/schemas/src/directory.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "DirectoryRecord"
+   ]
+  },
+  {
+   "a": "f:packages/schemas/src/workspace.ts",
+   "b": "f:packages/schemas/src/context.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "formatIssues",
+    "ValidationResult"
+   ]
+  },
+  {
+   "a": "f:packages/tokens/src/tokens.test.ts",
+   "b": "f:packages/tokens/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "tokens"
+   ]
+  },
+  {
+   "a": "f:packages/ui/src/channel.tsx",
+   "b": "f:packages/schemas/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "USER_CHANNELS",
+    "findUserChannel"
+   ]
+  },
+  {
+   "a": "f:packages/ui/src/channel.tsx",
+   "b": "f:packages/ui/src/overlays.tsx",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "Menu"
+   ]
+  },
+  {
+   "a": "f:packages/ui/src/controls.tsx",
+   "b": "f:packages/ui/src/Icon.tsx",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "Icon",
+    "IconName"
+   ]
+  },
+  {
+   "a": "f:packages/ui/src/format.test.ts",
+   "b": "f:packages/ui/src/format.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "amountInWords",
+    "formatAge",
+    "formatAmount",
+    "formatBps",
+    "formatCompact",
+    "parseAmount"
+   ]
+  },
+  {
+   "a": "f:packages/ui/src/index.ts",
+   "b": "f:packages/ui/src/Icon.tsx",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:packages/ui/src/index.ts",
+   "b": "f:packages/ui/src/controls.tsx",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:packages/ui/src/index.ts",
+   "b": "f:packages/ui/src/overlays.tsx",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:packages/ui/src/index.ts",
+   "b": "f:packages/ui/src/channel.tsx",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:packages/ui/src/index.ts",
+   "b": "f:packages/ui/src/format.ts",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:packages/ui/src/index.ts",
+   "b": "f:packages/ui/src/trading.tsx",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:packages/ui/src/index.ts",
+   "b": "f:packages/ui/src/DataGrid.tsx",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:packages/ui/src/index.ts",
+   "b": "f:packages/ui/src/more.tsx",
+   "k": "import",
+   "w": 1
+  },
+  {
+   "a": "f:packages/ui/src/overlays.tsx",
+   "b": "f:packages/ui/src/Icon.tsx",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "Icon"
+   ]
+  },
+  {
+   "a": "f:packages/ui/src/overlays.tsx",
+   "b": "f:packages/ui/src/controls.tsx",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "IconButton"
+   ]
+  },
+  {
+   "a": "f:packages/ui/src/trading.tsx",
+   "b": "f:packages/ui/src/format.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "formatAmount",
+    "parseAmount"
+   ]
+  },
+  {
+   "a": "f:packages/widgets/src/AlertsTile.tsx",
+   "b": "f:packages/schemas/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "SEVERITIES",
+    "AlertSummary",
+    "Severity"
+   ]
+  },
+  {
+   "a": "f:packages/widgets/src/AlertsTile.tsx",
+   "b": "f:packages/ui/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "Icon",
+    "IconName"
+   ]
+  },
+  {
+   "a": "f:packages/widgets/src/AlertsTile.tsx",
+   "b": "f:packages/widgets/src/types.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "WidgetProps"
+   ]
+  },
+  {
+   "a": "f:packages/widgets/src/InteropProbe.tsx",
+   "b": "f:packages/agent-client/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "HarborError",
+    "HarborClient"
+   ]
+  },
+  {
+   "a": "f:packages/widgets/src/InteropProbe.tsx",
+   "b": "f:packages/schemas/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "findUserChannel",
+    "Context",
+    "FxOrderContext",
+    "ImplementationMetadata",
+    "UserInfo"
+   ]
+  },
+  {
+   "a": "f:packages/widgets/src/InteropProbe.tsx",
+   "b": "f:packages/mock-data/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "createDataset",
+    "seedFromSearch"
+   ]
+  },
+  {
+   "a": "f:packages/widgets/src/InteropProbe.tsx",
+   "b": "f:packages/ui/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "Badge",
+    "Button",
+    "ChannelDot",
+    "EmptyState"
+   ]
+  },
+  {
+   "a": "f:packages/widgets/src/MockDataInspector.tsx",
+   "b": "f:packages/mock-data/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "ALL_PAIRS",
+    "COUNTS",
+    "createDataset",
+    "createPriceStream",
+    "rateParts",
+    "seedFromSearch",
+    "PriceTick"
+   ]
+  },
+  {
+   "a": "f:packages/widgets/src/MockDataInspector.tsx",
+   "b": "f:packages/ui/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "Badge"
+   ]
+  },
+  {
+   "a": "f:packages/widgets/src/MockDataInspector.tsx",
+   "b": "f:packages/widgets/src/types.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "WidgetProps"
+   ]
+  },
+  {
+   "a": "f:packages/widgets/src/OrderBlotter.tsx",
+   "b": "f:packages/agent-client/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "HarborError"
+   ]
+  },
+  {
+   "a": "f:packages/widgets/src/OrderBlotter.tsx",
+   "b": "f:packages/app-kit/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "useContextListener",
+    "useNow",
+    "useOrders",
+    "useSession"
+   ]
+  },
+  {
+   "a": "f:packages/widgets/src/OrderBlotter.tsx",
+   "b": "f:packages/mock-data/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "ALL_PAIRS",
+    "Order"
+   ]
+  },
+  {
+   "a": "f:packages/widgets/src/OrderBlotter.tsx",
+   "b": "f:packages/schemas/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "ORDER_STATUSES",
+    "FxOrderContext",
+    "OrderFilterContext"
+   ]
+  },
+  {
+   "a": "f:packages/widgets/src/OrderBlotter.tsx",
+   "b": "f:packages/ui/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "AmountCell",
+    "Button",
+    "Checkbox",
+    "DataGrid",
+    "Select",
+    "SideLabel",
+    "Skeleton",
+    "StatusPill",
+    "formatAge",
+    "toast",
+    "ColDef",
+    "PillTone"
+   ]
+  },
+  {
+   "a": "f:packages/widgets/src/OrderBlotter.tsx",
+   "b": "f:packages/widgets/src/types.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "ORDERS_CHANNEL",
+    "WidgetProps"
+   ]
+  },
+  {
+   "a": "f:packages/widgets/src/OrdersAwaitingTile.tsx",
+   "b": "f:packages/app-kit/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "useOrders",
+    "useSession"
+   ]
+  },
+  {
+   "a": "f:packages/widgets/src/OrdersAwaitingTile.tsx",
+   "b": "f:packages/schemas/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "OrderFilterContext"
+   ]
+  },
+  {
+   "a": "f:packages/widgets/src/OrdersAwaitingTile.tsx",
+   "b": "f:packages/ui/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "Skeleton",
+    "formatCompact"
+   ]
+  },
+  {
+   "a": "f:packages/widgets/src/OrdersAwaitingTile.tsx",
+   "b": "f:packages/widgets/src/types.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "ORDERS_CHANNEL",
+    "WidgetProps"
+   ]
+  },
+  {
+   "a": "f:packages/widgets/src/TileGroup.tsx",
+   "b": "f:packages/ui/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "EmptyState"
+   ]
+  },
+  {
+   "a": "f:packages/widgets/src/TileGroup.tsx",
+   "b": "f:packages/widgets/src/AlertsTile.tsx",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "AlertsTile"
+   ]
+  },
+  {
+   "a": "f:packages/widgets/src/TileGroup.tsx",
+   "b": "f:packages/widgets/src/OrdersAwaitingTile.tsx",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "OrdersAwaitingTile"
+   ]
+  },
+  {
+   "a": "f:packages/widgets/src/TileGroup.tsx",
+   "b": "f:packages/widgets/src/tiles.tsx",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "CutOffsTile",
+    "DayCostTile",
+    "RatesTile",
+    "UnmatchedTradesTile"
+   ]
+  },
+  {
+   "a": "f:packages/widgets/src/TileGroup.tsx",
+   "b": "f:packages/widgets/src/types.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "WidgetProps"
+   ]
+  },
+  {
+   "a": "f:packages/widgets/src/UiGallery.tsx",
+   "b": "f:packages/ui/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "AmountCell",
+    "Badge",
+    "Button",
+    "ChannelPicker",
+    "Checkbox",
+    "Combobox",
+    "Countdown",
+    "DataGrid",
+    "Dialog",
+    "Drawer",
+    "EmptyState",
+    "ErrorState",
+    "IconButton",
+    "Input",
+    "Kbd",
+    "KeyValueList",
+    "Menu",
+    "NumberInput",
+    "Popover",
+    "PriceCell",
+    "RadioGroup",
+    "Select",
+    "SideLabel",
+    "Skeleton",
+    "Sparkline",
+    "StatusPill",
+    "Switch",
+    "Tabs",
+    "Ticket",
+    "Tooltip",
+    "toast",
+    "ColDef"
+   ]
+  },
+  {
+   "a": "f:packages/widgets/src/UiGallery.tsx",
+   "b": "f:packages/widgets/src/types.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "WidgetProps"
+   ]
+  },
+  {
+   "a": "f:packages/widgets/src/index.ts",
+   "b": "f:packages/widgets/src/InteropProbe.tsx",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "InteropProbe"
+   ]
+  },
+  {
+   "a": "f:packages/widgets/src/index.ts",
+   "b": "f:packages/widgets/src/MockDataInspector.tsx",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "MockDataInspector"
+   ]
+  },
+  {
+   "a": "f:packages/widgets/src/index.ts",
+   "b": "f:packages/widgets/src/OrderBlotter.tsx",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "OrderBlotter"
+   ]
+  },
+  {
+   "a": "f:packages/widgets/src/index.ts",
+   "b": "f:packages/widgets/src/TileGroup.tsx",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "TILES",
+    "TileGroup"
+   ]
+  },
+  {
+   "a": "f:packages/widgets/src/index.ts",
+   "b": "f:packages/widgets/src/UiGallery.tsx",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "UiGallery"
+   ]
+  },
+  {
+   "a": "f:packages/widgets/src/index.ts",
+   "b": "f:packages/widgets/src/types.ts",
+   "k": "import",
+   "w": 2,
+   "names": [
+    "WidgetProps",
+    "ORDERS_CHANNEL"
+   ]
+  },
+  {
+   "a": "f:packages/widgets/src/tiles.tsx",
+   "b": "f:packages/app-kit/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "useContextListener",
+    "useNow",
+    "useSession",
+    "useTrades"
+   ]
+  },
+  {
+   "a": "f:packages/widgets/src/tiles.tsx",
+   "b": "f:packages/mock-data/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "ALL_PAIRS",
+    "pairSpec",
+    "upcomingCutOffs",
+    "MatchStatus",
+    "PriceTick"
+   ]
+  },
+  {
+   "a": "f:packages/widgets/src/tiles.tsx",
+   "b": "f:packages/schemas/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "FxTradeContext",
+    "SettlementContext"
+   ]
+  },
+  {
+   "a": "f:packages/widgets/src/tiles.tsx",
+   "b": "f:packages/ui/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "PriceCell",
+    "Skeleton",
+    "Sparkline",
+    "formatAge",
+    "formatBps"
+   ]
+  },
+  {
+   "a": "f:packages/widgets/src/tiles.tsx",
+   "b": "f:packages/widgets/src/types.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "WidgetProps"
+   ]
+  },
+  {
+   "a": "f:packages/widgets/src/types.ts",
+   "b": "f:packages/agent-client/src/index.ts",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "HarborClient"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/components/Layout.tsx",
+   "b": "n:dockview",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "dockview"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/main.tsx",
+   "b": "n:dockview",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "dockview"
+   ]
+  },
+  {
+   "a": "f:apps/shell/src/workspaces/controller.ts",
+   "b": "n:dockview",
+   "k": "import",
+   "w": 1,
+   "names": [
+    "dockview"
+   ]
+  },
+  {
+   "a": "f:packages/ui/src/DataGrid.tsx",
+   "b": "n:aggrid",
+   "k": "import",
+   "w": 3,
+   "names": [
+    "ag-grid-community",
+    "ag-grid-react"
+   ]
+  },
+  {
+   "a": "n:broker.client",
+   "b": "n:broker.agent",
+   "k": "rpc",
+   "w": 1,
+   "labels": [
+    "messages across frames"
+   ],
+   "desc": "Apps run in separate frames, so the connector sends every request to the broker as a browser message, and the broker checks where it came from before accepting it."
+  },
+  {
+   "a": "n:shell.chrome",
+   "b": "n:apps",
+   "k": "call",
+   "w": 1,
+   "labels": [
+    "shows in frames"
+   ],
+   "desc": "The panel layout loads each app from its own address inside a locked-down frame, using the list of apps the shell fetches at start-up."
+  },
+  {
+   "a": "f:apps/shell/src/auth.ts",
+   "b": "n:browser",
+   "k": "data",
+   "w": 1,
+   "labels": [
+    "remembers sign-in"
+   ]
+  },
+  {
+   "a": "n:shell.workspaces",
+   "b": "n:browser",
+   "k": "data",
+   "w": 1,
+   "labels": [
+    "saves layouts"
+   ]
+  },
+  {
+   "a": "n:apps.payments",
+   "b": "n:browser",
+   "k": "data",
+   "w": 1,
+   "labels": [
+    "keeps payments"
+   ],
+   "desc": "Payments are the one thing kept across reloads, because approval needs a second user to sign in."
+  }
+ ],
+ "flows": [
+  {
+   "id": "core-loop",
+   "title": "From order to trade",
+   "description": "The trader's main loop: pick an order, see its cost, trade it, and watch it reach the review apps.",
+   "steps": [
+    {
+     "ref": "f:packages/widgets/src/OrdersAwaitingTile.tsx",
+     "note": "The trader clicks the 'Orders awaiting execution' tile."
+    },
+    {
+     "ref": "f:packages/widgets/src/OrderBlotter.tsx",
+     "note": "The blotter narrows to those orders, and the trader selects one. The blotter announces the selected order."
+    },
+    {
+     "ref": "n:broker.agent",
+     "note": "The broker checks the message is valid and passes it to every app on the same channel."
+    },
+    {
+     "ref": "n:apps.pretrade",
+     "note": "Pre-Trade shows the expected cost and recommends asking banks for quotes."
+    },
+    {
+     "ref": "n:apps.fxexec",
+     "note": "'Execute via RFQ' opens FX Execution with the ticket already filled in. The trader accepts the best quote."
+    },
+    {
+     "ref": "n:broker.agent",
+     "note": "The new trade is announced to everyone through the broker."
+    },
+    {
+     "ref": "n:apps.tca",
+     "note": "Trade cost analysis shows the trade straight away, and Post-Trade matches it a few seconds later."
+    }
+   ]
+  }
+ ],
+ "tour": [
+  {
+   "ref": "n:shell",
+   "title": "What Harbor is",
+   "note": "One screen that holds many trading apps at once. You sign in once and every app knows who you are."
+  },
+  {
+   "ref": "n:apps",
+   "title": "The apps",
+   "note": "Each app is built separately and shown in its own locked-down frame. They can't see each other."
+  },
+  {
+   "ref": "n:broker",
+   "title": "How they talk",
+   "note": "Everything the apps share goes through the broker, which checks who's asking and whether they're allowed."
+  },
+  {
+   "ref": "n:schemas",
+   "title": "The rules for messages",
+   "note": "Every message has to match a known shape, or it's thrown away before it reaches anyone."
+  },
+  {
+   "ref": "n:mockdata",
+   "title": "Where the numbers come from",
+   "note": "There is no real server. The data is made up from a seed, so every app shows the same prices."
+  },
+  {
+   "ref": "f:packages/widgets/src/OrderBlotter.tsx",
+   "title": "Where the trading loop starts",
+   "note": "The order blotter is where a trader picks an order, and that choice ripples out to the other apps."
+  }
+ ],
+ "recent": {
+  "updatedAt": "2026-11-11T20:50:00Z",
+  "tasks": [
+   {
+    "title": "Host Harbor on Firebase",
+    "request": "",
+    "summary": "Every Harbor app now builds under one web address so the whole desktop can be hosted on Firebase and opened from the File Gallery. The shell works out app addresses relative to where it's hosted."
+   }
+  ],
+  "items": [
+   {
+    "id": "f:scripts/build-hosted.mjs",
+    "task": 0,
+    "change": "new",
+    "note": "New: builds every app into one folder with an app list that uses relative addresses, which is what lets Harbor be hosted at a single address."
+   },
+   {
+    "id": "f:apps/shell/src/directory.ts",
+    "task": 0,
+    "change": "changed",
+    "note": "Now turns the relative app addresses in the hosted app list into full ones at start-up, so the security checks still know each app's real address."
+   },
+   {
+    "id": "f:apps/shell/src/components/Layout.tsx",
+    "task": 0,
+    "change": "changed",
+    "note": "Opens popped-out panels from a page relative to where the shell is hosted, rather than the site root."
+   }
+  ]
+ },
+ "health": {
+  "summary": {
+   "high": 0,
+   "medium": 0,
+   "low": 0
+  },
+  "issues": []
+ },
+ "screens": []
+}
