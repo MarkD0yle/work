@@ -60,6 +60,14 @@ const router = createBrowserRouter([
         path: 'jobs',
         lazy: gridRoute(async () => (await import('./routes/Jobs')).Jobs),
       },
+      {
+        path: 'accounting/:section?',
+        lazy: gridRoute(async () => (await import('./routes/Accounting')).Accounting),
+      },
+      {
+        path: 'market-data',
+        lazy: gridRoute(async () => (await import('./routes/MarketData')).MarketData),
+      },
       { path: 'reports', element: <Reports /> },
       { path: ':domain', element: <DomainPlaceholder /> },
     ],

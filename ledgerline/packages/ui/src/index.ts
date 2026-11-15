@@ -41,7 +41,14 @@ export { useDensity } from './lib/use-density';
 export { FinancialCell, type FinancialCellProps } from './financial/financial-cell';
 export { FinancialInput, type FinancialInputProps } from './financial/financial-input';
 export { formatDelta, type FormattedDelta, type ToleranceLevel } from './financial/delta';
-export { formatFinancial, rawFinancial, type FormattedFinancial } from './financial/format';
+export {
+  formatFinancial,
+  formatPercent,
+  fractionToPercent,
+  percentToFraction,
+  rawFinancial,
+  type FormattedFinancial,
+} from './financial/format';
 export { parseFinancialInput, type ParseResult } from './financial/parse';
 export { displayPrecision, minorUnits, registryPrecision, storagePrecision } from './financial/registry';
 
@@ -185,3 +192,11 @@ export {
   type GlossaryProviderProps,
 } from './glossary/glossary';
 export { formatTimestamp } from './financial/provenance';
+export { ComparisonTable, type ComparisonTableProps, type DeltaMode } from './comparison/comparison';
+export {
+  ActorLabel,
+  AuditTimeline,
+  auditChanges,
+  describeAction,
+  type AuditTimelineProps,
+} from './audit/audit-timeline';

@@ -5,6 +5,17 @@
  */
 import type {
   AccountingPeriod,
+  ApprovalRequest,
+  CloseChecklist,
+  CloseSignOff,
+  CloseType,
+  Comparison,
+  ExceptionRecord,
+  PeriodOverviewRow,
+  PriceRow,
+  RecurringBreakRule,
+  ToleranceImpact,
+  ToleranceRule,
   AuditEvent,
   BulkResult,
   EntityKind,
@@ -158,3 +169,72 @@ export interface ReportDef {
 export const fetchReports = () => request<ReportDef[]>('/reports');
 export const runReport = (id: string, input: { asOf?: string; portfolioIds?: string[] }) =>
   post<Job>(`/reports/${encodeURIComponent(id)}/run`, input);
+
+// ── Exceptions ──
+export const queryExceptions = (query: GridQuery) =>
+  post<GridResponse<ExceptionRecord>>('/exceptions/query', query);
+export const fetchException = (id: string) =>
+  request<ExceptionRecord>(`/exceptions/${encodeURIComponent(id)}`);
+export const addExceptionComment = (id: string, text: string) =>
+  post<ExceptionRecord>(`/exceptions/${encodeURIComponent(id)}/thread`, { text });
+export interface ExceptionInputs {
+  note?: string;
+  rootCauseCategory?: string;
+  ownerId?: string;
+  challengeRef?: string;
+  evidence?: { name: string };
+}
+export const exceptionBulk = (actionId: string, ids: string[], inputs: ExceptionInputs = {}) =>
+  post<BulkResult>('/exceptions/bulk', { actionId, ids, inputs });
+export const fetchRootCauses = () => request<{ id: string; label: string }[]>('/exceptions/root-causes');
+export const fetchBreakRules = () => request<RecurringBreakRule[]>('/exceptions/rules');
+export type BreakRuleInput = Pick<RecurringBreakRule, 'name' | 'match' | 'rootCauseCategory'>;
+export const createBreakRule = (input: BreakRuleInput) =>
+  post<RecurringBreakRule>('/exceptions/rules', input);
+export const applyBreakRule = (id: string) =>
+  post<{ tagged: string[] }>(`/exceptions/rules/${encodeURIComponent(id)}/apply`, {});
+export const deleteBreakRule = (id: string) => del<unknown>(`/exceptions/rules/${encodeURIComponent(id)}`);
+export const fetchUsers = () => request<User[]>('/users');
+
+// ── Period close ──
+export const fetchCloseOverview = (periodEnd: string | null, scope: 'mine' | 'all') =>
+  request<PeriodOverviewRow[]>(
+    `/periods/overview?scope=${scope}${periodEnd ? `&periodEnd=${periodEnd}` : ''}`,
+  );
+export const fetchChecklist = (periodId: string) =>
+  request<CloseChecklist>(`/periods/${encodeURIComponent(periodId)}/checklist`);
+export const closePeriods = (portfolioIds: string[], periodEnd: string, closeTypes?: CloseType[]) =>
+  post<Job>('/periods/close', { portfolioIds, periodEnd, ...(closeTypes ? { closeTypes } : {}) });
+export const requestBlockOverride = (periodId: string, reason: string) =>
+  post<ApprovalRequest>(`/periods/${encodeURIComponent(periodId)}/override-block`, { reason });
+export const requestReopen = (periodId: string, reason: string, closeTypes?: CloseType[]) =>
+  post<ApprovalRequest>('/periods/reopen', { periodId, reason, ...(closeTypes ? { closeTypes } : {}) });
+export const signOffPeriod = (periodId: string, note: string) =>
+  post<CloseSignOff>(`/periods/${encodeURIComponent(periodId)}/signoff`, { note });
+export const createClosePackage = (periodId: string) =>
+  post<Job>(`/periods/${encodeURIComponent(periodId)}/package`, {});
+export const fetchBooksComparison = (portfolioId: string) =>
+  post<Comparison>('/comparisons', { kind: 'books', portfolioId });
+
+// ── Approvals ──
+export const queryApprovals = (query: GridQuery) =>
+  post<GridResponse<ApprovalRequest>>('/approvals/query', query);
+export const decideApproval = (id: string, decision: 'approve' | 'reject', note: string) =>
+  post<ApprovalRequest>(`/approvals/${encodeURIComponent(id)}/decide`, {
+    decision,
+    ...(note ? { note } : {}),
+  });
+export const decideApprovals = (ids: string[], decision: 'approve' | 'reject', note: string) =>
+  post<BulkResult>('/approvals/decide', { ids, decision, ...(note ? { note } : {}) });
+
+// ── Price review ──
+export const queryPrices = (query: GridQuery) => post<GridResponse<PriceRow>>('/prices/query', query);
+export const fetchTolerances = () => request<ToleranceRule[]>('/prices/tolerances');
+export type ToleranceEdit = Pick<ToleranceRule, 'id' | 'threshold' | 'holidayAware'>;
+export const previewTolerances = (rules: ToleranceEdit[]) =>
+  post<ToleranceImpact>('/prices/tolerances/impact', { rules });
+export const saveTolerances = (rules: ToleranceEdit[]) =>
+  put<ToleranceRule[]>('/prices/tolerances', { rules });
+
+// ── Audit ──
+export const queryAudit = (query: GridQuery) => post<GridResponse<AuditEvent>>('/audit/query', query);

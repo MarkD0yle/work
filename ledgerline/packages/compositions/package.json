@@ -6,7 +6,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./transactions": "./src/transactions/index.ts",
-    "./jobs": "./src/jobs/index.ts"
+    "./jobs": "./src/jobs/index.ts",
+    "./accounting": "./src/accounting/index.ts"
   },
   "dependencies": {
     "@ledgerline/contracts": "workspace:*",
