@@ -1,10 +1,13 @@
 import type {
+  ActionDef,
   ActionRef,
+  BulkResult,
   FilterCondition,
   FinancialValue,
   GridQuery,
   GridResponse,
   Message,
+  Permission,
   UiState,
 } from '@ledgerline/contracts';
 import { density as densityTokens } from '@ledgerline/tokens';
@@ -23,7 +26,19 @@ import {
   type ReactNode,
   type Ref,
 } from 'react';
+import { ActionBar, ActionMenuItems } from '../actions/action-bar';
+import { formatShortcut, matchesShortcut, resolveActions, type ResolvedAction } from '../actions/registry';
+import { useActionRunner, type ActionOutcome } from '../actions/use-action-runner';
+import { useCommandSource } from '../command/command-context';
 import { Button } from '../components/button';
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuLabel,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from '../components/context-menu';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -32,6 +47,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../components/dropdown-menu';
 import { Popover, PopoverAnchor, PopoverContent } from '../components/popover';
@@ -44,6 +60,7 @@ import { formatTimestamp } from '../financial/provenance';
 import { cn } from '../lib/cn';
 import { useDensity } from '../lib/use-density';
 import { NotificationContext } from '../state/notifications';
+import { SectionBanner } from '../state/section-banner';
 import { StateOverlay } from '../state/state-overlay';
 import { headerText, MESSAGES_COLUMN, toColDefs } from './cells';
 import { buildClipboard, formatBusinessDate } from './copy';
@@ -95,6 +112,22 @@ export function describeFilter<Row>(
   }
 }
 
+const DROPDOWN_PARTS = { Item: DropdownMenuItem, Separator: DropdownMenuSeparator } as Parameters<
+  typeof ActionMenuItems
+>[0]['parts'];
+const CONTEXT_PARTS = { Item: ContextMenuItem, Separator: ContextMenuSeparator } as Parameters<
+  typeof ActionMenuItems
+>[0]['parts'];
+const DEFAULT_NOUN = { one: 'row', many: 'rows' };
+const ALLOWED: Permission = { action: 'grid', accessLevel: 'view', allowed: true };
+const LOCAL_RESULT = (ids: string[]): BulkResult => ({
+  jobId: 'local',
+  status: 'completed',
+  succeeded: ids,
+  failed: [],
+  skipped: [],
+});
+
 const RETRY: ActionRef = { actionId: 'grid.retry', label: 'Retry' };
 const SEARCH_DEBOUNCE_MS = 200;
 const count = (n: number) => n.toLocaleString('en-US');
@@ -134,6 +167,10 @@ export function LLGrid<Row>({
   onViewChange,
   filterLabels,
   onRefresh,
+  actions,
+  permissions,
+  noun = DEFAULT_NOUN,
+  onAction,
   rowMessages,
   state: imposedState,
   onStateChange,
@@ -153,7 +190,10 @@ export function LLGrid<Row>({
   const [error, setError] = useState<Message[] | null>(null);
   const [selected, setSelected] = useState<Row[]>([]);
   const [sort, setSort] = useState<LLGridState['sort']>([]);
-  const [menuOpen, setMenuOpen] = useState(false);
+  /** The row the keyboard is on. With nothing selected, row actions act on it. */
+  const [focusedRow, setFocusedRow] = useState<Row | undefined>(undefined);
+  /** Result of the last action that did not fully succeed. It stays until dismissed: partial success is never a toast. */
+  const [actionState, setActionState] = useState<UiState | null>(null);
   const [announcement, setAnnouncement] = useState('');
   /** Counts grid instances: AG Grid is rebuilt when density changes, and each build needs its datasource. */
   const [gridVersion, setGridVersion] = useState(0);
@@ -349,13 +389,6 @@ export function LLGrid<Row>({
     return true;
   }, []);
 
-  useImperativeHandle(ref, () => ({ refresh, focusRow, getViewState: readView, applyViewState: applyView }), [
-    refresh,
-    focusRow,
-    readView,
-    applyView,
-  ]);
-
   // Notification-panel messages jump to their row (SPEC 7.7).
   useEffect(() => notifications?.registerTargetResolver(focusRow), [notifications, focusRow]);
 
@@ -455,6 +488,204 @@ export function LLGrid<Row>({
     [columns, features.copy, selected, notifications, label],
   );
 
+  // ── Actions: one registry for the toolbar, selection bar, context menu and palette (SPEC 7.8) ──
+  const refreshRef = useRef(refresh);
+  const copyRef = useRef(copy);
+  const openRef = useRef(onRowOpen);
+  useEffect(() => {
+    refreshRef.current = refresh;
+    copyRef.current = copy;
+    openRef.current = onRowOpen;
+  }, [refresh, copy, onRowOpen]);
+
+  const canOpen = Boolean(onRowOpen);
+  const definitions = useMemo<ActionDef<Row>[]>(() => {
+    const local = {
+      consequence: 'none' as const,
+      agentRequiresConfirmation: false,
+      available: () => ALLOWED,
+    };
+    const open: ActionDef<Row>[] = canOpen
+      ? [
+          {
+            ...local,
+            id: 'row.open',
+            label: 'Open',
+            description: `Opens the ${noun.one} in the detail panel.`,
+            tier: 'primary',
+            appliesTo: 'single',
+            shortcut: 'Enter',
+            execute: async (ids) => LOCAL_RESULT(ids),
+          },
+        ]
+      : [];
+    const copies: ActionDef<Row>[] = features.copy
+      ? [
+          {
+            ...local,
+            id: 'grid.copy',
+            label: 'Copy',
+            description: 'Copies the selected rows, or the focused cell, as they are shown.',
+            tier: 'secondary',
+            appliesTo: 'multi',
+            shortcut: 'Mod+C',
+            execute: async (ids) => {
+              copyRef.current('displayed');
+              return LOCAL_RESULT(ids);
+            },
+          },
+          {
+            ...local,
+            id: 'grid.copyRaw',
+            label: 'Copy raw values',
+            description: 'Copies the stored values at full precision, with ISO dates and ids.',
+            tier: 'overflow',
+            appliesTo: 'multi',
+            shortcut: 'Mod+Shift+C',
+            execute: async (ids) => {
+              copyRef.current('raw');
+              return LOCAL_RESULT(ids);
+            },
+          },
+        ]
+      : [];
+    const refreshAction: ActionDef<Row> = {
+      ...local,
+      id: 'grid.refresh',
+      label: 'Refresh',
+      description: 'Reloads the rows. Focus, selection and scroll position are kept.',
+      tier: 'secondary',
+      appliesTo: 'none',
+      execute: async () => {
+        refreshRef.current();
+        return LOCAL_RESULT([]);
+      },
+    };
+    return [...open, ...(actions ?? []), ...copies, refreshAction];
+  }, [actions, features.copy, noun.one, canOpen]);
+
+  const targets = useMemo(
+    () => (selected.length ? selected : focusedRow !== undefined ? [focusedRow] : []),
+    [selected, focusedRow],
+  );
+  const resolved = useMemo(
+    () => resolveActions(definitions, { selection: targets, state: ui, permissions: permissions ?? [] }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `ui` is rebuilt every render; its kind is what matters
+    [definitions, targets, ui.kind, permissions],
+  );
+  const rowActions = resolved.filter((a) => a.def.appliesTo !== 'none');
+  const gridActions = resolved.filter((a) => a.def.appliesTo === 'none');
+
+  const onDone = useCallback(
+    ({ action, result, error: failure }: ActionOutcome<Row>) => {
+      const requested = action.eligible.length;
+      if (failure) {
+        for (const m of failure) notifyRef.current.notify?.(m, notifyRef.current.label);
+        setActionState({ kind: 'blockingError', messages: failure });
+        onAction?.({
+          actionId: action.def.id,
+          requested,
+          succeeded: 0,
+          failed: requested,
+          skipped: 0,
+          error: true,
+        });
+        return;
+      }
+      if (!result) return;
+      if (action.def.id === 'row.open') {
+        const row = action.eligible[0];
+        if (row !== undefined) openRef.current?.(row);
+      }
+      const [ok, failed, skipped] = [result.succeeded.length, result.failed.length, result.skipped.length];
+      onAction?.({ actionId: action.def.id, requested, succeeded: ok, failed, skipped, error: false });
+      if (result.jobId === 'local') return;
+      if (failed + skipped === 0) {
+        setActionState(null);
+        toast(`${action.def.label}: done`, `${count(ok)} ${ok === 1 ? noun.one : noun.many}`);
+      } else {
+        // Partial success is a first-class outcome: three counts in a banner, and every row's reason in the notification panel.
+        setActionState({ kind: 'partialSuccess', succeeded: ok, failed, skipped, jobId: result.jobId });
+        for (const f of result.failed)
+          notifyRef.current.notify?.(
+            { ...f.message, target: f.message.target ?? f.id },
+            notifyRef.current.label,
+          );
+        for (const sk of result.skipped) {
+          notifyRef.current.notify?.(
+            {
+              code: 'LL-BLK-0003',
+              severity: 'info',
+              level: 'row',
+              text: `${action.def.label} skipped ${sk.id}.`,
+              fix: sk.reason,
+              target: sk.id,
+            },
+            notifyRef.current.label,
+          );
+        }
+      }
+      refreshRef.current();
+    },
+    [noun, onAction],
+  );
+  // When the confirm step closes, focus goes back to the grid cell the user was on, however the action was started.
+  const onConfirmClosed = useCallback(() => {
+    setTimeout(() => {
+      const grid = api.current;
+      const focused = grid?.getFocusedCell();
+      if (grid && focused) grid.setFocusedCell(focused.rowIndex, focused.column);
+    }, 0);
+  }, []);
+  const { run, dialog: confirmDialog } = useActionRunner<Row>({ rowId, noun, onDone, onConfirmClosed });
+
+  const runById = useCallback(
+    (actionId: string, onRow?: Row) => {
+      const listed = resolved.find((a) => a.def.id === actionId);
+      if (!listed) return;
+      // From the keyboard, the row under the cursor is known at once; the focused-row state may be a render behind.
+      const action: ResolvedAction<Row> | undefined =
+        onRow !== undefined && selected.length === 0
+          ? resolveActions<Row>([listed.def], {
+              selection: [onRow as Row],
+              state: ui,
+              permissions: permissions ?? [],
+            })[0]
+          : listed;
+      if (!action) return;
+      if (action.enabled) run(action);
+      else setAnnouncement(`${action.def.label} is not available. ${action.reason ?? ''}`);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `ui` is rebuilt every render; its kind is what matters
+    [resolved, run, selected.length, ui.kind, permissions],
+  );
+
+  // The command palette lists these actions with the same label, shortcut and reason as every other surface.
+  useCommandSource(`grid-${gridId}`, () =>
+    resolved.map((a) => ({
+      id: a.def.id,
+      group: 'Actions' as const,
+      label: a.def.label,
+      hint: a.def.description,
+      ...(a.def.shortcut ? { shortcut: formatShortcut(a.def.shortcut) } : {}),
+      ...(a.enabled ? {} : { disabledReason: a.reason ?? 'Not available.' }),
+      run: () => run(a),
+    })),
+  );
+
+  /** Right-click (and Shift+F10) act on the row under the pointer: if it is not part of the selection, it becomes the target. */
+  const prepareContext = (target: HTMLElement) => {
+    const grid = api.current;
+    const id = target.closest('.ag-row')?.getAttribute('row-id');
+    const node = id ? grid?.getRowNode(id) : undefined;
+    const record = recordOf(node?.data);
+    if (!grid || !node || record === undefined || node.rowIndex == null) return;
+    if (!node.isSelected() && grid.getSelectedNodes().length) grid.deselectAll();
+    const colId = target.closest('[col-id]')?.getAttribute('col-id');
+    if (colId) grid.setFocusedCell(node.rowIndex, colId);
+    setFocusedRow(record);
+  };
+
   // ── Keyboard (SPEC 7.1) ─────────────────────────────────
   const onCellKeyDown = useCallback(
     (event: CellKeyDownEvent<Row>) => {
@@ -462,6 +693,13 @@ export function LLGrid<Row>({
       if (!e) return;
       const mod = e.ctrlKey || e.metaKey;
       const key = e.key.toLowerCase();
+      // Action shortcuts come from the registry, so they are the same keys the menus and palette show.
+      const byShortcut = resolved.find((a) => a.def.shortcut && matchesShortcut(e, a.def.shortcut));
+      if (byShortcut || (e.key === 'F2' && canOpen)) {
+        e.preventDefault();
+        runById(byShortcut ? byShortcut.def.id : 'row.open', recordOf(event.data));
+        return;
+      }
       if (mod && key === 'a') {
         // Select all rows in view, never every row on the server.
         e.preventDefault();
@@ -471,9 +709,6 @@ export function LLGrid<Row>({
           .filter((n: IRowNode<Row>) => recordOf(n.data) !== undefined);
         for (const node of nodes) node.setSelected(true);
         setAnnouncement(`${count(nodes.length)} rows in view selected.`);
-      } else if (mod && key === 'c') {
-        e.preventDefault();
-        copy(e.shiftKey ? 'raw' : 'displayed');
       } else if (mod && key === 'i') {
         // Provenance is one keystroke away.
         e.preventDefault();
@@ -496,24 +731,42 @@ export function LLGrid<Row>({
           const node = event.api.getDisplayedRowAtIndex(i);
           if (recordOf(node?.data) !== undefined) node?.setSelected(true);
         }
-      } else if ((e.key === 'Enter' || e.key === 'F2') && onRowOpen && recordOf(event.data) !== undefined) {
-        e.preventDefault();
-        onRowOpen(event.data as Row);
       } else if (e.key === 'Escape') {
         if (event.api.getSelectedNodes().length) {
           event.api.deselectAll();
           setAnnouncement('Selection cleared.');
         }
       } else if (e.key === 'F10' && e.shiftKey) {
+        // Shift+F10 opens the same actions menu as right-click, at the focused cell: right-click is never the only path.
         e.preventDefault();
+        const cell = (e.target as HTMLElement).closest<HTMLElement>('.ag-cell');
         const focused = event.api.getFocusedCell();
-        returnFocus.current = focused
-          ? { rowIndex: focused.rowIndex, colId: focused.column.getColId() }
-          : null;
-        setMenuOpen(true);
+        if (!cell || !focused) return;
+        returnFocus.current = { rowIndex: focused.rowIndex, colId: focused.column.getColId() };
+        const box = cell.getBoundingClientRect();
+        cell.dispatchEvent(
+          new MouseEvent('contextmenu', {
+            bubbles: true,
+            cancelable: true,
+            clientX: box.left + 16,
+            clientY: box.bottom - 4,
+          }),
+        );
       }
     },
-    [copy, features.selection, onRowOpen],
+    [resolved, runById, features.selection, canOpen],
+  );
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      refresh,
+      focusRow,
+      getViewState: readView,
+      applyViewState: applyView,
+      runAction: (id: string) => runById(id),
+    }),
+    [refresh, focusRow, readView, applyView, runById],
   );
 
   const onGridReady = useCallback(
@@ -549,6 +802,12 @@ export function LLGrid<Row>({
   }, [selected, columns]);
 
   const rowHeight = densityTokens[density].rowHeight;
+  const targetLabel =
+    targets.length === 0
+      ? `No ${noun.one} selected`
+      : targets.length === 1
+        ? `1 ${noun.one}`
+        : `${count(targets.length)} ${noun.many}`;
 
   // ── Provenance (one popover for every financial cell) ───
   const openProvenance = useCallback(
@@ -580,14 +839,64 @@ export function LLGrid<Row>({
     (api.current as unknown as { setRowGroupColumns: (keys: string[]) => void } | null)?.setRowGroupColumns(
       on ? [...grouping, field] : grouping.filter((f) => f !== field),
     );
-  /** Text for a group row: status labels and dates read as they do in cells. */
-  const groupLabel = (field: string | undefined, key: string | null | undefined) => {
-    const column = columns.find((c) => c.field === field);
-    if (key == null || key === '') return '(none)';
-    if (column?.type === 'status') return column.statuses[key]?.label ?? key;
-    if (column?.type === 'date') return formatBusinessDate({ value: key, basis: column.dateBasis });
-    return key;
-  };
+
+  /**
+   * Grid options that never change while the grid is on screen. They are built once: handing AG Grid a new
+   * object on every render makes it rebuild columns and rows, which can drop a click that is in progress.
+   */
+  const client = dataSource.kind === 'client';
+  const staticOptions = useMemo(() => {
+    /** Text for a group row: status labels and dates read as they do in cells. */
+    const groupLabel = (field: string | undefined, key: string | null | undefined) => {
+      const column = columns.find((c) => c.field === field);
+      if (key == null || key === '') return '(none)';
+      if (column?.type === 'status') return column.statuses[key]?.label ?? key;
+      if (column?.type === 'date') return formatBusinessDate({ value: key, basis: column.dateBasis });
+      return key;
+    };
+    return {
+      getRowId: (params: { data: Row; parentKeys?: string[] }) =>
+        isGroupRow(params.data) ? groupRowId(params.parentKeys, params.data) : rowId(params.data),
+      suppressOverlays: ['loading', 'noRows'] as ('loading' | 'noRows')[],
+      ...(client
+        ? {}
+        : enterprise
+          ? { rowModelType: 'serverSide' as const, cacheBlockSize: 100 }
+          : {
+              rowModelType: 'infinite' as const,
+              cacheBlockSize: 100,
+              infiniteInitialRowCount: 1,
+              maxBlocksInCache: 20,
+            }),
+      ...(features.selection
+        ? {
+            rowSelection: {
+              mode: 'multiRow' as const,
+              checkboxes: true,
+              headerCheckbox: client,
+              enableClickSelection: false,
+              // Group rows are headings, not records: they cannot be selected.
+              isRowSelectable: (node: IRowNode<Row>) => !isGroupRow(node.data),
+            },
+            selectionColumnDef: { pinned: 'left' as const, width: 40, suppressHeaderMenuButton: true },
+          }
+        : {}),
+      ...(enterprise && !client
+        ? {
+            autoGroupColumnDef: {
+              headerName: 'Group',
+              minWidth: 240,
+              pinned: 'left' as const,
+              sortable: false,
+              valueFormatter: (p: { value: unknown; node: IRowNode<Row> | null }) =>
+                groupLabel(p.node?.rowGroupColumn?.getColId(), p.value as string | null),
+            },
+            getChildCount: (data: unknown) => (isGroupRow(data) ? data.count : 0),
+            suppressGroupChangesColumnVisibility: true,
+          }
+        : {}),
+    };
+  }, [client, enterprise, features.selection, columns, rowId]);
 
   // ── Filter tags: every active condition is visible and removable ──
   const tags = [
@@ -701,42 +1010,31 @@ export function LLGrid<Row>({
             </DropdownMenuContent>
           </DropdownMenu>
         ) : null}
-        <Button
-          variant="secondary"
-          onClick={() => {
-            refresh();
-            onRefresh?.();
-          }}
-        >
-          <RefreshCw aria-hidden />
-          Refresh
-        </Button>
-        {features.copy ? (
-          <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
+        {gridActions.map((action) => (
+          <Button
+            key={action.def.id}
+            variant="secondary"
+            data-action-id={action.def.id}
+            onClick={() => {
+              run(action);
+              if (action.def.id === 'grid.refresh') onRefresh?.();
+            }}
+          >
+            {action.def.id === 'grid.refresh' ? <RefreshCw aria-hidden /> : null}
+            {action.def.label}
+          </Button>
+        ))}
+        {rowActions.length ? (
+          <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="secondary">
                 Row actions
                 <ChevronDown aria-hidden className="text-muted-foreground" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              onCloseAutoFocus={(e) => {
-                // Opened from a cell with Shift+F10: closing puts focus back on that cell, not on the toolbar.
-                const back = returnFocus.current;
-                if (!back) return;
-                returnFocus.current = null;
-                e.preventDefault();
-                api.current?.setFocusedCell(back.rowIndex, back.colId);
-              }}
-            >
-              <DropdownMenuItem onSelect={() => copy('displayed')}>
-                Copy <span className="ml-auto pl-6 text-2xs text-muted-foreground">Ctrl+C</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => copy('raw')}>
-                Copy raw values{' '}
-                <span className="ml-auto pl-6 text-2xs text-muted-foreground">Ctrl+Shift+C</span>
-              </DropdownMenuItem>
+            <DropdownMenuContent align="end" className="min-w-64">
+              <DropdownMenuLabel>{targetLabel}</DropdownMenuLabel>
+              <ActionMenuItems actions={rowActions} onRun={run} parts={DROPDOWN_PARTS} />
             </DropdownMenuContent>
           </DropdownMenu>
         ) : null}
@@ -792,7 +1090,22 @@ export function LLGrid<Row>({
           <Button variant="ghost" onClick={() => api.current?.deselectAll()}>
             Clear selection
           </Button>
+          <ActionBar
+            className="ml-auto"
+            actions={rowActions}
+            onRun={run}
+            label={`Actions for selected ${noun.many}`}
+          />
         </div>
+      ) : null}
+
+      {actionState ? (
+        <SectionBanner
+          state={actionState}
+          dismissCritical
+          onDismiss={() => setActionState(null)}
+          className="shrink-0"
+        />
       ) : null}
 
       <StateOverlay
@@ -806,90 +1119,80 @@ export function LLGrid<Row>({
           }
         }}
       >
-        {/* Clicks on financial cells are handled here once, not by a listener per cell. */}
-        <div
-          className="ll-grid-body min-h-0 flex-1"
-          onClick={(e) => openProvenance(e.target as HTMLElement)}
-          role="presentation"
-        >
-          <AgGridReact<Row>
-            key={density}
-            theme={llGridTheme}
-            columnDefs={columnDefs}
-            getRowId={(params) =>
-              isGroupRow(params.data) ? groupRowId(params.parentKeys, params.data) : rowId(params.data)
-            }
-            rowHeight={rowHeight}
-            headerHeight={rowHeight}
-            {...(dataSource.kind === 'client'
-              ? { rowData: dataSource.rows }
-              : enterprise
-                ? { rowModelType: 'serverSide' as const, cacheBlockSize: 100 }
-                : {
-                    rowModelType: 'infinite' as const,
-                    cacheBlockSize: 100,
-                    infiniteInitialRowCount: 1,
-                    maxBlocksInCache: 20,
-                  })}
-            {...(features.selection
-              ? {
-                  rowSelection: {
-                    mode: 'multiRow' as const,
-                    checkboxes: true,
-                    headerCheckbox: !server,
-                    enableClickSelection: false,
-                    // Group rows are headings, not records: they cannot be selected.
-                    isRowSelectable: (node: IRowNode<Row>) => !isGroupRow(node.data),
-                  },
-                  selectionColumnDef: { pinned: 'left' as const, width: 40, suppressHeaderMenuButton: true },
-                }
-              : {})}
-            suppressOverlays={['loading', 'noRows']}
-            suppressCellFocus={false}
-            enableCellTextSelection={false}
-            onGridReady={onGridReady}
-            onSelectionChanged={(e) => {
-              const nodes = e.api.getSelectedNodes();
-              lastView.current.ids = nodes.flatMap((n) => (n.id ? [n.id] : []));
-              setSelected(nodes.flatMap((n) => recordOf(n.data) ?? []));
+        <ContextMenu>
+          <ContextMenuTrigger asChild>
+            {/* Clicks on financial cells are handled here once, not by a listener per cell. */}
+            <div
+              className="ll-grid-body min-h-0 flex-1"
+              onClick={(e) => openProvenance(e.target as HTMLElement)}
+              onContextMenu={(e) => prepareContext(e.target as HTMLElement)}
+              role="presentation"
+            >
+              <AgGridReact<Row>
+                key={density}
+                theme={llGridTheme}
+                columnDefs={columnDefs}
+                rowHeight={rowHeight}
+                headerHeight={rowHeight}
+                {...(dataSource.kind === 'client' ? { rowData: dataSource.rows } : {})}
+                {...staticOptions}
+                suppressCellFocus={false}
+                enableCellTextSelection={false}
+                onGridReady={onGridReady}
+                onSelectionChanged={(e) => {
+                  const nodes = e.api.getSelectedNodes();
+                  lastView.current.ids = nodes.flatMap((n) => (n.id ? [n.id] : []));
+                  setSelected(nodes.flatMap((n) => recordOf(n.data) ?? []));
+                }}
+                onBodyScrollEnd={(e) => {
+                  lastView.current.firstRow = e.api.getFirstDisplayedRowIndex();
+                }}
+                onRowDoubleClicked={(e) => {
+                  const record = recordOf(e.data);
+                  if (record !== undefined) onRowOpen?.(record);
+                }}
+                onSortChanged={emitView}
+                onColumnVisible={emitView}
+                onColumnPinned={emitView}
+                onColumnRowGroupChanged={emitView}
+                onColumnMoved={(e) => {
+                  if (e.finished) emitView();
+                }}
+                onColumnResized={(e) => {
+                  if (e.finished) emitView();
+                }}
+                onCellKeyDown={onCellKeyDown}
+                onModelUpdated={(e) => {
+                  if (!server) setTotalRows(e.api.getDisplayedRowCount());
+                }}
+                onCellFocused={(e) => {
+                  const node = e.rowIndex == null ? undefined : e.api.getDisplayedRowAtIndex(e.rowIndex);
+                  setFocusedRow(recordOf(node?.data));
+                }}
+              />
+            </div>
+          </ContextMenuTrigger>
+          <ContextMenuContent
+            onCloseAutoFocus={(e) => {
+              // Focus goes back to the cell the menu was opened from, so arrow keys carry on from there.
+              const back =
+                returnFocus.current ??
+                (api.current?.getFocusedCell()
+                  ? {
+                      rowIndex: api.current.getFocusedCell()?.rowIndex ?? 0,
+                      colId: api.current.getFocusedCell()?.column.getColId() ?? '',
+                    }
+                  : null);
+              returnFocus.current = null;
+              if (!back) return;
+              e.preventDefault();
+              api.current?.setFocusedCell(back.rowIndex, back.colId);
             }}
-            onBodyScrollEnd={(e) => {
-              lastView.current.firstRow = e.api.getFirstDisplayedRowIndex();
-            }}
-            onRowDoubleClicked={(e) => {
-              const record = recordOf(e.data);
-              if (record !== undefined) onRowOpen?.(record);
-            }}
-            onSortChanged={emitView}
-            onColumnVisible={emitView}
-            onColumnPinned={emitView}
-            onColumnRowGroupChanged={emitView}
-            onColumnMoved={(e) => {
-              if (e.finished) emitView();
-            }}
-            onColumnResized={(e) => {
-              if (e.finished) emitView();
-            }}
-            {...(enterprise && server
-              ? {
-                  autoGroupColumnDef: {
-                    headerName: 'Group',
-                    minWidth: 240,
-                    pinned: 'left' as const,
-                    sortable: false,
-                    valueFormatter: (p: { value: unknown; node: IRowNode<Row> | null }) =>
-                      groupLabel(p.node?.rowGroupColumn?.getColId(), p.value as string | null),
-                  },
-                  getChildCount: (data: unknown) => (isGroupRow(data) ? data.count : 0),
-                  suppressGroupChangesColumnVisibility: true,
-                }
-              : {})}
-            onCellKeyDown={onCellKeyDown}
-            onModelUpdated={(e) => {
-              if (!server) setTotalRows(e.api.getDisplayedRowCount());
-            }}
-          />
-        </div>
+          >
+            <ContextMenuLabel>{targetLabel}</ContextMenuLabel>
+            <ActionMenuItems actions={rowActions} onRun={run} parts={CONTEXT_PARTS} />
+          </ContextMenuContent>
+        </ContextMenu>
       </StateOverlay>
 
       <div
@@ -907,6 +1210,8 @@ export function LLGrid<Row>({
         <span className="flex-1" />
         {asOf ? <span>Refreshed {formatTimestamp(asOf)}</span> : null}
       </div>
+
+      {confirmDialog}
 
       {provenance ? (
         <Popover open onOpenChange={(open) => !open && setProvenance(null)}>

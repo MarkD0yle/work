@@ -7,7 +7,7 @@ import { schema, type Db } from './db/client';
 import { SEED_TODAY } from './db/seed';
 import { HttpError } from './lib/http';
 import { registerEntityRoutes } from './routes/entities';
-import { registerTransactionRoutes } from './routes/transactions';
+import { registerTransactionBulkRoutes, registerTransactionRoutes } from './routes/transactions';
 import { registerViewRoutes } from './routes/views';
 
 declare module 'fastify' {
@@ -173,6 +173,7 @@ export function buildApp(db: Db, clock: Clock = defaultClock): FastifyInstance {
   );
 
   registerTransactionRoutes(app, db, API_BASE, clock);
+  registerTransactionBulkRoutes(app, db, API_BASE, clock);
   registerViewRoutes(app, db, API_BASE, clock);
   registerEntityRoutes(app, db, API_BASE);
 

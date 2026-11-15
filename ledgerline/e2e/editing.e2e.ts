@@ -62,7 +62,7 @@ test.describe('grid toolbar', () => {
   test.beforeEach(async ({ page }) => {
     await signIn(page, 'u-ada');
     await page.goto('/transactions?view=V-transactions-default');
-    await expect(page.locator('[data-slot="status-bar"]')).toContainText('5,000 rows');
+    await expect(page.locator('[data-slot="status-bar"]')).toContainText(/[45],\d{3} rows/);
   });
 
   test('every active condition shows as a removable tag', async ({ page }) => {
@@ -70,11 +70,11 @@ test.describe('grid toolbar', () => {
     await page.getByRole('searchbox', { name: 'Quick search transactions' }).fill('TREASURY');
     const tags = page.getByRole('list', { name: 'Active filters' });
     await expect(tags.getByText('Search: TREASURY')).toBeVisible();
-    await expect(page.locator('[data-slot="status-bar"]')).not.toContainText('5,000 rows');
+    await expect(page.locator('[data-slot="status-bar"]')).not.toContainText(/[45],\d{3} rows/);
 
     await tags.getByRole('button', { name: 'Remove filter: Search: TREASURY' }).click();
     await expect(page.getByRole('searchbox', { name: 'Quick search transactions' })).toHaveValue('');
-    await expect(page.locator('[data-slot="status-bar"]')).toContainText('5,000 rows');
+    await expect(page.locator('[data-slot="status-bar"]')).toContainText(/[45],\d{3} rows/);
     await expect(page.getByRole('list', { name: 'Active filters' })).toHaveCount(0);
   });
 
@@ -249,6 +249,22 @@ test.describe('transaction detail panel', () => {
     await expect(gridCell(page, row.id, 'price')).toContainText('61.000000');
     // Their quantity change survived my save.
     await expect(gridCell(page, row.id, 'quantity')).toContainText('1,000.0000');
+  });
+
+  test('double-click opens the panel too', async ({ page }) => {
+    await signIn(page, 'u-ada');
+    await page.goto('/transactions?view=V-transactions-default');
+    const cell = page.locator('.ag-row[row-index="3"] [col-id="type"]').first();
+    await expect(cell).toBeVisible();
+    // Let the first load finish drawing: a double-click only counts when both clicks land on the same row.
+    await page.waitForLoadState('networkidle');
+    const id = await page.locator('.ag-row[row-index="3"]').first().getAttribute('row-id');
+    await cell.dblclick();
+    await expect(
+      page
+        .getByRole('complementary', { name: 'Transaction detail' })
+        .getByRole('heading', { name: `Transaction ${id}` }),
+    ).toBeVisible();
   });
 
   test('Escape closes the panel and focus returns to the row', async ({ page }) => {

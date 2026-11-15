@@ -46,13 +46,13 @@ Session prompt template:
 
 ## Milestone 3 — Shell and Action Registry
 
-- [ ] 3.1 App shell: left rail, top bar, job tray placeholder, notification toggle, user menu (theme, density).
-- [ ] 3.2 `ActionDef` registry hooks: toolbar, selection bar, context menu all render from one list.
-- [ ] 3.3 Command palette: navigation, views, entities, actions in context. Shortcut sheet on `?`.
-- [ ] 3.4 Disabled-with-reason pattern for actions and records.
-- [ ] 3.5 Analytics event sink (console in dev).
+- [x] 3.1 App shell: left rail, top bar, job tray placeholder, notification toggle, user menu (theme, density).
+- [x] 3.2 `ActionDef` registry hooks: toolbar, selection bar, context menu all render from one list.
+- [x] 3.3 Command palette: navigation, views, entities, actions in context. Shortcut sheet on `?`.
+- [x] 3.4 Disabled-with-reason pattern for actions and records.
+- [x] 3.5 Analytics event sink (console in dev).
 
-**Exit gate:** SPEC acceptance for 7.8 pass. All domains reachable without a mouse.
+**Exit gate (passed 2026-11-15):** SPEC acceptance for 7.8 pass. All domains reachable without a mouse.
 
 ## Milestone 4 — High-volume proof: Transaction Workbench and Import
 
@@ -62,7 +62,7 @@ Session prompt template:
 - [ ] 4.4 Quick paste into batch grid with last mapping, then the Spreadsheet Import Wizard for files (SPEC 8.1).
 - [ ] 4.6 Clone row, fill-down and inline delta columns (SPEC 7.1).
 - [ ] 4.7 Glossary tooltips and plain-language-first messages for new users (SPEC 7.7).
-- [ ] 4.5 Inline single-record post and reverse (bulk comes in M5).
+- [x] 4.5 Inline single-record post and reverse (bulk comes in M5). *Done early in Milestone 3, with Delete, so the action registry had real actions; see DECISIONS.md.*
 
 **Exit gate:** a Playwright journey: Ada finds yesterday's unposted trades with a saved view, quick-pastes 50 corrections, fixes 2 row errors, clones a trade and fills down a field, and posts 1 record with a single confirm. Ben sees Reverse disabled with a reason.
 

@@ -1,4 +1,5 @@
 import type {
+  BulkResult,
   BusinessDate,
   FinancialKind,
   FinancialValue,
@@ -447,4 +448,179 @@ export function registerTransactionRoutes(
       return result;
     },
   );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Bulk actions (inline form). Preview, eligibility endpoint and jobs for large runs arrive in Milestone 5.
+// ─────────────────────────────────────────────────────────────
+
+const BULK_ACTIONS = {
+  'transaction.post': { from: 'unposted', to: 'posted', done: 'Already posted.', verb: 'post' },
+  'transaction.reverse': { from: 'posted', to: 'reversed', done: 'Already reversed.', verb: 'reverse' },
+  'transaction.delete': { from: 'unposted', to: null, done: '', verb: 'delete' },
+} as const;
+type BulkActionId = keyof typeof BULK_ACTIONS;
+
+const INLINE_LIMIT = 200;
+
+export function registerTransactionBulkRoutes(
+  app: FastifyInstance,
+  db: Db,
+  base: string,
+  clock: { today: string; now: () => string },
+): void {
+  const sqlite = db.$client;
+
+  app.post(`${base}/transactions/bulk`, async (request): Promise<BulkResult> => {
+    const body = schemas.bulkRequest.parse(request.body);
+    const action = BULK_ACTIONS[body.actionId as BulkActionId];
+    if (!action) {
+      throw new HttpError(400, [
+        problem(
+          'LL-BLK-0001',
+          `"${body.actionId}" is not a bulk action for transactions.`,
+          `Use one of: ${Object.keys(BULK_ACTIONS).join(', ')}.`,
+          'actionId',
+        ),
+      ]);
+    }
+    // Permission for the action as a whole. Ben cannot reverse (business rule 3).
+    requirePermission(db, request.user, body.actionId);
+    if (body.ids.length > INLINE_LIMIT) {
+      throw new HttpError(400, [
+        problem(
+          'LL-BLK-0002',
+          `${body.ids.length} records is too many to run at once.`,
+          `Select ${INLINE_LIMIT} or fewer. Larger runs will go through jobs.`,
+          'ids',
+        ),
+      ]);
+    }
+
+    const actor = { type: 'user' as const, id: request.user.id, name: request.user.name };
+    const at = clock.now();
+    const scope = request.user.blotterScope;
+    const note = body.reason?.trim();
+
+    return sqlite.transaction((): BulkResult => {
+      const batchSeq =
+        (
+          sqlite.prepare("SELECT count(*) AS n FROM audit_events WHERE action LIKE '%.batch'").get() as {
+            n: number;
+          }
+        ).n + 1;
+      const batchId = `B-${String(batchSeq).padStart(6, '0')}`;
+      const result: BulkResult = {
+        jobId: batchId,
+        status: 'completed',
+        succeeded: [],
+        failed: [],
+        skipped: [],
+      };
+      const fail = (id: string, code: string, text: string, fix: string) =>
+        result.failed.push({ id, message: { code, severity: 'error', level: 'row', text, fix, target: id } });
+
+      for (const id of body.ids) {
+        const raw = sqlite.prepare(`${SELECT} WHERE t.id = ?`).get(id) as Raw | undefined;
+        if (!raw || (scope && !scope.includes(raw.portfolio_id))) {
+          fail(
+            id,
+            'LL-TXN-0404',
+            `Transaction ${id} was not found.`,
+            'It may have been deleted, or it is outside your portfolio scope.',
+          );
+          continue;
+        }
+        // Rows already in the target state are skipped, never repeated: a retry cannot post a row twice.
+        if (action.to && raw.status === action.to) {
+          result.skipped.push({ id, reason: action.done });
+          continue;
+        }
+        if (raw.status !== action.from) {
+          // Business rule 2: cannot reverse an unposted transaction; cannot delete a posted one.
+          result.skipped.push({
+            id,
+            reason:
+              body.actionId === 'transaction.reverse'
+                ? 'Not posted, so there is nothing to reverse.'
+                : body.actionId === 'transaction.delete'
+                  ? `It is ${raw.status}. Only unposted transactions can be deleted; reverse it instead.`
+                  : `It is ${raw.status}. Only unposted transactions can be posted.`,
+          });
+          continue;
+        }
+        if (body.actionId === 'transaction.post') {
+          // Business rule 1: cannot post into a closed period; the message names the period and who can reopen it.
+          const period = sqlite
+            .prepare('SELECT period_end, closes FROM periods WHERE portfolio_id = ? AND period_end = ?')
+            .get(raw.portfolio_id, endOfMonth(raw.trade_date)) as
+            { period_end: string; closes: string } | undefined;
+          const state = period
+            ? (JSON.parse(period.closes) as Record<string, string>).transaction
+            : undefined;
+          if (period && (state === 'closed' || state === 'closing')) {
+            fail(
+              id,
+              'LL-PER-0001',
+              `The period ending ${period.period_end} is ${state} for transactions in ${raw.portfolio_name}.`,
+              'Ask a controller in Investment Accounting to reopen the period, or change the trade date.',
+            );
+            continue;
+          }
+          if (raw.settle_date !== null && raw.settle_date < raw.trade_date) {
+            fail(
+              id,
+              'LL-VAL-0118',
+              'Settlement date is before trade date.',
+              'Correct the dates, then post again.',
+            );
+            continue;
+          }
+        }
+
+        if (action.to)
+          sqlite
+            .prepare('UPDATE transactions SET status = ?, version = version + 1 WHERE id = ?')
+            .run(action.to, id);
+        else sqlite.prepare('DELETE FROM transactions WHERE id = ?').run(id);
+        writeAudit(db, {
+          action: body.actionId,
+          recordType: 'transaction',
+          recordId: id,
+          actor,
+          at,
+          effectiveDate: raw.trade_date,
+          before: { status: raw.status },
+          after: { status: action.to ?? 'deleted' },
+          batchId,
+          ...(note ? { note: { kind: 'comment' as const, text: note } } : {}),
+        });
+        result.succeeded.push(id);
+      }
+
+      // One audit event per row plus one for the batch, sharing the batch id.
+      writeAudit(db, {
+        action: `${body.actionId}.batch`,
+        recordType: 'batch',
+        recordId: batchId,
+        actor,
+        at,
+        batchId,
+        after: {
+          requested: body.ids.length,
+          succeeded: result.succeeded.length,
+          failed: result.failed.length,
+          skipped: result.skipped.length,
+        },
+        ...(note ? { note: { kind: 'comment' as const, text: note } } : {}),
+      });
+      result.status =
+        result.failed.length === 0 && result.skipped.length === 0
+          ? 'completed'
+          : result.succeeded.length === 0
+            ? 'failed'
+            : 'partial';
+      return result;
+    })();
+  });
 }

@@ -292,9 +292,9 @@ One `ActionDef[]` per grid or record feeds the toolbar, selection bar, context m
 - Each action declares `description`, `inputSchema` and `agentRequiresConfirmation` so an assistant can call it later through the same permissions and audit.
 
 **Acceptance**
-- [ ] The same action has the same label and shortcut in toolbar, menu and palette.
-- [ ] Every right-click action is reachable by keyboard.
-- [ ] A unit test asserts every registered action has a description and an explicit `agentRequiresConfirmation`.
+- [x] The same action has the same label and shortcut in toolbar, menu and palette.
+- [x] Every right-click action is reachable by keyboard.
+- [x] A unit test asserts every registered action has a description and an explicit `agentRequiresConfirmation`.
 
 ### 7.9 Comparison — Milestone 6
 

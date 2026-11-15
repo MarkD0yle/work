@@ -539,3 +539,11 @@ export const savedViewInput = savedView
 export const workspaceInput = workspace
   .omit({ id: true, owner: true })
   .extend({ owner: actorRef.exactOptional() });
+
+/** Body of POST /…/bulk. */
+export const bulkRequest = z.object({
+  actionId: z.string(),
+  ids: z.array(z.string()).min(1),
+  inputs: unknownRecord.exactOptional(),
+  reason: z.string().exactOptional(),
+});

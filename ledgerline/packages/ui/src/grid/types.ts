@@ -1,4 +1,5 @@
 import type {
+  ActionDef,
   BusinessDate,
   DateBasis,
   EntityRef,
@@ -8,6 +9,7 @@ import type {
   GridQuery,
   GridResponse,
   Message,
+  Permission,
   SavedView,
   UiState,
 } from '@ledgerline/contracts';
@@ -111,6 +113,8 @@ export interface LLGridHandle {
   getViewState: () => GridViewState;
   /** Applies a view. Reloads data once, with the new sort, search and grouping. */
   applyViewState: (state: GridViewState) => void;
+  /** Runs a registered action by id on the current selection, exactly as the toolbar would. */
+  runAction: (actionId: string) => void;
   /** Reloads data. Focus, selection and scroll position are kept. */
   refresh: () => void;
   /** Moves focus to a row by id. Returns false when the row is not loaded. */
@@ -140,6 +144,24 @@ export interface LLGridProps<Row> {
   filterLabels?: Record<string, string>;
   /** Called when the user asks for a refresh (not when the caller refreshes through the handle). */
   onRefresh?: () => void;
+  /**
+   * This grid's actions (SPEC 7.8). The toolbar, the selection bar, the context menu and the command palette
+   * are all built from this one list, plus the grid's own Open, Copy and Refresh.
+   */
+  actions?: ActionDef<Row>[];
+  /** The signed-in user's permissions, passed to each action's `available`. */
+  permissions?: Permission[];
+  /** What a row is called, for confirm text: { one: 'transaction', many: 'transactions' }. */
+  noun?: { one: string; many: string };
+  /** Called after an action has run, for analytics. */
+  onAction?: (event: {
+    actionId: string;
+    requested: number;
+    succeeded: number;
+    failed: number;
+    skipped: number;
+    error: boolean;
+  }) => void;
   /** Opens a row (Enter, F2 or double-click), e.g. in a detail panel. */
   onRowOpen?: (row: Row) => void;
   /** When given, the toolbar offers a density control. The app owns the setting so it applies everywhere. */

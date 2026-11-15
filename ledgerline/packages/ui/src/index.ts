@@ -122,4 +122,40 @@ export {
 } from './picker/entity-picker-sheet';
 export { detectIdentifier, shouldSearch, type IdentifierKind } from './picker/identify';
 
+// Action registry (SPEC 7.8)
+export { ActionBar, ActionLabel, ActionMenuItems, type ActionBarProps } from './actions/action-bar';
+export { ConfirmDialog, type ConfirmDialogProps, type Noun } from './actions/confirm-dialog';
+export {
+  formatShortcut,
+  groupIneligible,
+  layoutActions,
+  matchesShortcut,
+  resolveAction,
+  resolveActions,
+  validateRegistry,
+  type ResolvedAction,
+} from './actions/registry';
+export { useActionRunner, type ActionOutcome } from './actions/use-action-runner';
+
+// Command palette and shortcut sheet (SPEC 6)
+export {
+  CommandProvider,
+  isTypingTarget,
+  useCommands,
+  useCommandSource,
+  type CommandGroup,
+  type CommandItem,
+  type ShortcutEntry,
+} from './command/command-context';
+export { CommandPalette, matchCommands, type CommandPaletteProps } from './command/command-palette';
+export { GRID_SHORTCUTS, ShortcutSheet, type ShortcutSection } from './command/shortcut-sheet';
+export {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuLabel,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from './components/context-menu';
+
 // The data grid (SPEC 7.1) is a separate entry, `@ledgerline/ui/grid`, so screens without a grid do not load the grid engine.

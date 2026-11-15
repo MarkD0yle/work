@@ -11,6 +11,11 @@ export interface SectionBannerProps {
   onAction?: (action: ActionRef) => void;
   /** Blockers cannot be dismissed; pass this only for states the user may hide. */
   onDismiss?: () => void;
+  /**
+   * Lets a critical banner be dismissed. Off by default: a blocker stays until it is fixed.
+   * On for a report of something that already happened (a failed action), which the user may clear once read.
+   */
+  dismissCritical?: boolean;
   className?: string;
 }
 
@@ -18,7 +23,13 @@ export interface SectionBannerProps {
  * Section or record level state. Blocking states are announced assertively, everything else politely.
  * Renders nothing for `normal`.
  */
-export function SectionBanner({ state, onAction, onDismiss, className }: SectionBannerProps) {
+export function SectionBanner({
+  state,
+  onAction,
+  onDismiss,
+  dismissCritical,
+  className,
+}: SectionBannerProps) {
   if (state.kind === 'normal') return null;
   const d = describeState(state);
   const assertive = d.tone === 'critical';
@@ -55,7 +66,7 @@ export function SectionBanner({ state, onAction, onDismiss, className }: Section
           </div>
         ) : null}
       </div>
-      {onDismiss && d.tone !== 'critical' ? (
+      {onDismiss && (d.tone !== 'critical' || dismissCritical) ? (
         <Button variant="ghost" size="icon" aria-label={`Dismiss: ${d.title}`} onClick={onDismiss}>
           <X aria-hidden />
         </Button>

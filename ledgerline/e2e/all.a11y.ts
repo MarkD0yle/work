@@ -8,9 +8,10 @@ const THEMES = ['light', 'dark'] as const;
 /** Definition of done: zero serious or critical violations against WCAG 2.2 AA. */
 async function expectNoSeriousViolations(page: Page) {
   let axe = new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']);
-  // An open modal menu hides the rest of the page with aria-hidden and traps focus inside itself.
+  // An open modal menu or dialog hides the rest of the page with aria-hidden and traps focus inside itself.
   // axe cannot see the focus trap, so it reports the hidden trigger as focusable. Only skipped while a menu is open.
-  if (await page.getByRole('menu').count()) axe = axe.disableRules(['aria-hidden-focus']);
+  if ((await page.getByRole('menu').count()) || (await page.getByRole('dialog').count()))
+    axe = axe.disableRules(['aria-hidden-focus']);
   const results = await axe.analyze();
   const serious = results.violations
     .filter((v) => v.impact === 'serious' || v.impact === 'critical')
@@ -68,7 +69,8 @@ for (const theme of THEMES) {
     await page.goto('/transactions?view=V-transactions-default');
     await page.getByRole('searchbox', { name: 'Quick search transactions' }).fill('TREASURY');
     await expect(page.getByRole('list', { name: 'Active filters' })).toBeVisible();
-    await page.locator('.ag-row[row-index="0"] [col-id="type"]').first().dblclick();
+    await page.locator('.ag-row[row-index="0"] [col-id="type"]').first().click();
+    await page.keyboard.press('Enter');
     const panel = page.getByRole('complementary', { name: 'Transaction detail' });
     await expect(panel.getByLabel('Amount', { exact: true })).toBeVisible();
     await expectNoSeriousViolations(page);
@@ -112,6 +114,42 @@ for (const theme of THEMES) {
   });
 }
 
+for (const theme of THEMES) {
+  test(`actions: selection bar, context menu, confirm step, palette and shortcut sheet, ${theme}`, async ({
+    page,
+  }) => {
+    await page.addInitScript((t) => {
+      localStorage.setItem(
+        'll-session',
+        JSON.stringify({
+          state: { userId: 'u-ben', theme: t, density: null, railCollapsed: false },
+          version: 0,
+        }),
+      );
+    }, theme);
+    await page.goto('/transactions?view=V-transactions-default');
+    const cell = page.locator('.ag-row[row-index="0"] [col-id="type"]').first();
+    await cell.click();
+    await page.keyboard.press('Space');
+    await expect(page.getByRole('group', { name: 'Actions for selected transactions' })).toBeVisible();
+    await expectNoSeriousViolations(page);
+
+    await cell.click({ button: 'right' });
+    await expect(page.getByRole('menu')).toBeVisible();
+    await expectNoSeriousViolations(page);
+    await page.keyboard.press('Escape');
+
+    await page.keyboard.press('Control+k');
+    await expect(page.getByRole('listbox', { name: 'Commands' })).toBeVisible();
+    await expectNoSeriousViolations(page);
+    await page.keyboard.press('Escape');
+
+    await page.getByRole('button', { name: 'Keyboard shortcuts' }).click();
+    await expect(page.getByRole('dialog', { name: 'Keyboard shortcuts' })).toBeVisible();
+    await expectNoSeriousViolations(page);
+  });
+}
+
 interface StoryIndex {
   entries: Record<string, { id: string; title: string; name: string; type: string }>;
 }
@@ -134,7 +172,10 @@ for (const theme of THEMES) {
         await page.goto(
           `${STORYBOOK}/iframe.html?id=${story.id}&viewMode=story&globals=theme:${theme};a11y.manual:!true`,
         );
-        await page.locator('#storybook-root > *, [data-radix-popper-content-wrapper]').first().waitFor();
+        await page
+          .locator('#storybook-root > *, [data-radix-popper-content-wrapper], [role="dialog"]')
+          .first()
+          .waitFor();
         await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
         await expectNoSeriousViolations(page);
       });

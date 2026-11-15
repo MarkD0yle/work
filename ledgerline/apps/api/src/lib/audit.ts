@@ -11,6 +11,8 @@ export interface AuditInput {
   before?: Record<string, unknown>;
   after?: Record<string, unknown>;
   note?: NonNullable<AuditEvent['note']>;
+  /** Shared by every row event of one bulk run, and by the run's own event. */
+  batchId?: string;
 }
 
 /** Writes one immutable audit event and returns its id. Every data-changing action calls this. */
@@ -20,8 +22,8 @@ export function writeAudit(db: Db, event: AuditInput): string {
   const id = `AU-${String(seq).padStart(7, '0')}`;
   sqlite
     .prepare(
-      `INSERT INTO audit_events (id, action, record_type, record_id, actor, at, effective_date, before, after, note, immutable)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+      `INSERT INTO audit_events (id, action, record_type, record_id, actor, at, effective_date, before, after, note, batch_id, immutable)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
     )
     .run(
       id,
@@ -34,6 +36,7 @@ export function writeAudit(db: Db, event: AuditInput): string {
       event.before ? JSON.stringify(event.before) : null,
       event.after ? JSON.stringify(event.after) : null,
       event.note ? JSON.stringify(event.note) : null,
+      event.batchId ?? null,
     );
   return id;
 }

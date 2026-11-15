@@ -3,6 +3,16 @@ import {
   applyTheme,
   Button,
   cn,
+  CommandPalette,
+  encodeViewDiff,
+  isTypingTarget,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  ShortcutSheet,
+  useCommands,
+  useCommandSource,
+  type CommandItem,
   NotificationPanel,
   NotificationToggle,
   Tooltip,
@@ -10,10 +20,17 @@ import {
   TooltipTrigger,
 } from '@ledgerline/ui';
 import { useQuery } from '@tanstack/react-query';
-import { PanelLeftClose, PanelLeftOpen, ShieldCheck } from 'lucide-react';
+import { CircleHelp, Command, ListChecks, PanelLeftClose, PanelLeftOpen, ShieldCheck } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { NavLink, Outlet } from 'react-router';
-import { ApiError, fetchMe, fetchUsers } from '../api/client';
+import { NavLink, Outlet, useNavigate } from 'react-router';
+import {
+  ApiError,
+  fetchMe,
+  fetchUsers,
+  fetchWorkspaces,
+  rememberEntity,
+  searchEntities,
+} from '../api/client';
 import { useSession } from '../state/session';
 import { domains } from './domains';
 import { GlobalSearch } from './GlobalSearch';
@@ -38,6 +55,89 @@ export function Shell() {
   useEffect(() => applyDensity(effectiveDensity), [effectiveDensity]);
 
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const navigate = useNavigate();
+  const commands = useCommands();
+  const workspaces = useQuery({
+    queryKey: ['workspaces', userId],
+    queryFn: fetchWorkspaces,
+    enabled: Boolean(userId && me.data),
+  });
+  const isClient = me.data?.user.segment === 'client';
+
+  // Navigation and workspaces in the command palette. Each domain also has a two-key shortcut: g, then a letter.
+  useCommandSource('navigation', () => [
+    ...domains.map((d) => ({
+      id: `nav.${d.path}`,
+      group: 'Navigation' as const,
+      label: `Go to ${d.label}`,
+      shortcut: `g ${d.key}`,
+      run: () => void navigate(`/${d.path}`),
+    })),
+    {
+      id: 'nav.profile',
+      group: 'Navigation' as const,
+      label: 'Go to My access',
+      hint: 'What this user can do, and why not',
+      run: () => void navigate('/profile'),
+    },
+    ...(workspaces.data ?? []).map((w) => ({
+      id: `workspace.${w.id}`,
+      group: 'Workspaces' as const,
+      label: `Open workspace: ${w.name}`,
+      hint: w.isTeamDefault ? 'Team default' : `Owned by ${w.owner.name}`,
+      run: () => void navigate(`/w/${w.id}`),
+    })),
+  ]);
+
+  // "g" then a letter jumps to a domain, from anywhere except while typing.
+  useEffect(() => {
+    let armed = 0;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey || isTypingTarget(e.target)) return;
+      const now = Date.now();
+      if (e.key === 'g') {
+        armed = now;
+        return;
+      }
+      const target = now - armed < 1500 ? domains.find((d) => d.key === e.key) : undefined;
+      armed = 0;
+      if (target) {
+        e.preventDefault();
+        void navigate(`/${target.path}`);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [navigate]);
+
+  const findRecords = async (q: string): Promise<CommandItem[]> => {
+    const [portfolios, securities] = await Promise.all([
+      searchEntities('portfolio', q),
+      searchEntities('security', q),
+    ]);
+    return [...portfolios, ...securities]
+      .sort((a, b) => Number(Boolean(b.matchedOn)) - Number(Boolean(a.matchedOn)))
+      .slice(0, 12)
+      .map((r) => ({
+        id: `${r.ref.kind}.${r.ref.id}`,
+        group: 'Entities' as const,
+        label: `${r.ref.id} ${r.description}`,
+        hint: `Show transactions for this ${r.ref.kind}`,
+        ...(r.restricted ? { disabledReason: r.restricted.reason } : {}),
+        run: () => {
+          void rememberEntity(r.ref);
+          const d = encodeViewDiff({
+            filters: [
+              { field: r.ref.kind === 'portfolio' ? 'portfolioId' : 'securityId', op: 'eq', value: r.ref.id },
+            ],
+          });
+          void navigate(`/transactions?view=V-transactions-default&d=${d}`, {
+            state: { nonce: `${r.ref.id}-${Date.now()}` },
+          });
+        },
+      }));
+  };
+
   const failed = users.error ?? me.error;
 
   return (
@@ -69,7 +169,42 @@ export function Shell() {
         </NavLink>
         <div className="flex-1" />
         {me.data ? <GlobalSearch /> : null}
+        <Button
+          variant="secondary"
+          onClick={() => commands.setOpen(true)}
+          aria-keyshortcuts="Control+K Meta+K"
+        >
+          <Command aria-hidden />
+          Commands
+          <kbd className="font-sans text-2xs text-muted-foreground">Ctrl+K</kbd>
+        </Button>
         {userId && me.data ? <WorkspaceSwitcher userId={userId} /> : null}
+        {isClient ? null : (
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost">
+                <ListChecks aria-hidden />
+                Jobs
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" aria-label="Jobs">
+              <p className="font-medium">No jobs yet</p>
+              <p className="text-muted-foreground">
+                Reports, exports, imports and large bulk actions will run here, so you can leave a screen and
+                come back for the result.
+              </p>
+            </PopoverContent>
+          </Popover>
+        )}
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="Keyboard shortcuts"
+          aria-keyshortcuts="?"
+          onClick={() => commands.setSheetOpen(true)}
+        >
+          <CircleHelp aria-hidden />
+        </Button>
         <NotificationToggle open={notificationsOpen} onToggle={() => setNotificationsOpen((open) => !open)} />
         <RoleSwitcher users={users.data ?? []} currentId={userId} onChange={setUser} />
         <PreferencesMenu theme={theme} density={effectiveDensity} onTheme={setTheme} onDensity={setDensity} />
@@ -137,6 +272,22 @@ export function Shell() {
         </main>
         <NotificationPanel open={notificationsOpen} onClose={() => setNotificationsOpen(false)} />
       </div>
+      {/* External clients get navigation and views only: no actions, no record search (SPEC 8.6). */}
+      <CommandPalette
+        {...(isClient ? { groups: ['Navigation', 'Views'] } : { searchEntities: findRecords })}
+      />
+      <ShortcutSheet
+        sections={[
+          {
+            title: 'Everywhere',
+            entries: [
+              { keys: 'Ctrl+K', what: 'Open the command palette' },
+              { keys: '?', what: 'Show this list' },
+              ...domains.map((d) => ({ keys: `g then ${d.key}`, what: `Go to ${d.label}` })),
+            ],
+          },
+        ]}
+      />
     </div>
   );
 }

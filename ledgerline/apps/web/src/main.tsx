@@ -1,4 +1,4 @@
-import { NotificationProvider, Toaster, TooltipProvider } from '@ledgerline/ui';
+import { CommandProvider, NotificationProvider, Toaster, TooltipProvider } from '@ledgerline/ui';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StrictMode, type ComponentType } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -60,7 +60,9 @@ createRoot(root).render(
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <NotificationProvider>
-          <RouterProvider router={router} />
+          <CommandProvider>
+            <RouterProvider router={router} />
+          </CommandProvider>
           <Toaster />
         </NotificationProvider>
       </TooltipProvider>

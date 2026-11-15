@@ -64,9 +64,9 @@ Response:
 | PATCH | `/transactions/:id` | Edit (If-Match). Body `{ changes?: { quantity?, price?, amount? }, dates?: { tradeDate?, settleDate? }, reason? }`. A trade date in a period that is closed or closing for transactions is a 422 naming the period and who can reopen it; a settle date before the trade date is a 422. Unposted records only. Changing a calculated value is an override: needs `transaction.override` and a reason. Returns `{ record, auditEventIds }` |
 | POST | `/transactions/eligibility` | `{ actionId, ids }` → per-row `Permission` |
 | POST | `/transactions/preview` | `{ actionId, ids, inputs }` → `PreviewRow[]` |
-| POST | `/transactions/bulk` | `{ actionId, ids, inputs, reason }` → `BulkResult` inline (≤200) or `{ jobId }` |
+| POST | `/transactions/bulk` | `{ actionId, ids, inputs?, reason? }` → `BulkResult` inline. At most 200 ids for now (more is a 400 until jobs arrive in Milestone 5). Each row succeeds, fails with a message, or is skipped with a reason. A row already in the target state is skipped, so a retry cannot repeat it. Writes one audit event per row plus one for the batch, sharing `batchId` (returned as `jobId`) |
 
-Bulk action ids: `transaction.post`, `transaction.reverse`, `transaction.delete`, `transaction.override`.
+Bulk action ids: `transaction.post`, `transaction.reverse`, `transaction.delete` (built), `transaction.override` (Milestone 5; single-record override goes through PATCH).
 
 ### Market data
 | Method | Path | Purpose |

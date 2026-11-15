@@ -3,6 +3,7 @@ import type {
   FilterCondition,
   GridQuery,
   GridResponse,
+  Permission,
   SavedView,
   TransactionRow,
 } from '@ledgerline/contracts';
@@ -20,6 +21,7 @@ import {
   TaskChips,
   toast,
   useDensity,
+  useCommandSource,
   useNotifications,
   ViewSelector,
   type EntityCriteria,
@@ -40,6 +42,7 @@ import {
   ApiError,
   createView,
   deleteView,
+  fetchPermissions,
   fetchViews,
   recentEntities,
   rememberEntity,
@@ -50,6 +53,8 @@ import {
 import { ErrorPanel, LoadingPanel } from '../../app/StatePanel';
 import { TransactionPanel } from '../../routes/TransactionPanel';
 import { useSession } from '../../state/session';
+import { track } from '../../analytics';
+import { transactionActions } from './actions';
 import {
   ASSET_CLASSES,
   columns,
@@ -61,6 +66,10 @@ import {
   taskChips,
   viewSchema,
 } from './config';
+
+const NOUN = { one: 'transaction', many: 'transactions' };
+const EMPTY_PERMISSIONS: Permission[] = [];
+const onAction = (event: Record<string, unknown>) => track('action.invoked', { gridId: GRID_ID, ...event });
 
 export interface BlotterHandle {
   refresh: () => void;
@@ -136,6 +145,7 @@ function Blotter({
   const setDensity = useSession((s) => s.setDensity);
   const density = useDensity();
   const grid = useRef<LLGridHandle>(null);
+  const permissions = useQuery({ queryKey: ['permissions', user.id], queryFn: fetchPermissions });
 
   // ── Starting view: from the link, else the team default, else the grid default ──
   const [start] = useState(() => {
@@ -184,6 +194,11 @@ function Blotter({
       setFilters(state.filters);
       if (state.density) setDensity(state.density);
       grid.current?.applyViewState(gridPart(state));
+      track('view.applied', {
+        gridId: GRID_ID,
+        viewId: view?.id ?? null,
+        ownership: view?.ownership ?? 'none',
+      });
     },
     [setDensity],
   );
@@ -210,6 +225,12 @@ function Blotter({
       setSaved(state);
       await reloadViews();
       toast('View saved', currentView.name);
+      track('view.saved', {
+        gridId: GRID_ID,
+        viewId: currentView.id,
+        ownership: currentView.ownership,
+        isNew: false,
+      });
     } catch (error) {
       fail(error);
     }
@@ -228,6 +249,7 @@ function Blotter({
       setSaved(state);
       await reloadViews();
       toast('View saved', record.name);
+      track('view.saved', { gridId: GRID_ID, viewId: record.id, ownership: record.ownership, isNew: true });
     } catch (error) {
       fail(error);
     }
@@ -267,6 +289,22 @@ function Blotter({
   const chips = useMemo(() => taskChips(user), [user]);
   const openRow = useCallback((row: TransactionRow) => setOpenId(row.id), []);
   useImperativeHandle(ref, () => ({ refresh: () => grid.current?.refresh() }), []);
+
+  // Saved views in the command palette.
+  useCommandSource('views-transactions', () =>
+    views.map((v) => ({
+      id: `view.${v.id}`,
+      group: 'Views' as const,
+      label: `View: ${v.name}`,
+      hint:
+        v.ownership === 'default'
+          ? 'Default view'
+          : v.ownership === 'shared'
+            ? `Shared by ${v.owner.name}`
+            : 'My view',
+      run: () => applyView(v),
+    })),
+  );
 
   // ── Picker filters ──────────────────────────────────────
   const pickedId = (field: string) => {
@@ -377,6 +415,10 @@ function Blotter({
           initialView={gridPart(start.state)}
           onViewChange={setGridView}
           onRowOpen={openRow}
+          actions={transactionActions}
+          permissions={permissions.data ?? EMPTY_PERMISSIONS}
+          noun={NOUN}
+          onAction={onAction}
           onDensityChange={setDensity}
           {...(onRefresh ? { onRefresh } : {})}
           {...(onSelection ? { onStateChange: (s) => onSelection(s.selectedIds) } : {})}
