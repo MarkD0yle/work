@@ -48,7 +48,8 @@ Open Claude Code in this folder and prompt:
 
 | Variable | Effect |
 | --- | --- |
-| `VITE_AG_GRID_LICENSE` | Enables AG Grid Enterprise features (grouping, server-side model, Excel export) |
+| `VITE_AG_GRID_ENTERPRISE` | AG Grid Enterprise is on by default. Set `false` to run on Community |
+| `VITE_AG_GRID_LICENSE` | Licence key. Without one, Enterprise shows AG Grid's watermark: fine for a design concept, not for production |
 | `SEED_SCALE` | `small` (default, about 1s) for dev; `full` (1M securities, 250k transactions, about 1 min) for performance tests |
 | `LL_DB_PATH` | SQLite file. Default `apps/api/data/ledgerline.sqlite` |
 | `LL_API_PORT` | API port. Default `4310` |

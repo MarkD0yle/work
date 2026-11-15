@@ -21,7 +21,7 @@ Read these first. They are risks, not solved problems.
 | 1 | The API is a mock. The real accounting engine may not expose these endpoints. | The UI can be finished while integration is impossible. | `docs/API.md` is written as the contract to negotiate with the backend owner. Keep it stable. |
 | 2 | No capability has been tested with real users. | Assumptions harden into standards. | Every capability starts at `Hypothesis`. Research protocol in §11. |
 | 3 | The foundation design system is a stand-in (`packages/tokens` + shadcn/ui on Radix and Tailwind). | An enterprise design system may replace it later. | All primitives are wrapped in `packages/ui`. Swapping the foundation changes one package. |
-| 4 | AG Grid Enterprise needs a paid licence. | Without it: no row grouping, server-side row model, Excel export or range selection. | Grid works on Community; Enterprise features switch on when the licence key exists. The 100k-row target needs Enterprise. |
+| 4 | AG Grid Enterprise needs a paid licence. | Without it: no row grouping, server-side row model, Excel export or range selection. | Decided 2026-11-15: use Enterprise unlicensed, with AG Grid's watermark, while Ledgerline is a design concept. A licence must be bought before production. Community still works as a fallback and is tested. |
 | 5 | Approval volume is unknown. | If approval is heavier than assumed, the queue becomes a bottleneck. | Approval Queue is core in milestone 6 (8.5). Measure queue time from day one. |
 | 7 | The end-user review in §15 is simulated, not observed. | It reflects the spec author's assumptions about users. | Every §15 change is tagged `Hypothesis` and is the first thing tested in research. |
 | 6 | Scope is large. | Breadth ships, no journey works end to end. | Build order is gated by proof journeys (§10). |
@@ -84,7 +84,7 @@ packages/contracts ── shared types (imported by every layer above tokens, an
 
 - `apps/api` is a Fastify service with SQLite. It mimics the accounting engine: validation, posting, jobs, periods, audit.
 - The AG Grid theme is generated from `packages/tokens`. A token change reaches every grid.
-- Feature flags live in `apps/web/src/flags.ts`, read from env. Flags: `agGridEnterprise`, `assistant`, `approvals`.
+- Feature flags live in `apps/web/src/flags.ts`, read from env. Flags: `agGridEnterprise` (on by default), `assistant`, `approvals`.
 
 ## 5. Foundations (`packages/tokens`)
 

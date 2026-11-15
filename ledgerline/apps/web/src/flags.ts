@@ -2,8 +2,11 @@
 const on = (value: string | undefined) => value === 'true' || value === '1';
 
 export const flags = {
-  /** Enterprise grid features switch on only when a licence key is present. */
-  agGridEnterprise: Boolean(import.meta.env.VITE_AG_GRID_LICENSE),
+  /**
+   * AG Grid Enterprise is on by default. With no licence key it runs with AG Grid's watermark,
+   * which is accepted while Ledgerline is a design concept. Set VITE_AG_GRID_ENTERPRISE=false for Community.
+   */
+  agGridEnterprise: import.meta.env.VITE_AG_GRID_ENTERPRISE !== 'false',
   /** No assistant in this phase; the action registry is assistant-ready. */
   assistant: on(import.meta.env.VITE_FLAG_ASSISTANT),
   approvals:

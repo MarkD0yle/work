@@ -11,15 +11,20 @@ export function ensureGridModules(): void {
 }
 
 /**
- * Switches on AG Grid Enterprise (server-side row model, grouping, Excel export, range selection).
- * Call once at app start, only when a licence key exists. The Enterprise bundle is loaded on demand,
- * so Community builds never ship it.
+ * Switches on AG Grid Enterprise. Call before the first grid renders.
+ *
+ * Without a licence key the grid still works and shows AG Grid's watermark: acceptable for a design
+ * concept, not for production. Only the modules a milestone actually uses are registered, so Enterprise
+ * defaults (its own clipboard and context menu) cannot bypass Ledgerline rules such as restricted columns.
+ * Add modules here as milestones need them (row grouping in Milestone 2, Excel export in Milestone 5).
  */
-export async function enableGridEnterprise(licenseKey: string): Promise<void> {
+export async function enableGridEnterprise(licenseKey?: string): Promise<void> {
   if (enterprise) return;
-  const { AllEnterpriseModule, LicenseManager } = await import('ag-grid-enterprise');
-  LicenseManager.setLicenseKey(licenseKey);
-  ModuleRegistry.registerModules([AllEnterpriseModule]);
+  ensureGridModules();
+  const { LicenseManager, ServerSideRowModelApiModule, ServerSideRowModelModule } =
+    await import('ag-grid-enterprise');
+  if (licenseKey) LicenseManager.setLicenseKey(licenseKey);
+  ModuleRegistry.registerModules([ServerSideRowModelModule, ServerSideRowModelApiModule]);
   enterprise = true;
 }
 

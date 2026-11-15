@@ -1,6 +1,7 @@
 import { defineConfig } from '@playwright/test';
 
 const WEB = 'http://localhost:5310';
+const WEB_COMMUNITY = 'http://localhost:5311';
 const STORYBOOK = 'http://localhost:6310';
 /** Tests run against their own freshly seeded database, never the dev one. */
 const env = { LL_DB_PATH: 'apps/api/data/e2e.sqlite', LL_API_PORT: '4311', SEED_SCALE: 'small' };
@@ -13,6 +14,13 @@ export default defineConfig({
   use: { viewport: { width: 1440, height: 900 }, trace: 'off' },
   projects: [
     { name: 'e2e', testDir: './e2e', testMatch: /.*\.e2e\.ts/, use: { baseURL: WEB } },
+    // The same grid journeys on AG Grid Community, so the fallback stays working.
+    {
+      name: 'e2e-community',
+      testDir: './e2e',
+      testMatch: /transactions\.e2e\.ts/,
+      use: { baseURL: WEB_COMMUNITY },
+    },
     { name: 'a11y', testDir: './e2e', testMatch: /.*\.a11y\.ts/, use: { baseURL: WEB } },
   ],
   webServer: [
@@ -27,6 +35,13 @@ export default defineConfig({
       command: 'pnpm --filter @ledgerline/web dev',
       url: WEB,
       env,
+      reuseExistingServer: false,
+      timeout: 60_000,
+    },
+    {
+      command: 'pnpm --filter @ledgerline/web exec vite --port 5311 --strictPort',
+      url: WEB_COMMUNITY,
+      env: { ...env, VITE_AG_GRID_ENTERPRISE: 'false' },
       reuseExistingServer: false,
       timeout: 60_000,
     },

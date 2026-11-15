@@ -46,6 +46,19 @@ test.describe('transactions grid', () => {
     await expect(page.locator('[data-slot="grid-count-announcer"]')).toHaveAttribute('aria-live', 'polite');
   });
 
+  test('Enterprise: the server-side row model exposes the server total to assistive technology', async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== 'e2e', 'Community cannot know the total up front');
+    await openGrid(page);
+    // Header row + 5,000 data rows.
+    await expect(page.locator('[role="grid"], [role="treegrid"]').first()).toHaveAttribute(
+      'aria-rowcount',
+      '5001',
+    );
+    await expect(page.locator('.ag-watermark')).toHaveCount(1);
+  });
+
   test('a financial column never shows more or fewer decimals than its registry entry', async ({ page }) => {
     await openGrid(page);
     const checked = await page.evaluate(() => {

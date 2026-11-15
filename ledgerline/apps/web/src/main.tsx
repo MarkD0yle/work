@@ -22,7 +22,15 @@ const router = createBrowserRouter([
       // Loaded on demand: the grid engine is large and not needed for first paint.
       {
         path: 'transactions',
-        lazy: async () => ({ Component: (await import('./routes/Transactions')).Transactions }),
+        lazy: async () => {
+          // The grid engine loads with the first grid screen. Enterprise is switched on before any grid renders.
+          const [route, grid] = await Promise.all([
+            import('./routes/Transactions'),
+            import('@ledgerline/ui/grid'),
+          ]);
+          if (flags.agGridEnterprise) await grid.enableGridEnterprise(import.meta.env.VITE_AG_GRID_LICENSE);
+          return { Component: route.Transactions };
+        },
       },
       { path: ':domain', element: <DomainPlaceholder /> },
     ],
@@ -31,11 +39,6 @@ const router = createBrowserRouter([
 
 const root = document.getElementById('root');
 if (!root) throw new Error('Missing #root');
-
-// Enterprise grid features switch on only when a licence key exists (SPEC §2, weakness 4).
-const licence = import.meta.env.VITE_AG_GRID_LICENSE;
-if (flags.agGridEnterprise && licence)
-  await (await import('@ledgerline/ui/grid')).enableGridEnterprise(licence);
 
 createRoot(root).render(
   <StrictMode>

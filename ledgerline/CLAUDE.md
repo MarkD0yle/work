@@ -31,7 +31,7 @@ Read these before any work:
 | Web app | React 19, Vite, React Router | React 19 is required by current shadcn/ui components (ref as a prop) |
 | Server state | TanStack Query | No global store for server data |
 | Client state | Zustand only for UI state (selection, panels) | |
-| Grid engine | AG Grid (Enterprise if `VITE_AG_GRID_LICENSE` is set, Community otherwise) | Only imported inside `packages/ui/src/grid` |
+| Grid engine | AG Grid Enterprise, unlicensed (watermark) while Ledgerline is a design concept. Community with `VITE_AG_GRID_ENTERPRISE=false` | Only imported inside `packages/ui/src/grid`. Register only the Enterprise modules a milestone uses. A licence is required before production |
 | Primitives | shadcn/ui (Radix UI + Tailwind) | Component source lives in `packages/ui/src/components`; apps never import Radix directly |
 | Styling | Tailwind CSS v4, themed only through CSS variables from `packages/tokens` | No raw colours or pixel sizes in components; no CSS-in-JS runtime |
 | Decimal maths | `decimal.js` | Never use JS `number` for money, price, units or rates |
