@@ -71,6 +71,12 @@ export const GALLERY_META: Record<string, GalleryMeta> = {
   },
 
   // Operations
+  "data-processing-hub": {
+    description:
+      "Support console for daily FMR, MDM and MRD loads: status and failed counts by source, an AG Grid of records, plain-language failure details, and replay of a whole file or load with tracked progress.",
+    tags: ["monitoring", "data loads", "support", "ag-grid", "replay"],
+    motif: "grid",
+  },
   "ops-overview": {
     description:
       "Operational control tower rolling up pipelines and monitors into one situational view.",
