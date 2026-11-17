@@ -12,6 +12,7 @@ import FundDetails from "./components/FundDetails";
 import CobrandTable from "./components/CobrandTable";
 import { summariseCobrands } from "./lib/cobrands";
 import OrderTypeTable from "./components/OrderTypeTable";
+import EteWorkspace from "./ete/EteWorkspace";
 import { summariseOrderTypes } from "./lib/orderTypes";
 import {
   USERS,
@@ -269,7 +270,19 @@ function ColumnChooser({
   );
 }
 
-export default function FundConnect2Page() {
+/** The two workspaces of the page. They share the header (acting user,
+ *  theme, inbox); the register keeps its own body, ETE Fund Configuration
+ *  lives in ./ete. */
+type Area = "register" | "configuration";
+
+const AREAS: { id: Area; label: string }[] = [
+  { id: "register", label: "Register" },
+  { id: "configuration", label: "ETE Fund Configuration" },
+];
+
+export default function FundConnect2Page({ initialArea = "register" }: { initialArea?: Area }) {
+  const [area, setArea] = useState<Area>(initialArea);
+  const inRegister = area === "register";
   const [records, setRecords] = useState<FundRecord2[]>(SEED_RECORDS);
   const [notices, setNotices] = useState<Notice[]>(SEED_NOTICES);
   const [userId, setUserId] = useState("p.raman");
@@ -313,7 +326,9 @@ export default function FundConnect2Page() {
   }
 
   const user = userById(userId) ?? USERS[0];
-  const record = openId ? (records.find((r) => r.id === openId) ?? null) : null;
+  // Outside the register no record is on screen; the open one is kept in
+  // `openId` and comes back when the user returns.
+  const record = inRegister && openId ? (records.find((r) => r.id === openId) ?? null) : null;
   const myNotices = notices
     .filter((n) => n.userId === user.id)
     .sort((a, b) => Date.parse(b.at) - Date.parse(a.at));
@@ -330,6 +345,7 @@ export default function FundConnect2Page() {
 
   function openRecord(id: string, nextMode: "view" | "edit" = "edit") {
     if (!records.some((r) => r.id === id)) return;
+    setArea("register");
     setOpenId(id);
     setMode(nextMode);
     setOpenSection("identity");
@@ -711,8 +727,29 @@ export default function FundConnect2Page() {
               <span className="text-[11px] font-semibold tracking-[0.2em] text-neutral-400 uppercase">
                 Fund Connect 2
               </span>
+              <div role="radiogroup" aria-label="Workspace" className="inline-flex border border-neutral-300 bg-white p-0.5">
+                {AREAS.map((a) => (
+                  <button
+                    key={a.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={area === a.id}
+                    onClick={() => {
+                      setArea(a.id);
+                      setToast(null);
+                    }}
+                    className={`px-2 py-0.5 text-[11px] font-medium whitespace-nowrap ${
+                      area === a.id ? "bg-neutral-900 text-white" : "text-neutral-600 hover:bg-neutral-100"
+                    }`}
+                  >
+                    {a.label}
+                  </button>
+                ))}
+              </div>
             </div>
-            {record ? (
+            {!inRegister ? (
+              <h1 className="mt-1 text-lg font-semibold tracking-tight">ETE Fund Configuration</h1>
+            ) : record ? (
               <div className="mt-1 flex flex-wrap items-center gap-2">
                 <button
                   type="button"
@@ -803,7 +840,7 @@ export default function FundConnect2Page() {
         </div>
 
         {/* Second row — work strip on the grid, status + actions on a record. */}
-        {!record ? (
+        {!inRegister ? null : !record ? (
           <div className="flex flex-wrap items-stretch gap-2 px-6 pb-3 pl-36">
             {/* "All ETFs" is the strip's home state — always visible, so
                 getting back to the full register is one obvious click. */}
@@ -1059,8 +1096,11 @@ export default function FundConnect2Page() {
         )}
       </header>
 
+      {/* ================= ETE Fund Configuration ================= */}
+      {!inRegister && <EteWorkspace user={user} />}
+
       {/* ================= The register grid ================= */}
-      {!record && (
+      {inRegister && !record && (
         <main className="min-h-0 flex-1 overflow-y-auto p-6">
           {/* Toolbar */}
           <div className="mb-3 flex flex-wrap items-center gap-2">

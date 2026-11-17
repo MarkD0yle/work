@@ -107,6 +107,7 @@ const SLUG_SECTION: Record<string, string> = {
   "counterparty-onboarding": "forms",
   "fund-connect": "forms",
   "fund-connect-2": "forms",
+  "ete-fund-configuration": "forms",
   "sign-up": "forms",
   "accordion-modal-forms": "forms",
   settings: "forms",

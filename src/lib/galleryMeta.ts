@@ -263,6 +263,12 @@ export const GALLERY_META: Record<string, GalleryMeta> = {
     tags: ["grid", "import", "review", "workflow"],
     motif: "grid",
   },
+  "ete-fund-configuration": {
+    description:
+      "Fund Connect 2 workspace that configures an ETE fund around its hierarchy: Order Types first, Settlement Periods T+0 to T+5 inside each one, a docked editor instead of nested modals, and a review of errors, warnings and before/after changes with maker-checker approval.",
+    tags: ["configuration", "order types", "settlement", "review", "workflow", "forms"],
+    motif: "form",
+  },
   "accordion-modal-forms": {
     description:
       "Accordion form whose section opens a 50+ radio modal and saves it back as an inline entry — three treatments: grouped list, paged questionnaire, matrix. Plus four ways to avoid a modal on a modal: inline row editor, docked side panel, drill-in view, and a spreadsheet-import review with an attention queue and field × class matrix.",
