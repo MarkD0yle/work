@@ -72,3 +72,63 @@ export function formatPercent(fraction: string, decimals = 2): string {
   const value = new Decimal(fraction).mul(100);
   return `${value.isNegative() ? '-' : ''}${formatDecimal(value, decimals)}%`;
 }
+
+/**
+ * Sum of financial values with decimal maths. Nulls are skipped. Amounts in different currencies are never
+ * added together: the result is `mixed`. Null when there is nothing to add.
+ */
+export function sumFinancial(
+  values: FinancialValue[],
+): { kind: 'sum'; value: FinancialValue; count: number } | { kind: 'mixed' } | null {
+  const present = values.filter((v) => v.value !== null);
+  const first = present[0];
+  if (!first) return null;
+  if (new Set(present.map((v) => v.currency)).size > 1) return { kind: 'mixed' };
+  const total = present.reduce((sum, v) => sum.plus(v.value as string), new Decimal(0));
+  return { kind: 'sum', value: { ...first, value: total.toString() }, count: present.length };
+}
+
+/** A financial value as a spreadsheet cell: a plain decimal string and the number format that shows it as the grid does. */
+export interface SpreadsheetFinancial {
+  /** Plain decimal string, no grouping, "-" for negatives. Null for a blank cell. */
+  value: string | null;
+  /** Stable id for the format, e.g. "ll-xl-2-n-a". One of `SPREADSHEET_FORMATS`. */
+  styleId: string;
+}
+
+const UNITS = { n: '', p: '%', bp: '"bp"' } as const;
+const MAX_DECIMALS = 6;
+
+/**
+ * Every number format a financial cell can need: decimals 0 to 6, plain, percent or basis points,
+ * natural or accounting sign. A fixed list, because a spreadsheet's formats are set before any row is known.
+ * The currency is not in the format: the export names it in the header, or writes text when a column mixes currencies.
+ */
+export const SPREADSHEET_FORMATS: { id: string; format: string }[] = Array.from(
+  { length: MAX_DECIMALS + 1 },
+  (_, decimals) =>
+    (Object.keys(UNITS) as (keyof typeof UNITS)[]).flatMap((unit) =>
+      (['n', 'a'] as const).map((sign) => {
+        const positive = `#,##0${decimals ? `.${'0'.repeat(decimals)}` : ''}${UNITS[unit]}`;
+        return {
+          id: `ll-xl-${decimals}-${unit}-${sign}`,
+          format: sign === 'a' ? `${positive};(${positive})` : positive,
+        };
+      }),
+    ),
+).flat();
+
+/**
+ * Rounds to display precision with decimal maths, so the spreadsheet holds what the grid shows.
+ * Percentages stay fractions under a percent format; basis points are scaled, because a spreadsheet cannot scale by 10,000.
+ */
+export function toSpreadsheetFinancial(fv: FinancialValue): SpreadsheetFinancial {
+  const decimals = Math.min(MAX_DECIMALS, displayPrecision(fv.kind, fv.currency, fv.precision));
+  const unit = fv.kind === 'percentage' ? 'p' : fv.kind === 'basisPoints' ? 'bp' : 'n';
+  const styleId = `ll-xl-${decimals}-${unit}-${fv.signConvention === 'accounting' ? 'a' : 'n'}`;
+  if (fv.value === null) return { value: null, styleId };
+  const value = new Decimal(fv.value)
+    .mul(unit === 'bp' ? 10_000 : 1)
+    .toFixed(unit === 'p' ? decimals + 2 : decimals, Decimal.ROUND_HALF_UP);
+  return { value, styleId };
+}

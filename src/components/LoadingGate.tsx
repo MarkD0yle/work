@@ -29,7 +29,7 @@ export function LoadingGate({ children }: { children: ReactNode }) {
                     >
                         <BackgroundCircles
                             title="Absurd Alpha"
-                            description="Mark, Atib & Juho"
+                            description="Mark, Atib, Juho & Stuart"
                             variant="senary"
                         />
                     </motion.div>

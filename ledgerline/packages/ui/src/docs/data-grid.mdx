@@ -18,6 +18,8 @@ One grid for every list of records: search, sort, filter, group, select and act,
 
 **Do not use it** for a short fixed list inside a panel (use a table), or for a batch on its way in (use the Batch Grid).
 
+**With AG Grid Enterprise** (the default), the grid adds: server-side loading and grouping (with a drag-to-group panel), cell-range selection with decimal sums in the status bar, a column menu (sort, pin, autosize, group), a Columns tool panel, row numbers, Export to Excel at display precision, find-in-rows on client grids, and master/detail rows (`detail` prop). Enterprise features that would break a Ledgerline rule are not switched on: see `docs/AG-GRID-ENTERPRISE.md`.
+
 ## Foundations
 
 Density tokens set row height (24, 32, 40). Financial columns right-align in tabular figures. Colour only ever backs up a word. The grid engine (AG Grid) is imported only inside `packages/ui/src/grid` and loads on demand.
@@ -32,12 +34,12 @@ Loading, empty (no data), no matches (with the number of active filters), blocki
 
 ## Permissions
 
-`gridFeatures(segment)` switches capability by role: clients get no selection bar; new users see the preview before every confirm. Restricted columns cannot be copied and say why. Actions come disabled with their reason, never hidden.
+`gridFeatures(segment)` switches capability by role: clients get no selection bar; new users see the preview before every confirm. Restricted columns cannot be copied or exported, and say why. `features.cellSelection` and `features.export` can be turned off per role; both are on by default. Actions come disabled with their reason, never hidden.
 
 ## Accessibility
 
-Row and column counts are announced, including the server total. Every action reachable by mouse is reachable by keyboard (Shift+F10 opens the same menu). Focus, selection and scroll survive a refresh. Group rows name their group in words.
+Row and column counts are announced, including the server total. Every action reachable by mouse is reachable by keyboard (Shift+F10 opens the same menu). Focus, selection and scroll survive a refresh. Group rows name their group in words. A cell range is summarised in words in the status bar. Alt+Down and Alt+Up open and close a row's detail.
 
 ## Code reference
 
-`@ledgerline/ui/grid`: `LLGrid`, `gridFeatures`, `LLColumnDef`, `LLDataSource`, `GridJobs`. Stories: Grid/LLGrid, Grid/BatchGrid. Tests: `grid.test.ts`, `dom-cells.test.tsx`, `e2e/transactions.e2e.ts`.
+`@ledgerline/ui/grid`: `LLGrid`, `gridFeatures`, `LLColumnDef`, `LLDataSource`, `LLGridDetail`, `GridJobs`. Stories: Grid/LLGrid (including Enterprise and Enterprise Master Detail), Grid/BatchGrid. Tests: `grid.test.ts`, `enterprise.test.ts`, `dom-cells.test.tsx`, `e2e/transactions.e2e.ts`, `e2e/enterprise.e2e.ts`.

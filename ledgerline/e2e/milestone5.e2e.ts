@@ -155,13 +155,15 @@ test.describe('exit gate', () => {
     const back = await context.newPage();
     await signIn(back, 'u-ada');
     await back.goto('/');
-    await expect(tray(back)).toHaveAccessibleName(/1 finished and not yet opened/, { timeout: 30_000 });
     await tray(back).click();
     const entry = back
       .locator('[data-slot="job-tray"] [data-job-id]')
       .filter({ hasText: 'Post 500 transactions' })
       .first();
-    await expect(entry).toContainText('Partly done');
+    await expect(entry).toContainText('Partly done', { timeout: 30_000 });
+    await expect(entry).toContainText('New');
+    // The badge counts every finished job Ada has not opened, so the seeded export and other journeys' jobs are in it.
+    await expect(tray(back)).toHaveAccessibleName(/\d+ finished and not yet opened/);
     await expect(entry).toContainText('490 succeeded, 10 failed, 0 skipped');
     await entry.click();
     const detail = back.locator('[data-slot="job-detail"]');

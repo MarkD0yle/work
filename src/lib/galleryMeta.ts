@@ -597,6 +597,18 @@ export const GALLERY_META: Record<string, GalleryMeta> = {
     tags: ["dashboard", "esg", "climate", "emissions"],
     motif: "treemap",
   },
+  ledgerline: {
+    description:
+      "Ledgerline investment accounting workbench: transaction blotter, bulk actions as jobs, period close, exceptions, approvals and price review, on a mock engine that runs in the browser.",
+    tags: ["operations", "accounting", "workbench", "grid"],
+    motif: "panel",
+  },
+  harbor: {
+    description:
+      "Harbor desktop shell: one sign-in, dockable workspaces and shared context across pre-trade, FX execution, post-trade, TCA, cash, payments and research apps.",
+    tags: ["trading", "shell", "interop", "workspace"],
+    motif: "panel",
+  },
   "execution-analytics": {
     description:
       "Execution analytics platform redesign: rail and fixed-toolbar shell, light/dark tokens, shared table and chart panel, eight screens.",

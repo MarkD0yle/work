@@ -145,7 +145,7 @@ export function Shell() {
       >
         Skip to content
       </a>
-      <header className="flex h-12 shrink-0 items-center gap-3 border-b bg-card px-3">
+      <header className="flex h-10 shrink-0 items-center gap-1.5 border-b px-2">
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -161,19 +161,21 @@ export function Shell() {
           </TooltipTrigger>
           <TooltipContent>{railCollapsed ? 'Expand navigation' : 'Collapse navigation'}</TooltipContent>
         </Tooltip>
-        <NavLink to="/" className="text-lg font-semibold tracking-tight">
+        <NavLink to="/" className="flex items-center gap-1.5 px-1 text-base font-semibold tracking-tight">
+          <span aria-hidden className="size-2 bg-primary" />
           Ledgerline
         </NavLink>
         <div className="flex-1" />
         {me.data ? <GlobalSearch /> : null}
         <Button
-          variant="secondary"
+          variant="ghost"
+          className="text-muted-foreground"
           onClick={() => commands.setOpen(true)}
           aria-keyshortcuts="Control+K Meta+K"
         >
           <Command aria-hidden />
           Commands
-          <kbd className="font-sans text-2xs text-muted-foreground">Ctrl+K</kbd>
+          <kbd className="rounded-sm bg-muted px-1 font-sans text-2xs text-muted-foreground">Ctrl+K</kbd>
         </Button>
         {userId && me.data ? <WorkspaceSwitcher userId={userId} /> : null}
         {isClient || !me.data ? null : userId ? (
@@ -196,7 +198,7 @@ export function Shell() {
         <nav
           id="rail"
           aria-label="Domains"
-          className={cn('shrink-0 overflow-y-auto border-r bg-card p-2', railCollapsed ? 'w-12' : 'w-52')}
+          className={cn('shrink-0 overflow-y-auto border-r p-1.5', railCollapsed ? 'w-10' : 'w-44')}
         >
           <ul className="flex flex-col gap-0.5">
             {domains.map(({ path, label, icon: Icon }) => (
@@ -207,9 +209,9 @@ export function Shell() {
                   title={railCollapsed ? label : undefined}
                   className={({ isActive }) =>
                     cn(
-                      'flex h-(--ll-control-height) items-center gap-2 rounded-md px-2 text-foreground hover:bg-accent',
+                      'flex h-(--ll-control-height) items-center gap-2 rounded-md px-2 text-muted-foreground hover:bg-accent hover:text-foreground',
                       railCollapsed && 'justify-center px-0',
-                      isActive && 'bg-accent font-medium shadow-[inset_2px_0_0_var(--ll-accent)]',
+                      isActive && 'bg-accent font-medium text-foreground',
                     )
                   }
                 >
@@ -218,16 +220,16 @@ export function Shell() {
                 </NavLink>
               </li>
             ))}
-            <li className="mt-2 border-t pt-2">
+            <li className="mt-1.5 border-t pt-1.5">
               <NavLink
                 to="/profile"
                 aria-label="My access"
                 title={railCollapsed ? 'My access' : undefined}
                 className={({ isActive }) =>
                   cn(
-                    'flex h-(--ll-control-height) items-center gap-2 rounded-md px-2 text-foreground hover:bg-accent',
+                    'flex h-(--ll-control-height) items-center gap-2 rounded-md px-2 text-muted-foreground hover:bg-accent hover:text-foreground',
                     railCollapsed && 'justify-center px-0',
-                    isActive && 'bg-accent font-medium shadow-[inset_2px_0_0_var(--ll-accent)]',
+                    isActive && 'bg-accent font-medium text-foreground',
                   )
                 }
               >

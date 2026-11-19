@@ -1,0 +1,16 @@
+{
+  "name": "@ledgerline/demo",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "seed-image": "tsx scripts/seed-image.ts",
+    "demo:dev": "tsx scripts/seed-image.ts && vite",
+    "demo:build": "tsx scripts/seed-image.ts && vite build",
+    "demo:preview": "vite preview"
+  },
+  "dependencies": {
+    "@sqlite.org/sqlite-wasm": "3.54.1-build1",
+    "buffer": "^6.0.3"
+  }
+}

@@ -101,6 +101,7 @@ const SLUG_SECTION: Record<string, string> = {
   "payments-center": "operations",
   "corp-actions": "operations",
   "settlement-timeline": "operations",
+  ledgerline: "operations",
 
   // Forms & Flows
   "client-onboarding": "forms",

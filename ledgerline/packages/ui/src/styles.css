@@ -60,7 +60,7 @@
   --radius-lg: var(--ll-radius-8);
 
   /* The single elevation level, for popovers and menus only. */
-  --shadow-popover: 0 4px 16px rgb(0 0 0 / 0.16);
+  --shadow-popover: 0 0 0 1px rgb(0 0 0 / 0.04), 0 8px 24px -4px rgb(0 0 0 / 0.14);
 
   --default-transition-duration: var(--ll-motion-fast);
 }
@@ -83,6 +83,14 @@
     color: var(--ll-text);
     font-size: var(--ll-font-size-body);
     line-height: 1.4;
+    letter-spacing: -0.006em;
+    font-feature-settings: 'cv11', 'ss03';
+    -webkit-font-smoothing: antialiased;
+  }
+  /* Quiet scrollbars: the data is the content, not the chrome. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--ll-border-strong) transparent;
   }
   :focus-visible {
     outline: 2px solid var(--ll-focus);

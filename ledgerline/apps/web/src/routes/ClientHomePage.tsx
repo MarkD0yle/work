@@ -6,9 +6,9 @@ import { useOutletContext } from 'react-router';
 export function ClientHomePage() {
   const me = useOutletContext<Me>();
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3 p-4">
+    <div className="flex h-full min-h-0 flex-col gap-2 px-3 py-2">
       <header className="shrink-0">
-        <h1 className="text-xl font-semibold tracking-tight">Your account</h1>
+        <h1 className="text-base font-semibold tracking-tight">Your account</h1>
         <p className="text-muted-foreground">
           {me.user.blotterScope
             ? `Portfolios on your account: ${me.user.blotterScope.join(', ')}. Other records are outside your account scope.`

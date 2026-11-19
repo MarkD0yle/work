@@ -256,7 +256,7 @@ function PanelTab({ api, containerApi }: IDockviewPanelHeaderProps) {
       },
     },
     { id: 'float', label: 'Float', onSelect: () => dock && containerApi.addFloatingGroup(dock) },
-    { id: 'popout', label: 'Pop out', onSelect: () => dock && void containerApi.addPopoutGroup(dock, { popoutUrl: '/popout.html' }) },
+    { id: 'popout', label: 'Pop out', onSelect: () => dock && void containerApi.addPopoutGroup(dock, { popoutUrl: `${import.meta.env.BASE_URL}popout.html` }) },
     { id: 'duplicate', label: 'Duplicate', separated: true, onSelect: () => duplicatePanel(panelId) },
     { id: 'reload', label: 'Reload', onSelect: () => reloadPanel(panelId) },
     ...saved
@@ -324,7 +324,7 @@ export function Layout() {
         defaultTabComponent={PanelTab}
         watermarkComponent={Watermark}
         defaultRenderer="always"
-        popoutUrl="/popout.html"
+        popoutUrl={`${import.meta.env.BASE_URL}popout.html`}
         onReady={onReady}
         onDidDrop={(e) => {
           const appId = e.nativeEvent.dataTransfer?.getData(DRAG_TYPE)

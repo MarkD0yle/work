@@ -31,43 +31,46 @@ type ColourTokens = Record<
   string
 >;
 
-/** Text and status colours meet WCAG AA (4.5:1) on bg, surface and surface-raised. */
+/**
+ * Neutral greys with one indigo accent. Light theme is a single white plane split by hairlines;
+ * `surface-sunken` is the only fill. Text and status colours meet WCAG AA (4.5:1) on every surface.
+ */
 export const colour: Record<Theme, ColourTokens> = {
   light: {
-    bg: '#f6f7f9',
+    bg: '#ffffff',
     surface: '#ffffff',
     'surface-raised': '#ffffff',
-    'surface-sunken': '#eceef2',
-    border: '#d6dae1',
-    'border-strong': '#7d8798',
-    text: '#161a22',
-    'text-muted': '#535d6e',
-    accent: '#1d58b3',
+    'surface-sunken': '#f4f4f5',
+    border: '#e6e6e9',
+    'border-strong': '#85858f',
+    text: '#17171a',
+    'text-muted': '#62626c',
+    accent: '#3b4fd8',
     'accent-contrast': '#ffffff',
-    focus: '#1d58b3',
+    focus: '#3b4fd8',
     'status-good': '#17703f',
     'status-warning': '#8a5300',
     'status-critical': '#b3261e',
     'status-info': '#0b6394',
-    'status-neutral': '#535d6e',
+    'status-neutral': '#62626c',
   },
   dark: {
-    bg: '#0f1217',
-    surface: '#161a21',
-    'surface-raised': '#1d222b',
-    'surface-sunken': '#0b0d11',
-    border: '#2d3440',
-    'border-strong': '#6b7687',
-    text: '#e7eaf0',
-    'text-muted': '#a0aabb',
-    accent: '#86b4ff',
-    'accent-contrast': '#0f1217',
-    focus: '#86b4ff',
+    bg: '#0d0d0f',
+    surface: '#121214',
+    'surface-raised': '#19191c',
+    'surface-sunken': '#09090b',
+    border: '#27272b',
+    'border-strong': '#70707a',
+    text: '#ececef',
+    'text-muted': '#a0a0ab',
+    accent: '#929df5',
+    'accent-contrast': '#0d0d0f',
+    focus: '#929df5',
     'status-good': '#5fce8d',
     'status-warning': '#f0b84a',
     'status-critical': '#ff8f85',
     'status-info': '#6cc4f5',
-    'status-neutral': '#a0aabb',
+    'status-neutral': '#a0a0ab',
   },
 };
 

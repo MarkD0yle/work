@@ -363,7 +363,9 @@ test.describe('workspaces', () => {
 
     // A refresh in the pop-out refreshes the other panel in the main window too.
     await page.getByRole('tab', { name: /Yesterday's unposted trades/ }).click();
-    await expect(statusBar(page)).toContainText(/rows?/);
+    // Wait for this panel's own first load: a refresh sent while it is still mounting has nothing to refresh.
+    await expect(statusBar(page)).toContainText(/\d rows?/);
+    await expect(statusBar(page)).toContainText('Refreshed');
     const mainReload = page.waitForRequest((r) => r.url().endsWith('/transactions/query'));
     await popout.getByRole('button', { name: 'Refresh' }).click();
     await mainReload;
@@ -398,7 +400,7 @@ test.describe('Entity Picker', () => {
     const picker = page.getByRole('combobox', { name: 'Security', exact: true });
     await picker.focus();
     const filtered = lastQuery(page, (b) => JSON.stringify(b.filters ?? []).includes(security.id));
-    await page.keyboard.press('Control+v');
+    await page.keyboard.press('ControlOrMeta+v');
     await filtered;
     // One paste: the security is chosen, the grid is filtered, the filter is a visible tag.
     await expect(picker).toHaveAttribute('placeholder', `${security.label} (${security.id})`);

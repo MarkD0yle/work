@@ -1,1 +1,3 @@
 @import '@ledgerline/ui/styles.css';
+/* Named explicitly so the styles build the same from any Vite root (the hosted demo builds from apps/demo). */
+@source './';

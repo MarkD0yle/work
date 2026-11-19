@@ -11,6 +11,7 @@ export {
   type GridViewState,
   type LLColumnDef,
   type LLDataSource,
+  type LLGridDetail,
   type LLGridFeatures,
   type LLGridHandle,
   type LLGridProps,

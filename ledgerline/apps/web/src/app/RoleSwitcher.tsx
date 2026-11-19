@@ -22,7 +22,7 @@ export function RoleSwitcher({ users, currentId, onChange }: RoleSwitcherProps) 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="secondary">
+        <Button variant="ghost">
           <UserRound aria-hidden />
           <span className="sr-only">Switch user. Signed in as</span>
           <span>{current ? `${current.name} · ${current.role}` : 'nobody yet'}</span>

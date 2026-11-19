@@ -21,7 +21,7 @@ export function WorkspaceSwitcher({ userId }: { userId: string }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="secondary">
+        <Button variant="ghost">
           <PanelsTopLeft aria-hidden />
           <span className="sr-only">Workspace:</span>{' '}
           <span className="max-w-48 truncate">{current?.name ?? 'Workspaces'}</span>
