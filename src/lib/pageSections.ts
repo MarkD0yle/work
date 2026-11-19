@@ -153,6 +153,7 @@ const SLUG_SECTION: Record<string, string> = {
   "pattern-gallery": "patterns",
   "pattern-atlas": "patterns",
   "right-panel-patterns": "patterns",
+  "left-sidebar-patterns": "patterns",
   "ai-assistant": "patterns",
   "order-config-patterns": "patterns",
   "github-cheatsheet": "patterns",
