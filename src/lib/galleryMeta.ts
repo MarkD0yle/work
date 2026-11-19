@@ -500,6 +500,12 @@ export const GALLERY_META: Record<string, GalleryMeta> = {
     tags: ["patterns", "panel", "trading", "ui"],
     motif: "panel",
   },
+  "left-sidebar-patterns": {
+    description:
+      "Ten left sidebars for one fund services platform — grouped, rail, tree, fund scope, NAV cycle, work queue, search, terminal and role.",
+    tags: ["patterns", "navigation", "sidebar", "fund-ops"],
+    motif: "panel",
+  },
   "ai-assistant": {
     description:
       "AI chat for a wealth desk — floating, docked or full screen, with guiding prompts, inline charts and tables, cited sources and a context panel.",
