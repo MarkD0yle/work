@@ -18,6 +18,7 @@ import {
   ComparisonTable,
   Dialog,
   DialogContent,
+  FinancialCell,
   DialogDescription,
   DialogFooter,
   DialogTitle,
@@ -103,6 +104,57 @@ const SEVERITY = {
 } as const;
 const OPEN = ['new', 'inProgress', 'waitingOnOthers'];
 const NOUN = { one: 'exception', many: 'exceptions' };
+
+/**
+ * Expanded in place (Enterprise master/detail): enough to triage a break without opening the panel.
+ * The panel stays the place to act, comment and attach evidence.
+ */
+function ExceptionSummary({ x }: { x: ExceptionRecord }) {
+  const values = x.values;
+  const last = x.thread.at(-1);
+  return (
+    <div className="grid gap-x-8 gap-y-1 text-xs md:grid-cols-2" data-slot="exception-summary">
+      <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1">
+        {values?.expected ? (
+          <>
+            <dt className="text-muted-foreground">Expected</dt>
+            <dd>
+              <FinancialCell value={values.expected} className="justify-start" />
+            </dd>
+          </>
+        ) : null}
+        {values?.actual ? (
+          <>
+            <dt className="text-muted-foreground">Actual</dt>
+            <dd>
+              <FinancialCell value={values.actual} className="justify-start" />
+            </dd>
+          </>
+        ) : null}
+        {values?.tolerance ? (
+          <>
+            <dt className="text-muted-foreground">Tolerance</dt>
+            <dd>
+              <FinancialCell value={values.tolerance} className="justify-start" />
+            </dd>
+          </>
+        ) : null}
+        <dt className="text-muted-foreground">Root cause</dt>
+        <dd>{x.rootCauseCategory ?? x.rootCause ?? 'Not set'}</dd>
+      </dl>
+      <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1">
+        <dt className="text-muted-foreground">Proposal</dt>
+        <dd>{x.proposal ? `${x.proposal.summary} (by ${x.proposal.by.name})` : 'None'}</dd>
+        <dt className="text-muted-foreground">Evidence</dt>
+        <dd>{x.evidence.length ? x.evidence.map((e) => e.label).join(', ') : 'None'}</dd>
+        <dt className="text-muted-foreground">Latest comment</dt>
+        <dd>{last ? `${last.author.name}, ${formatTimestamp(last.at)}: ${last.text}` : 'No comments yet'}</dd>
+      </dl>
+    </div>
+  );
+}
+
+const EXCEPTION_DETAIL = { height: 112, render: (x: ExceptionRecord) => <ExceptionSummary x={x} /> };
 const PRICE_TYPES: ExceptionType[] = ['priceStale', 'priceVariance', 'priceMissing'];
 
 const daysBetween = (fromIso: string, toIso: string) =>
@@ -487,6 +539,7 @@ export function ExceptionQueue({
           permissions={permissions.data ?? []}
           noun={NOUN}
           onRowOpen={(x) => setOpenId(x.id)}
+          detail={EXCEPTION_DETAIL}
         />
       </div>
       {openId ? (

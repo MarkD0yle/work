@@ -4,6 +4,7 @@ import { useState } from 'react';
 import type { FilterCondition } from '@ledgerline/contracts';
 import { NotificationProvider } from '../state/notifications';
 import { LLGrid } from './ll-grid';
+import { enableGridEnterprise } from './modules';
 import type { LLColumnDef, LLDataSource } from './types';
 
 interface Row {
@@ -234,3 +235,61 @@ function Filtered() {
 
 /** Every active filter is a removable tag; the toolbar also offers columns and density. */
 export const FilterTags: Story = { render: () => <Filtered /> };
+
+/**
+ * AG Grid Enterprise, routed through Ledgerline rules (see `docs/AG-GRID-ENTERPRISE.md`).
+ * Drag across Price and Amount: the status bar sums the range in decimals and refuses to add USD to JPY.
+ * Find highlights matches without hiding rows. Export to Excel leaves the restricted tax id out.
+ * The Columns menu adds row numbers, the column panel and fit-to-content. Header menus offer sort, pin and autosize.
+ * Shows AG Grid's watermark: no licence key in a design concept.
+ */
+const withEnterprise = [
+  async () => {
+    await enableGridEnterprise();
+    return {};
+  },
+];
+export const Enterprise: Story = {
+  loaders: withEnterprise,
+  render: () => (
+    <LLGrid
+      gridId="story-enterprise"
+      label="Transactions"
+      columns={columns}
+      rowId={rowId}
+      rowMessages={rowMessages}
+      dataSource={client}
+      features={features}
+      onDensityChange={() => undefined}
+    />
+  ),
+};
+
+/** Master/detail (Enterprise): a row expands in place. Chevron, or Alt+Down and Alt+Up from the keyboard. */
+export const EnterpriseMasterDetail: Story = {
+  loaders: withEnterprise,
+  render: () => (
+    <LLGrid
+      gridId="story-master-detail"
+      label="Transactions"
+      columns={columns}
+      rowId={rowId}
+      dataSource={client}
+      features={features}
+      detail={{
+        height: 96,
+        hasDetail: (r) => r.status !== 'reversed',
+        render: (r) => (
+          <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1 text-xs">
+            <dt className="text-muted-foreground">Security</dt>
+            <dd>{r.security}</dd>
+            <dt className="text-muted-foreground">Status</dt>
+            <dd>{r.status}</dd>
+            <dt className="text-muted-foreground">Warning</dt>
+            <dd>{r.warning?.text ?? 'None'}</dd>
+          </dl>
+        ),
+      }}
+    />
+  ),
+};

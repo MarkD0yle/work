@@ -15,6 +15,7 @@ import type {
   SavedView,
   UiState,
 } from '@ledgerline/contracts';
+import type { ReactNode } from 'react';
 import type { BadgeProps } from '../components/badge';
 
 interface ColumnBase {
@@ -110,6 +111,10 @@ export interface LLGridFeatures {
   quickSearch: boolean;
   /** Open the preview before every confirm. On for users flagged as new (SPEC 7.4). */
   previewFirst?: boolean;
+  /** Enterprise: drag across cells to select a range. The status bar sums it, Copy takes it. On unless set to false. */
+  cellSelection?: boolean;
+  /** Enterprise: Export to Excel. On unless set to false. Restricted columns are never exported. */
+  export?: boolean;
 }
 
 export function gridFeatures(segment: ExperienceSegment): LLGridFeatures {
@@ -119,6 +124,8 @@ export function gridFeatures(segment: ExperienceSegment): LLGridFeatures {
     copy: true,
     quickSearch: true,
     previewFirst: segment === 'newUser',
+    cellSelection: true,
+    export: true,
   };
 }
 
@@ -164,6 +171,14 @@ export interface LLGridHandle {
   focusRow: (rowId: string) => boolean;
 }
 
+export interface LLGridDetail<Row> {
+  render: (row: Row) => ReactNode;
+  /** Height of the expanded area in pixels. Without it, the detail sizes to its content. */
+  height?: number;
+  /** Rows without a detail get no chevron. All rows have one when omitted. */
+  hasDetail?: (row: Row) => boolean;
+}
+
 export interface LLGridProps<Row> {
   /** Stable id for this grid, used for saved views and analytics. */
   gridId: string;
@@ -207,6 +222,11 @@ export interface LLGridProps<Row> {
   }) => void;
   /** The job queue. Without it, a run that goes to a job is announced but not followed. */
   jobs?: GridJobs;
+  /**
+   * Enterprise master/detail: a row expands in place to show more about it, e.g. a job's log or an exception's thread.
+   * Rendered with React, inside the grid. Expand and collapse from the chevron column, or with Alt+Down / Alt+Up.
+   */
+  detail?: LLGridDetail<Row>;
   /** Opens a row (Enter, F2 or double-click), e.g. in a detail panel. */
   onRowOpen?: (row: Row) => void;
   /** When given, the toolbar offers a density control. The app owns the setting so it applies everywhere. */

@@ -11,10 +11,26 @@ import type {
   UiState,
 } from '@ledgerline/contracts';
 import { density as densityTokens } from '@ledgerline/tokens';
-import type { CellKeyDownEvent, GridApi, GridReadyEvent, IRowNode } from 'ag-grid-community';
+import type {
+  CellKeyDownEvent,
+  GridApi,
+  GridReadyEvent,
+  ICellRendererParams,
+  IRowNode,
+} from 'ag-grid-community';
 import { AgGridReact } from 'ag-grid-react';
-import { Decimal } from 'decimal.js';
-import { ChevronDown, Columns3, Group, RefreshCw, Rows3, Search, X } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronUp,
+  Columns3,
+  Download,
+  Group,
+  RefreshCw,
+  Rows3,
+  Search,
+  TextSearch,
+  X,
+} from 'lucide-react';
 import {
   useCallback,
   useContext,
@@ -56,7 +72,7 @@ import { toast } from '../components/toaster';
 import { ProvenanceDetails } from '../financial/financial-cell';
 import { densities } from '../lib/preferences';
 import { Input } from '../components/input';
-import { formatFinancial } from '../financial/format';
+import { formatFinancial, sumFinancial } from '../financial/format';
 import { formatTimestamp } from '../financial/provenance';
 import { cn } from '../lib/cn';
 import { useDensity } from '../lib/use-density';
@@ -65,6 +81,17 @@ import { SectionBanner } from '../state/section-banner';
 import { StateOverlay } from '../state/state-overlay';
 import { headerText, MESSAGES_COLUMN, toColDefs } from './cells';
 import { buildClipboard, formatBusinessDate } from './copy';
+import {
+  EXCEL_STYLES,
+  exportableColumns,
+  exportFileName,
+  exportHeader,
+  planExport,
+  processExportCell,
+  rangeCells,
+  rangeSummary,
+  EXPORT_PLAN,
+} from './enterprise';
 import {
   createInfiniteDatasource,
   createServerSideDatasource,
@@ -155,6 +182,27 @@ function messagesFrom(error: unknown): Message[] {
   ];
 }
 
+/** Master/detail: the expanded area under a row. React, because a detail is rich content (logs, threads, tables). */
+function DetailCell<Row>(params: ICellRendererParams<Row> & { llRender: (row: Row) => ReactNode }) {
+  const record = recordOf(params.data);
+  return (
+    <div data-slot="grid-detail" className="h-full overflow-auto bg-muted/40 px-(--ll-padding-x) py-2">
+      {record === undefined ? null : params.llRender(record)}
+    </div>
+  );
+}
+
+/** Keys AG Grid must leave alone, because Ledgerline gives them its own meaning (SPEC 7.1 keyboard). */
+const suppressGridKeys = (params: { event: KeyboardEvent }) => {
+  const e = params.event;
+  // Ctrl/Cmd+A selects the rows in view, not every cell; Ctrl/Cmd+C copies through Ledgerline's own rules.
+  // Alt+Down and Alt+Up open and close a row's detail; AG Grid would also move focus down a row.
+  return (
+    ((e.ctrlKey || e.metaKey) && ['a', 'c'].includes(e.key.toLowerCase())) ||
+    (e.altKey && (e.key === 'ArrowDown' || e.key === 'ArrowUp'))
+  );
+};
+
 /**
  * The Ledgerline data grid (SPEC 7.1). Wraps AG Grid: apps never import AG Grid themselves.
  *
@@ -171,6 +219,7 @@ export function LLGrid<Row>({
   filters,
   onFiltersChange,
   onRowOpen,
+  detail,
   jobs,
   onDensityChange,
   initialView,
@@ -238,6 +287,12 @@ export function LLGrid<Row>({
       ),
   );
   const [grouping, setGrouping] = useState<string[]>([]);
+  /** Enterprise: status-bar text for the selected cell range (count and decimal sums). */
+  const [rangeText, setRangeText] = useState<string[]>([]);
+  const [rowNumbers, setRowNumbers] = useState(false);
+  /** Enterprise find (client grids): highlights matches without filtering rows out. */
+  const [findText, setFindText] = useState('');
+  const [findMatches, setFindMatches] = useState<{ active: number; total: number }>({ active: 0, total: 0 });
   /** The view as it is now. A rebuilt grid (density change) is given it back. */
   const liveView = useRef<GridViewState | null>(initialView ?? null);
   /** The filters and search the attached datasource was last loaded with, to avoid loading twice. */
@@ -257,8 +312,21 @@ export function LLGrid<Row>({
   const server = dataSource.kind === 'server';
   const serverQuery = server ? dataSource.query : null;
   const enterprise = isGridEnterprise();
+  const cellSelection = enterprise && features.cellSelection !== false;
+  const canExport = enterprise && features.export !== false;
+  const hasDetail = enterprise && Boolean(detail);
+  const detailFilter = detail?.hasDetail;
+  const detailHeight = detail?.height;
 
-  const columnDefs = useMemo(() => toColDefs(columns, rowMessages), [columns, rowMessages]);
+  const columnDefs = useMemo(
+    () =>
+      toColDefs(columns, rowMessages, {
+        enterprise,
+        ...(hasDetail ? { detail: detailFilter ? { hasDetail: detailFilter } : {} } : {}),
+        exportClasses: canExport,
+      }),
+    [columns, rowMessages, enterprise, hasDetail, detailFilter, canExport],
+  );
 
   // ── Data ────────────────────────────────────────────────
   const reload = useCallback(() => {
@@ -493,10 +561,13 @@ export function LLGrid<Row>({
       if (!grid || !features.copy) return;
       const focused = grid.getFocusedCell();
       const focusedRow = focused ? recordOf(grid.getDisplayedRowAtIndex(focused.rowIndex)?.data) : undefined;
-      const rows = selected.length ? selected : focusedRow ? [focusedRow] : [];
+      // A cell range of more than one cell (Enterprise) wins: Copy takes exactly the cells the user dragged across.
+      const range = cellSelection ? rangeCells(grid, columns) : null;
+      const useRange = range !== null && range.cells > 1;
+      const rows = useRange ? range.rows : selected.length ? selected : focusedRow ? [focusedRow] : [];
       // With no selection, Copy takes the focused cell only. With a selection, it takes whole rows.
       const focusedColumn = focused ? columns.find((c) => c.field === focused.column.getColId()) : undefined;
-      const cols = selected.length || !focusedColumn ? columns : [focusedColumn];
+      const cols = useRange ? range.columns : selected.length || !focusedColumn ? columns : [focusedColumn];
       if (rows.length === 0) return;
       const result = buildClipboard(rows, cols, mode);
       if (result.text === '' && result.blocked.length) {
@@ -514,28 +585,91 @@ export function LLGrid<Row>({
         return;
       }
       void navigator.clipboard?.writeText(result.text);
-      const what =
-        cols.length === 1 ? '1 cell' : `${count(rows.length)} ${rows.length === 1 ? 'row' : 'rows'}`;
+      const what = useRange
+        ? `${count(result.cells)} ${result.cells === 1 ? 'cell' : 'cells'}`
+        : cols.length === 1
+          ? '1 cell'
+          : `${count(rows.length)} ${rows.length === 1 ? 'row' : 'rows'}`;
       const left = result.blocked.length
         ? ` ${result.blocked.map((b) => b.header).join(', ')} left out: ${result.blocked[0]?.reason}`
         : '';
       setAnnouncement(`Copied ${what}${mode === 'raw' ? ' as raw values' : ''}.${left}`);
       toast(`Copied ${what}${mode === 'raw' ? ' as raw values' : ''}`);
     },
-    [columns, features.copy, selected, notifications, label],
+    [columns, features.copy, selected, notifications, label, cellSelection],
   );
+
+  // ── Excel export (Enterprise) ───────────────────────────
+  /**
+   * A client grid exports every row that passes its search, in the order shown. A server grid holds only the
+   * rows on screen, so it exports the selected rows; exporting every match is a job (SPEC 7.11), not a download.
+   */
+  const exportExcel = useCallback(() => {
+    const grid = api.current;
+    if (!grid) return;
+    const { allowed, blocked } = exportableColumns(grid, columns);
+    const rows: Row[] = [];
+    const take = (node: IRowNode<Row>) => {
+      const record = recordOf(node.data);
+      if (record !== undefined) rows.push(record);
+    };
+    if (server) grid.getSelectedNodes().forEach(take);
+    else grid.forEachNodeAfterFilterAndSort(take);
+    const plan = planExport(rows, allowed);
+    // Each cell's Excel class reads the plan from the grid context while the file is written.
+    grid.setGridOption('context', { [EXPORT_PLAN]: plan });
+    try {
+      grid.exportDataAsExcel({
+        fileName: exportFileName(gridId, new Date().toISOString()),
+        sheetName: label.slice(0, 31),
+        columnKeys: allowed.map((c) => c.field),
+        onlySelected: server,
+        shouldRowBeSkipped: (p) => recordOf(p.node.data) === undefined,
+        processCellCallback: processExportCell(columns, plan),
+        processHeaderCallback: (p) => {
+          const column = columns.find((c) => c.field === p.column.getColId());
+          return column ? exportHeader(headerText(column), column.field, plan) : '';
+        },
+      });
+    } finally {
+      grid.setGridOption('context', {});
+    }
+    const what = `${count(rows.length)} ${rows.length === 1 ? noun.one : noun.many}`;
+    const left = blocked.length
+      ? ` ${blocked.map((c) => c.header).join(', ')} left out: ${blocked[0]?.restricted?.reason ?? ''}`
+      : '';
+    setAnnouncement(`Exported ${what} to Excel.${left}`);
+    toast(`Exported ${what} to Excel`);
+    if (blocked.length)
+      notifications?.notify(
+        {
+          code: 'LL-GRD-0002',
+          severity: 'info',
+          level: 'operation',
+          text: `${blocked.map((c) => c.header).join(', ')} not exported.`,
+          fix: blocked[0]?.restricted?.reason ?? '',
+        },
+        label,
+      );
+  }, [columns, server, gridId, label, noun, notifications]);
 
   // ── Actions: one registry for the toolbar, selection bar, context menu and palette (SPEC 7.8) ──
   const refreshRef = useRef(refresh);
   const copyRef = useRef(copy);
   const openRef = useRef(onRowOpen);
+  const exportRef = useRef(exportExcel);
   useEffect(() => {
     refreshRef.current = refresh;
     copyRef.current = copy;
     openRef.current = onRowOpen;
-  }, [refresh, copy, onRowOpen]);
+    exportRef.current = exportExcel;
+  }, [refresh, copy, onRowOpen, exportExcel]);
 
   const canOpen = Boolean(onRowOpen);
+  const selectedCount = selected.length;
+  const matchKey = JSON.stringify([filters ?? [], quickSearch]);
+  const everyMatch = allMatching && allMatching.key === matchKey ? allMatching.rows : null;
+  const everyMatchCount = everyMatch ? everyMatch.length : null;
   const definitions = useMemo<ActionDef<Row>[]>(() => {
     const local = {
       consequence: 'none' as const,
@@ -598,11 +732,36 @@ export function LLGrid<Row>({
         return LOCAL_RESULT([]);
       },
     };
-    return [...open, ...(actions ?? []), ...copies, refreshAction];
-  }, [actions, features.copy, noun.one, canOpen]);
+    // Server grids export the selection: the rows that are not on screen are not in the browser.
+    const exportBlocked =
+      server && selectedCount === 0
+        ? `Select the ${noun.many} to export. Only rows on screen can be downloaded; exporting every match runs as a job.`
+        : server && everyMatchCount !== null && everyMatchCount > selectedCount
+          ? `Only the ${count(selectedCount)} ${noun.many} on screen can be downloaded, not all ${count(everyMatchCount)} matching. Narrow the filters, or run the export as a job.`
+          : null;
+    const exportAction: ActionDef<Row>[] = canExport
+      ? [
+          {
+            ...local,
+            id: 'grid.exportExcel',
+            label: 'Export to Excel',
+            description: server
+              ? `Downloads the selected ${noun.many} as an Excel file, at display precision. Restricted columns are left out.`
+              : `Downloads every ${noun.one} that matches the search as an Excel file, at display precision. Restricted columns are left out.`,
+            tier: 'secondary',
+            appliesTo: 'none',
+            available: () =>
+              exportBlocked ? { ...ALLOWED, allowed: false, explanation: exportBlocked } : ALLOWED,
+            execute: async () => {
+              exportRef.current();
+              return LOCAL_RESULT([]);
+            },
+          },
+        ]
+      : [];
+    return [...open, ...(actions ?? []), ...copies, ...exportAction, refreshAction];
+  }, [actions, features.copy, noun, canOpen, canExport, server, selectedCount, everyMatchCount]);
 
-  const matchKey = JSON.stringify([filters ?? [], quickSearch]);
-  const everyMatch = allMatching && allMatching.key === matchKey ? allMatching.rows : null;
   const targets = useMemo(
     () => everyMatch ?? (selected.length ? selected : focusedRow !== undefined ? [focusedRow] : []),
     [everyMatch, selected, focusedRow],
@@ -906,7 +1065,18 @@ export function LLGrid<Row>({
           const node = event.api.getDisplayedRowAtIndex(i);
           if (recordOf(node?.data) !== undefined) node?.setSelected(true);
         }
+      } else if (hasDetail && e.altKey && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+        // Alt+Down opens a row's detail, Alt+Up closes it.
+        e.preventDefault();
+        const node = event.node;
+        if (!node.master) return;
+        node.setExpanded(e.key === 'ArrowDown');
+        setAnnouncement(e.key === 'ArrowDown' ? 'Details shown.' : 'Details hidden.');
       } else if (e.key === 'Escape') {
+        if (cellSelection && (event.api.getCellRanges()?.length ?? 0) > 0) {
+          event.api.clearCellSelection();
+          setRangeText([]);
+        }
         if (event.api.getSelectedNodes().length) {
           event.api.deselectAll();
           setAnnouncement('Selection cleared.');
@@ -929,7 +1099,7 @@ export function LLGrid<Row>({
         );
       }
     },
-    [resolved, runById, features.selection, canOpen],
+    [resolved, runById, features.selection, canOpen, hasDetail, cellSelection],
   );
 
   useImperativeHandle(
@@ -965,13 +1135,11 @@ export function LLGrid<Row>({
     if (selected.length === 0) return [];
     return columns.flatMap((column) => {
       if (column.type !== 'financial' || !column.aggregate) return [];
-      const values = selected.map((row) => column.value(row)).filter((v) => v.value !== null);
-      const first = values[0];
-      if (!first) return [];
+      const sum = sumFinancial(selected.map((row) => column.value(row)));
+      if (!sum) return [];
       // Amounts in different currencies are never added together.
-      if (new Set(values.map((v) => v.currency)).size > 1) return [`${column.header}: mixed currencies`];
-      const sum = values.reduce((total, v) => total.plus(v.value as string), new Decimal(0));
-      const f = formatFinancial({ ...first, value: sum.toString() });
+      if (sum.kind === 'mixed') return [`${column.header}: mixed currencies`];
+      const f = formatFinancial(sum.value);
       return [`Sum of ${column.header.toLowerCase()}: ${f.text}${f.currency ? ` ${f.currency}` : ''}`];
     });
   }, [selected, columns]);
@@ -1089,8 +1257,65 @@ export function LLGrid<Row>({
             suppressGroupChangesColumnVisibility: true,
           }
         : {}),
+      ...(enterprise
+        ? {
+            // The Columns tool panel: order, show, pin and group in one place. Pivot and values stay off:
+            // their maths is not decimal. The side bar opens from the Columns menu.
+            sideBar: {
+              hiddenByDefault: true,
+              toolPanels: [
+                {
+                  id: 'columns',
+                  labelDefault: 'Columns',
+                  labelKey: 'columns',
+                  iconKey: 'columns',
+                  toolPanel: 'agColumnsToolPanel',
+                  toolPanelParams: {
+                    suppressPivotMode: true,
+                    suppressValues: true,
+                    suppressPivots: true,
+                    suppressRowGroups: client || !columns.some((c) => c.groupable),
+                  },
+                },
+              ],
+            },
+            // Drag a column header here to group; the chips show the grouping and can be reordered or removed.
+            rowGroupPanelShow:
+              !client && columns.some((c) => c.groupable)
+                ? ('onlyWhenGrouping' as const)
+                : ('never' as const),
+            defaultColDef: { suppressKeyboardEvent: suppressGridKeys },
+          }
+        : {}),
+      ...(cellSelection
+        ? { cellSelection: { suppressMultiRanges: true, handle: { mode: 'range' as const } } }
+        : {}),
+      ...(canExport ? { excelStyles: EXCEL_STYLES } : {}),
+      ...(hasDetail
+        ? {
+            masterDetail: true,
+            isRowMaster: (data: Row) =>
+              recordOf(data) !== undefined && (detailFilter ? detailFilter(data) : true),
+            detailCellRenderer: DetailCell,
+            ...(detailHeight ? { detailRowHeight: detailHeight } : { detailRowAutoHeight: true }),
+          }
+        : {}),
     };
-  }, [client, enterprise, features.selection, columns, rowId]);
+  }, [
+    client,
+    enterprise,
+    features.selection,
+    columns,
+    rowId,
+    cellSelection,
+    canExport,
+    hasDetail,
+    detailFilter,
+    detailHeight,
+  ]);
+  const detailRender = detail?.render;
+  const detailParams = useMemo(() => (detailRender ? { llRender: detailRender } : undefined), [detailRender]);
+  const findable = enterprise && client;
 
   // ── Filter tags: every active condition is visible and removable ──
   const tags = [
@@ -1130,6 +1355,57 @@ export function LLGrid<Row>({
               onChange={(e) => setSearchText(e.target.value)}
               className="pl-8"
             />
+          </div>
+        ) : null}
+        {findable ? (
+          <div className="flex items-center gap-1" data-slot="grid-find">
+            <div className="relative w-56 max-w-full">
+              <TextSearch
+                aria-hidden
+                className="pointer-events-none absolute top-1/2 left-2 size-4 -translate-y-1/2 text-muted-foreground"
+              />
+              <Input
+                type="search"
+                aria-label={`Find in ${label.toLowerCase()}`}
+                placeholder="Find (highlights, keeps rows)"
+                value={findText}
+                onChange={(e) => setFindText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key !== 'Enter') return;
+                  e.preventDefault();
+                  if (e.shiftKey) api.current?.findPrevious();
+                  else api.current?.findNext();
+                }}
+                className="pl-8"
+              />
+            </div>
+            {findText ? (
+              <>
+                <span className="text-xs whitespace-nowrap text-muted-foreground tabular" aria-live="polite">
+                  {findMatches.total
+                    ? `${count(findMatches.active)} of ${count(findMatches.total)}`
+                    : 'No matches'}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Previous match"
+                  disabled={!findMatches.total}
+                  onClick={() => api.current?.findPrevious()}
+                >
+                  <ChevronUp aria-hidden />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Next match"
+                  disabled={!findMatches.total}
+                  onClick={() => api.current?.findNext()}
+                >
+                  <ChevronDown aria-hidden />
+                </Button>
+              </>
+            ) : null}
           </div>
         ) : null}
         <div className="flex-1" />
@@ -1179,6 +1455,42 @@ export function LLGrid<Row>({
                 {headerText(c)}
               </DropdownMenuCheckboxItem>
             ))}
+            {enterprise ? (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuCheckboxItem
+                  checked={rowNumbers}
+                  onSelect={(e) => e.preventDefault()}
+                  onCheckedChange={(checked) => setRowNumbers(checked)}
+                >
+                  Row numbers
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuItem
+                  onSelect={() => {
+                    const grid = api.current;
+                    if (!grid) return;
+                    const open = grid.isSideBarVisible() && grid.isToolPanelShowing();
+                    if (open) {
+                      grid.closeToolPanel();
+                      grid.setSideBarVisible(false);
+                    } else {
+                      grid.setSideBarVisible(true);
+                      grid.openToolPanel('columns');
+                    }
+                  }}
+                >
+                  Column panel (order, pin, group)
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => {
+                    api.current?.autoSizeAllColumns();
+                    emitView();
+                  }}
+                >
+                  Fit columns to content
+                </DropdownMenuItem>
+              </>
+            ) : null}
           </DropdownMenuContent>
         </DropdownMenu>
         {onDensityChange ? (
@@ -1223,6 +1535,7 @@ export function LLGrid<Row>({
             }}
           >
             {action.def.id === 'grid.refresh' ? <RefreshCw aria-hidden /> : null}
+            {action.def.id === 'grid.exportExcel' ? <Download aria-hidden /> : null}
             {action.def.label}
           </Button>
         ))}
@@ -1392,6 +1705,15 @@ export function LLGrid<Row>({
                 headerHeight={rowHeight}
                 {...(dataSource.kind === 'client' ? { rowData: dataSource.rows } : {})}
                 {...staticOptions}
+                {...(enterprise ? { rowNumbers } : {})}
+                {...(findable ? { findSearchValue: findText } : {})}
+                {...(detailParams ? { detailCellRendererParams: detailParams } : {})}
+                onFindChanged={(e) => {
+                  setFindMatches({ active: e.activeMatch?.numOverall ?? 0, total: e.totalMatches });
+                }}
+                onCellSelectionChanged={(e) => {
+                  if (e.finished) setRangeText(rangeSummary(rangeCells(e.api, columns)));
+                }}
                 suppressCellFocus={false}
                 enableCellTextSelection={false}
                 onGridReady={onGridReady}
@@ -1465,6 +1787,11 @@ export function LLGrid<Row>({
             {text}
           </span>
         ))}
+        {rangeText.length ? (
+          <span className="tabular" data-slot="range-summary">
+            Range: {rangeText.join(' · ')}
+          </span>
+        ) : null}
         <span className="flex-1" />
         {asOf ? <span>Refreshed {formatTimestamp(asOf)}</span> : null}
       </div>

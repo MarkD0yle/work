@@ -3,7 +3,8 @@ import type { Message } from '@ledgerline/contracts';
 import { RowMarker } from '../state/row-marker';
 import { rawText } from './copy';
 import { cellElement, placeholderElement } from './dom-cells';
-import { isGroupRow } from './grouping';
+import { columnMenuItems, excelClass, exportPlanOf } from './enterprise';
+import { isGroupRow, recordOf } from './grouping';
 import type { LLColumnDef } from './types';
 
 interface DomCellParams<Row> extends ICellRendererParams<Row> {
@@ -77,11 +78,23 @@ export function headerText<Row>(column: LLColumnDef<Row>): string {
 }
 
 export const MESSAGES_COLUMN = '__messages';
+export const DETAIL_COLUMN = '__detail';
+
+export interface ColDefOptions<Row> {
+  /** Enterprise is on: add the column menu and the per-cell Excel classes. */
+  enterprise?: boolean;
+  /** Add Excel classes. They are worked out only while an export is being written (its plan is in the grid context). */
+  exportClasses?: boolean;
+  /** Master/detail is on: add the expand column. */
+  detail?: { hasDetail?: (row: Row) => boolean };
+}
 
 export function toColDefs<Row>(
   columns: LLColumnDef<Row>[],
   rowMessages?: (row: Row) => Message[],
+  options: ColDefOptions<Row> = {},
 ): ColDef<Row>[] {
+  const { enterprise = false, detail, exportClasses = false } = options;
   const defs: ColDef<Row>[] = columns.map((column) => ({
     colId: column.field,
     headerName: headerText(column),
@@ -91,8 +104,16 @@ export function toColDefs<Row>(
     resizable: true,
     ...(column.pinned ? { pinned: column.pinned } : {}),
     // Financial columns right-align in tabular figures; alignment is a property of the kind, not the cell.
-    ...(column.type === 'financial' || column.type === 'delta'
-      ? { type: 'rightAligned', cellClass: 'll-cell-financial' }
+    ...(column.type === 'financial' || column.type === 'delta' ? { type: 'rightAligned' } : {}),
+    // The Excel class is per cell: one column can hold USD at 2 decimals and JPY at 0.
+    cellClass: (params) => {
+      const plan = exportClasses ? exportPlanOf(params.context) : null;
+      const xl = plan ? excelClass(column, recordOf(params.data), plan) : undefined;
+      const base = column.type === 'financial' || column.type === 'delta' ? 'll-cell-financial' : undefined;
+      return [base, xl].filter((c): c is string => Boolean(c));
+    },
+    ...(enterprise
+      ? { mainMenuItems: columnMenuItems(column.groupable ?? false), suppressHeaderFilterButton: true }
       : {}),
     cellRenderer: DomCell,
     cellRendererParams: { llColumn: column },
@@ -107,8 +128,30 @@ export function toColDefs<Row>(
           ? ''
           : rawText(column, params.data),
   }));
-  if (!rowMessages) return defs;
+  const detailColumn: ColDef<Row>[] = detail
+    ? [
+        {
+          colId: DETAIL_COLUMN,
+          headerName: 'Details',
+          headerClass: 'll-header-icon-only',
+          width: 44,
+          pinned: 'left',
+          sortable: false,
+          resizable: false,
+          suppressMovable: true,
+          lockVisible: true,
+          suppressHeaderMenuButton: true,
+          // AG Grid's group cell renderer draws the expand chevron for master rows.
+          cellRenderer: 'agGroupCellRenderer',
+          cellRendererParams: { suppressCount: true, innerRenderer: () => '' },
+          valueGetter: () => '',
+          suppressColumnsToolPanel: true,
+        },
+      ]
+    : [];
+  if (!rowMessages) return [...detailColumn, ...defs];
   return [
+    ...detailColumn,
     {
       colId: MESSAGES_COLUMN,
       headerName: 'Messages',
@@ -119,6 +162,8 @@ export function toColDefs<Row>(
       resizable: false,
       suppressMovable: true,
       lockVisible: true,
+      suppressColumnsToolPanel: true,
+      ...(enterprise ? { suppressHeaderMenuButton: true } : {}),
       // Only rows that have messages mount the (React) marker; every other row stays an empty cell.
       cellRendererSelector: (params: ICellRendererParams<Row>) =>
         params.data !== undefined && !isGroupRow(params.data) && rowMessages(params.data).length
