@@ -39,7 +39,7 @@ export function WorkspaceScreen() {
   if (!workspace) {
     return (
       <div className="p-6">
-        <h1 className="text-2xl font-semibold tracking-tight">Workspace not found</h1>
+        <h1 className="text-lg font-semibold tracking-tight">Workspace not found</h1>
         <p className="text-muted-foreground">
           It may have been deleted, or it belongs to someone else. Choose a workspace from the switcher in the
           top bar.
@@ -140,9 +140,9 @@ function WorkspaceView({ me, workspace }: { me: Me; workspace: Workspace }) {
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3 p-4">
+    <div className="flex h-full min-h-0 flex-col gap-2 px-3 py-2">
       <header className="flex shrink-0 flex-wrap items-center gap-2">
-        <h1 className="text-xl font-semibold tracking-tight">{workspace.name}</h1>
+        <h1 className="text-base font-semibold tracking-tight">{workspace.name}</h1>
         {workspace.group ? <span className="text-muted-foreground">{workspace.group}</span> : null}
         {workspace.isTeamDefault ? <Badge status="info">Team default</Badge> : null}
         {workspace.loadAtStartup ? <Badge status="neutral">Opens at sign-in</Badge> : null}

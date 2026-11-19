@@ -413,6 +413,8 @@ for (const theme of THEMES) {
   test.describe(`stories, ${theme}`, () => {
     for (const story of stories) {
       test(`${story.title} / ${story.name}`, async ({ page }) => {
+        // Reduced motion zeroes the motion tokens, so axe never samples a colour halfway through the theme switch.
+        await page.emulateMedia({ reducedMotion: 'reduce' });
         await page.goto(
           `${STORYBOOK}/iframe.html?id=${story.id}&viewMode=story&globals=theme:${theme};a11y.manual:!true`,
         );

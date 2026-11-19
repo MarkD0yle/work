@@ -145,7 +145,13 @@ export function TransactionPanel({ id, user, businessDate, onSaved, onClose }: T
     },
   });
 
-  if (record.isPending || permissions.isPending) {
+  // The calendar and periods load after the record. Until they arrive the date checks have nothing to check
+  // against, so the form waits: a date entered early would otherwise skip the closed-period rule on screen.
+  const rulesPending = Boolean(
+    (record.data?.tradeDate.calendar && calendar.isPending) ||
+    (record.data?.portfolio.id && periods.isPending),
+  );
+  if (record.isPending || permissions.isPending || rulesPending) {
     return (
       <Shell title={`Transaction ${id}`} heading={heading} onClose={onClose}>
         <LoadingPanel label="Loading transaction…" />

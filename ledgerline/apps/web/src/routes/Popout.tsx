@@ -69,7 +69,7 @@ export function Popout() {
   if (!workspace || !panel) {
     return (
       <main className="p-6">
-        <h1 className="text-2xl font-semibold tracking-tight">Panel not found</h1>
+        <h1 className="text-lg font-semibold tracking-tight">Panel not found</h1>
         <p className="text-muted-foreground">
           The workspace or panel no longer exists. Close this window and pop the panel out again.
         </p>
@@ -78,9 +78,9 @@ export function Popout() {
   }
 
   return (
-    <main className="flex h-dvh flex-col gap-3 p-4">
+    <main className="flex h-dvh flex-col gap-2 px-3 py-2">
       <header className="flex shrink-0 items-baseline gap-2">
-        <h1 className="text-xl font-semibold tracking-tight">{panelTitle(panel)}</h1>
+        <h1 className="text-base font-semibold tracking-tight">{panelTitle(panel)}</h1>
         <p className="text-muted-foreground">
           Popped out of {workspace.name} · signed in as {me.data.user.name}
         </p>

@@ -12,7 +12,7 @@ export function TabsList({ className, ...props }: ComponentProps<typeof TabsPrim
   return (
     <TabsPrimitive.List
       data-slot="tabs-list"
-      className={cn('flex shrink-0 gap-1 border-b px-2', className)}
+      className={cn('flex shrink-0 gap-3 border-b', className)}
       {...props}
     />
   );
@@ -23,8 +23,8 @@ export function TabsTrigger({ className, ...props }: ComponentProps<typeof TabsP
     <TabsPrimitive.Trigger
       data-slot="tabs-trigger"
       className={cn(
-        '-mb-px h-(--ll-control-height) border-b-2 border-transparent px-3 text-body font-medium text-muted-foreground',
-        'hover:text-foreground data-[state=active]:border-primary data-[state=active]:text-foreground',
+        '-mb-px h-(--ll-control-height) border-b-2 border-transparent px-0.5 text-body font-medium text-muted-foreground',
+        'hover:text-foreground data-[state=active]:border-foreground data-[state=active]:text-foreground',
         className,
       )}
       {...props}

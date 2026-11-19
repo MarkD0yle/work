@@ -1412,7 +1412,7 @@ export function LLGrid<Row>({
         {groupable.length ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="secondary">
+              <Button variant="ghost">
                 <Group aria-hidden />
                 Group
                 {grouping.length ? <span className="text-muted-foreground">({grouping.length})</span> : null}
@@ -1435,7 +1435,7 @@ export function LLGrid<Row>({
         ) : null}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="secondary">
+            <Button variant="ghost">
               <Columns3 aria-hidden />
               Columns
               {hidden.size ? <span className="text-muted-foreground">({hidden.size} hidden)</span> : null}
@@ -1496,7 +1496,7 @@ export function LLGrid<Row>({
         {onDensityChange ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="secondary">
+              <Button variant="ghost">
                 <Rows3 aria-hidden />
                 Density
               </Button>
@@ -1562,10 +1562,7 @@ export function LLGrid<Row>({
           className="flex shrink-0 flex-wrap items-center gap-2"
         >
           {tags.map((tag) => (
-            <li
-              key={tag.key}
-              className="flex h-6 items-center gap-1 rounded-sm border bg-muted pr-0.5 pl-2 text-xs"
-            >
+            <li key={tag.key} className="flex h-6 items-center gap-1 rounded-sm bg-muted pr-0.5 pl-2 text-xs">
               <span>{tag.text}</span>
               {tag.remove ? (
                 <button
@@ -1599,7 +1596,7 @@ export function LLGrid<Row>({
       {features.selection && selected.length > 0 ? (
         <div
           data-slot="selection-bar"
-          className="flex h-(--ll-control-height) shrink-0 items-center gap-3 rounded-md border bg-muted px-(--ll-padding-x)"
+          className="flex h-(--ll-control-height) shrink-0 items-center gap-3 rounded-md bg-muted px-(--ll-padding-x)"
         >
           <span className="font-medium" data-slot="selection-count">
             {everyMatch

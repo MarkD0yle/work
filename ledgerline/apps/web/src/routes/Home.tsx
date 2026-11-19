@@ -21,7 +21,7 @@ export function Home() {
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6 p-6">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Signed in as {user.name}</h1>
+        <h1 className="text-lg font-semibold tracking-tight">Signed in as {user.name}</h1>
         <p className="text-muted-foreground">
           {user.role} · {user.team} · default density {user.defaultDensity}
           {user.blotterScope ? ` · limited to ${user.blotterScope.join(', ')}` : ''}

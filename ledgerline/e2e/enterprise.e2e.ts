@@ -136,6 +136,9 @@ test.describe('AG Grid Enterprise in Ledgerline', () => {
     await expect(detail).toBeVisible();
     await expect(detail).toContainText('Root cause');
     await expect(detail).toContainText('Latest comment');
+    // AG Grid redraws the master row when it expands and puts focus back on the cell a moment later.
+    // A key pressed in between goes to the page, not the grid, so wait for the cell as a person would.
+    await expect(cell(page, 0, 'type')).toBeFocused();
     await page.keyboard.press('Alt+ArrowUp');
     await expect(page.locator('[data-slot="exception-summary"]')).toHaveCount(0);
   });

@@ -2,6 +2,12 @@ import { expect, test, type Page } from '@playwright/test';
 
 /** Milestone 3: shell, action registry (SPEC 7.8) and command palette (SPEC 6). */
 
+/** Shortcut labels follow the platform (`formatShortcut`): symbols on a Mac, words elsewhere. */
+const keys =
+  process.platform === 'darwin'
+    ? { post: '⌘↵', delete: '⌫', open: '↵' }
+    : { post: 'Ctrl+Enter', delete: 'Delete', open: 'Enter' };
+
 const signIn = (page: Page, userId: string) =>
   page.addInitScript(
     (id) =>
@@ -112,9 +118,9 @@ test.describe('action registry', () => {
       expect(entries.length, `${id}: ${JSON.stringify(seen)}`).toBeGreaterThanOrEqual(4);
       expect(new Set(entries.map((e) => e.split(': ')[1])).size, `${id}: ${entries.join(' / ')}`).toBe(1);
     }
-    expect(seen['transaction.post']?.[0]).toContain('Post | Ctrl+Enter');
-    expect(seen['transaction.delete']?.[0]).toContain('Delete | Delete');
-    expect(seen['row.open']?.[0]).toContain('Open | Enter');
+    expect(seen['transaction.post']?.[0]).toContain(`Post | ${keys.post}`);
+    expect(seen['transaction.delete']?.[0]).toContain(`Delete | ${keys.delete}`);
+    expect(seen['row.open']?.[0]).toContain(`Open | ${keys.open}`);
   });
 
   test('at most 3 actions show as buttons; the rest are under More', async ({ page }) => {
@@ -374,7 +380,7 @@ test.describe('command palette and shell', () => {
     await expect(sheet.getByRole('region', { name: 'Everywhere' })).toContainText('g then t');
     await expect(sheet.getByRole('region', { name: 'In a grid' })).toContainText('Shift+F10');
     const actions = sheet.getByRole('region', { name: 'Actions on this screen' });
-    await expect(actions).toContainText('Ctrl+Enter');
+    await expect(actions).toContainText(keys.post);
     await expect(actions).toContainText('Post');
     // It is also a button, for people who do not know the key.
     await page.keyboard.press('Escape');
