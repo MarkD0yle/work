@@ -76,7 +76,7 @@ export default function MyScreen() {
 - **Forms & Flows** — client/counterparty onboarding, audit trail client onboarding, sign-up, settings
 - **Dashboards** — fifteen deliberately different dashboards across financial services: loan book health, AML alert operations, fraud control room, capital adequacy, claims & reserving, fund flows, private markets, fixed income portfolio, climate & transition, VaR backtesting, banking book rate risk (IRRBB), mortgage pipeline, settlement fails & CSDR penalties, pension scheme funding, CLO deal monitor
 - **Wealth & Clients** — client overview, portfolio performance, wealth summary, asset allocation, goals
-- **Patterns & Tools** — pattern gallery, right panel and left sidebar patterns, date pickers, KPI trend patterns, GitHub cheat sheet, Awesome Quant resource directory
+- **Patterns & Tools** — pattern gallery, right panel and left sidebar patterns, AG Grid advanced filter, date pickers, KPI trend patterns, GitHub cheat sheet, Awesome Quant resource directory
 - **Other** — catch-all for any page not yet mapped (so new files always show up)
 
 A page's section is resolved by `sectionForSlug(slug, explicitSection)`: an explicit `export const section` wins, otherwise the slug→section map is used, otherwise it falls into **Other**.
