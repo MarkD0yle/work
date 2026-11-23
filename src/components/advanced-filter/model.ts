@@ -807,3 +807,132 @@ export function depthOf(root: FilterNode, id: string, d = 0): number {
 }
 
 export const MAX_DEPTH = 3;
+
+/* ---- restructuring ------------------------------------------------ */
+
+/** Group levels in a subtree: 0 for a condition, 1 for a flat group. */
+export function groupHeight(n: FilterNode): number {
+  return n.kind === "condition" ? 0 : 1 + Math.max(0, ...n.children.map(groupHeight));
+}
+
+export function parentOf(root: Group, id: string): Group | null {
+  for (const c of root.children) {
+    if (c.id === id) return root;
+    if (c.kind === "group") {
+      const hit = parentOf(c, id);
+      if (hit) return hit;
+    }
+  }
+  return null;
+}
+
+/** Groups may sit at depth 0 (the root) to MAX_DEPTH - 1. */
+function fitsAt(n: FilterNode, parentDepth: number) {
+  return parentDepth + groupHeight(n) <= MAX_DEPTH - 1;
+}
+
+/** Can `id` move into `groupId`? Not into itself, its own subtree, or too deep. */
+export function canMove(root: Group, id: string, groupId: string): boolean {
+  const node = findNode(root, id);
+  if (!node || node.id === root.id) return false;
+  if (findNode(node, groupId)) return false;
+  const d = depthOf(root, groupId);
+  return d >= 0 && fitsAt(node, d);
+}
+
+/** Move a node into a group, before `beforeId` or at the end. */
+export function moveNode(root: Group, id: string, groupId: string, beforeId: string | null): Group {
+  if (!canMove(root, id, groupId) || id === beforeId) return root;
+  const node = findNode(root, id)!;
+  const without = mapNode(root, id, () => null);
+  return mapNode(without, groupId, (g) => {
+    if (g.kind !== "group") return g;
+    const i = beforeId ? g.children.findIndex((c) => c.id === beforeId) : -1;
+    const children = [...g.children];
+    children.splice(i < 0 ? children.length : i, 0, node);
+    return { ...g, children };
+  });
+}
+
+/** Swap a node with its previous (-1) or next (+1) sibling. */
+export function moveSibling(root: Group, id: string, dir: -1 | 1): Group {
+  const parent = parentOf(root, id);
+  if (!parent) return root;
+  const i = parent.children.findIndex((c) => c.id === id);
+  const j = i + dir;
+  if (j < 0 || j >= parent.children.length) return root;
+  return mapNode(root, parent.id, (g) => {
+    const children = [...(g as Group).children];
+    [children[i], children[j]] = [children[j], children[i]];
+    return { ...(g as Group), children };
+  });
+}
+
+export function canWrap(root: Group, id: string): boolean {
+  const node = findNode(root, id);
+  const parent = parentOf(root, id);
+  return !!node && !!parent && fitsAt({ ...newGroup(), children: [node] }, depthOf(root, parent.id));
+}
+
+/** Put a node inside a new group of its own, ready for siblings. */
+export function wrapInGroup(root: Group, id: string): { root: Group; groupId: string | null } {
+  if (!canWrap(root, id)) return { root, groupId: null };
+  const parent = parentOf(root, id)!;
+  const g = newGroup(parent.join === "AND" ? "OR" : "AND", []);
+  return { root: mapNode(root, id, (n) => ({ ...g, children: [n] })), groupId: g.id };
+}
+
+/** Ungrouping is only offered when it can't change what the filter matches. */
+export function ungroupBlocker(root: Group, id: string): string | null {
+  const g = findNode(root, id);
+  const parent = parentOf(root, id);
+  if (!g || g.kind !== "group" || !parent) return "Not a nested group";
+  if (g.not) return "Turn NOT off first: ungrouping would drop the negation";
+  if (!g.enabled) return "Turn the group on first";
+  if (g.children.length > 1 && g.join !== parent.join) return `Joins differ (${g.join} inside ${parent.join}): ungrouping would change the result`;
+  return null;
+}
+
+export function ungroup(root: Group, id: string): Group {
+  if (ungroupBlocker(root, id)) return root;
+  const parent = parentOf(root, id)!;
+  const g = findNode(root, id) as Group;
+  return mapNode(root, parent.id, (p) => ({
+    ...(p as Group),
+    children: (p as Group).children.flatMap((c) => (c.id === id ? g.children : [c])),
+  }));
+}
+
+/** Short label for a node: a condition's sentence, a group's in brackets. */
+export function nodeLabel(n: FilterNode): string {
+  if (n.kind === "condition") return describeCondition(n);
+  const inner = n.children
+    .filter((c) => activeConditions(c).length > 0)
+    .map(nodeLabel)
+    .join(` ${n.join} `);
+  return `${n.not ? "NOT " : ""}(${inner || "empty"})`;
+}
+
+/* ---- adding from the bar ------------------------------------------ */
+
+/** Can a condition join the whole filter with `join`? Joining with the
+ * other join wraps the current filter in a group, one level deeper. */
+export function canCombine(root: Group, join: Join): boolean {
+  const live = root.children.length;
+  if (live <= 1 || join === root.join) return true;
+  return groupHeight(root) + 1 <= MAX_DEPTH;
+}
+
+/** Add a condition to the whole filter with AND (narrow) or OR (widen).
+ *
+ * With one condition or none, the filter simply takes the new join. With
+ * the join it already uses, the condition is appended. With the other
+ * join, the current filter becomes a group, so its meaning is kept:
+ * (A AND B) + OR C  →  (A AND B) OR C. */
+export function combine(root: Group, c: Condition, join: Join): Group {
+  if (root.children.length <= 1) return { ...root, join, children: [...root.children, c] };
+  if (join === root.join) return { ...root, children: [...root.children, c] };
+  if (!canCombine(root, join)) return root;
+  const inner: Group = { ...root, id: uid("g") };
+  return { ...newGroup(join, [inner, c]), id: root.id };
+}

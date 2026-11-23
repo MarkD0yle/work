@@ -508,7 +508,7 @@ export const GALLERY_META: Record<string, GalleryMeta> = {
   },
   "advanced-filter": {
     description:
-      "AG Grid advanced filter over Ledgerline transactions — 24 criteria, nested AND / OR / NOT groups, live match counts and an exportable filter model.",
+      "AG Grid Enterprise's own Advanced Filter, restyled — expression bar in the toolbar, builder docked as a side panel, saved filters as filter models.",
     tags: ["patterns", "ag-grid", "filter", "fund-ops"],
     motif: "grid",
   },
