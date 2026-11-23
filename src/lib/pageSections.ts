@@ -154,6 +154,7 @@ const SLUG_SECTION: Record<string, string> = {
   "pattern-atlas": "patterns",
   "right-panel-patterns": "patterns",
   "left-sidebar-patterns": "patterns",
+  "advanced-filter": "patterns",
   "ai-assistant": "patterns",
   "order-config-patterns": "patterns",
   "github-cheatsheet": "patterns",

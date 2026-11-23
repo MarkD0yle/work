@@ -1,0 +1,310 @@
+/* Restyle of AG Grid Enterprise's Advanced Filter.
+ *
+ * Nothing here replaces AG Grid's UI; it re-dresses it. Colours, pills and
+ * indent come from theme params in NativeFilterGrid.tsx. This file covers
+ * what params can't reach:
+ *
+ *  - the expression bar, which renders into the page toolbar
+ *    (advancedFilterParent) and so sits outside the grid's theme scope;
+ *  - the builder, which AG Grid opens as a floating, movable dialog. Here it
+ *    is pinned as a panel docked to the right of the grid. The page sets
+ *    --af-dock-top / --af-dock-width / --af-dock-height and narrows the grid
+ *    while it is open, so no rows hide behind it.
+ *
+ * Square corners throughout, per the zero-radius rule. */
+
+/* ---- expression bar ---------------------------------------------- */
+
+.af-bar .ag-advanced-filter {
+  gap: 6px;
+  font-size: 12px;
+}
+
+.af-bar .ag-autocomplete {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.af-bar .ag-input-field-input {
+  height: 32px;
+  width: 100%;
+  border: 1px solid #d4d4d4;
+  border-radius: 0;
+  background: #fff;
+  padding: 0 10px;
+  color: #171717;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  outline: none;
+}
+
+.af-bar .ag-input-field-input:hover {
+  border-color: #a3a3a3;
+}
+
+.af-bar .ag-input-field-input:focus {
+  border-color: #171717;
+  box-shadow: inset 0 0 0 1px #171717;
+}
+
+.af-bar .ag-input-field-input::placeholder {
+  color: #a3a3a3;
+}
+
+.af-bar .ag-input-field-input:disabled {
+  background: #fafafa;
+  color: #737373;
+}
+
+/* AG Grid marks an invalid expression on the input. */
+.af-bar .ag-autocomplete .ag-invalid .ag-input-field-input,
+.af-bar .ag-input-field-input.invalid,
+.af-bar .ag-input-field-input:invalid {
+  border-color: #e11d48;
+}
+
+.af-bar .ag-advanced-filter-apply-button,
+.af-bar .ag-filter-apply-panel-apply-button,
+.af-bar .ag-advanced-filter-builder-button {
+  height: 32px;
+  margin: 0 !important;
+  padding: 0 12px;
+  border: 1px solid #d4d4d4;
+  border-radius: 0;
+  background: #fff;
+  color: #404040;
+  font-size: 12px;
+  font-weight: 500;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.af-bar .ag-advanced-filter-builder-button:hover {
+  background: #f5f5f5;
+  color: #171717;
+}
+
+.af-bar .ag-advanced-filter-apply-button,
+.af-bar .ag-filter-apply-panel-apply-button {
+  border-color: #171717;
+  background: #171717;
+  color: #fff;
+}
+
+.af-bar .ag-advanced-filter-apply-button:hover:not(:disabled),
+.af-bar .ag-filter-apply-panel-apply-button:hover:not(:disabled) {
+  background: #404040;
+}
+
+.af-bar .ag-advanced-filter-apply-button:disabled,
+.af-bar .ag-filter-apply-panel-apply-button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.af-bar .ag-advanced-filter-builder-button-label {
+  margin: 0 !important;
+}
+
+/* ---- builder, docked as a right-hand panel ----------------------- */
+
+/* AG Grid gives .ag-root-wrapper `container-type: inline-size` and
+ * `content-visibility: auto`. Both make it the containing block for
+ * position: fixed, so the docked builder would be placed inside the grid
+ * instead of against the page. The container query only centres the
+ * pagination panel (not shown here), and content-visibility only skips
+ * painting a grid that is off screen; this one fills the page. */
+.af-native .ag-root-wrapper {
+  container-type: normal;
+  content-visibility: visible;
+}
+
+.af-native .ag-dialog:has(.ag-advanced-filter-builder) {
+  position: fixed !important;
+  top: var(--af-dock-top, 0) !important;
+  right: 0 !important;
+  left: auto !important;
+  width: var(--af-dock-width, 460px) !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  height: var(--af-dock-height, 100vh) !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  border: 0;
+  border-left: 1px solid #e5e5e5;
+  border-radius: 0;
+  box-shadow: -8px 0 24px -16px rgb(0 0 0 / 0.25);
+}
+
+/* Pinned, so no drag handle or resize edges. */
+.af-native .ag-dialog:has(.ag-advanced-filter-builder) .ag-resizer-wrapper {
+  display: none;
+}
+
+.af-native .ag-dialog:has(.ag-advanced-filter-builder) .ag-panel-title-bar {
+  height: auto;
+  padding: 10px 12px;
+  border-bottom: 1px solid #e5e5e5;
+  background: #fff;
+  cursor: default;
+}
+
+.af-native .ag-dialog:has(.ag-advanced-filter-builder) .ag-panel-title-bar-title {
+  color: #171717;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Pills: a hairline in the pill's own tone, so the four kinds read apart. */
+.af-native .ag-advanced-filter-builder-pill {
+  border: 1px solid transparent;
+  border-radius: 0;
+  font-size: 12px;
+}
+
+.af-native .ag-advanced-filter-builder-join-pill {
+  border-color: #bae6fd;
+  color: #075985;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.af-native .ag-advanced-filter-builder-column-pill {
+  border-color: #e5e5e5;
+  color: #171717;
+}
+
+.af-native .ag-advanced-filter-builder-option-pill {
+  border-color: #fde68a;
+  color: #78350f;
+}
+
+.af-native .ag-advanced-filter-builder-value-pill {
+  border-color: #d4d4d4;
+  color: #171717;
+  max-width: 180px;
+}
+
+.af-native .ag-advanced-filter-builder-pill:hover {
+  border-color: #737373;
+}
+
+.af-native .ag-advanced-filter-builder-pill:focus-visible,
+.af-native .ag-advanced-filter-builder-item-button:focus-visible {
+  outline: 2px solid #171717;
+  outline-offset: 1px;
+  box-shadow: none;
+}
+
+.af-native .ag-advanced-filter-builder-value-pill .ag-input-field-input {
+  border-radius: 0;
+}
+
+.af-native .ag-advanced-filter-builder-virtual-list-item:hover {
+  background: #fafafa;
+}
+
+.af-native .ag-advanced-filter-builder-item-button {
+  color: #a3a3a3;
+}
+
+.af-native .ag-advanced-filter-builder-item-button:hover {
+  color: #171717;
+}
+
+.af-native .ag-advanced-filter-builder-invalid {
+  font-size: 11px;
+}
+
+/* Footer: Clear and Cancel quiet, Apply primary. */
+.af-native .ag-advanced-filter-builder-button-panel {
+  gap: 6px;
+  padding: 10px 12px;
+  background: #fafafa;
+}
+
+.af-native .ag-advanced-filter-builder-button-panel .ag-standard-button {
+  height: 30px;
+  margin: 0 !important;
+  padding: 0 12px;
+  border: 1px solid #d4d4d4;
+  border-radius: 0;
+  background: #fff;
+  color: #404040;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.af-native .ag-advanced-filter-builder-button-panel .ag-standard-button:hover:not(:disabled) {
+  background: #f5f5f5;
+  color: #171717;
+}
+
+.af-native .ag-advanced-filter-builder-button-panel .ag-advanced-filter-builder-apply-button {
+  border-color: #171717;
+  background: #171717;
+  color: #fff;
+}
+
+.af-native .ag-advanced-filter-builder-button-panel .ag-advanced-filter-builder-apply-button:hover:not(:disabled) {
+  background: #404040;
+  color: #fff;
+}
+
+.af-native .ag-advanced-filter-builder-button-panel .ag-standard-button:disabled {
+  opacity: 0.35;
+}
+
+/* ---- suggestion list under the expression bar --------------------- */
+
+/* AG Grid opens it where the caret expects a column, an operator or a join
+ * (also on ↓ or Ctrl+Space). It floats over the rows, so it needs a clear
+ * edge and a clear highlight to read as a menu. */
+.af-native .ag-autocomplete-list-popup {
+  border: 1px solid #171717;
+  border-radius: 0;
+  background: #fff;
+}
+
+/* AG Grid gives the list a fixed 6.5-row height, so a one-item list ("OR")
+ * shows a tall empty box. Let it shrink to its rows, up to 8.5 of them. */
+.af-native .ag-autocomplete-list {
+  min-width: 260px;
+  height: auto;
+  max-height: calc(28px * 8.5);
+}
+
+.af-native .ag-autocomplete-virtual-list-viewport {
+  height: auto;
+  max-height: calc(28px * 8.5);
+}
+
+.af-native .ag-autocomplete-virtual-list-item:hover {
+  background: #fafafa;
+}
+
+.af-native .ag-autocomplete-row {
+  border-left: 2px solid transparent;
+}
+
+.af-native .ag-autocomplete-row-selected {
+  border-left-color: #171717;
+  background: #f5f5f5;
+}
+
+.af-native .ag-autocomplete-row-label {
+  margin: 0 10px;
+  color: #171717;
+  font-size: 12px;
+}
+
+/* Pickers inside the builder pills. */
+.af-native .ag-advanced-filter-builder-pill-select .ag-list,
+.af-native .ag-select-list {
+  border: 1px solid #171717;
+  border-radius: 0;
+}
+
+.af-native .ag-list-item.ag-active-item {
+  background: #f5f5f5;
+}
